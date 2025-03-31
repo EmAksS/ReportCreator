@@ -1,0 +1,156 @@
+@font-face {
+  font-family: 'Kurale';
+  src:
+          url("../public/assets/fonts/Kurale/Kurale-Regular.ttf") format('truetype');
+  font-style: normal;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  background-color: #F4F4F4;
+  font-size: 24px;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.page
+{
+  height: calc(100vh - 30px);
+  padding-top: 30px;
+}
+
+.hat
+{
+  position: relative;
+  width: 100%;
+  height: 75px;
+  display: grid;
+  justify-content: end;
+  grid-auto-flow: column;
+  background: linear-gradient(
+          to right,
+          #39BAF6 15%,
+          #75D3FF 100%
+  );
+}
+
+.hat-logo
+{
+  width: 120px;
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  transform: translate(0, -50%);
+  pointer-events: none;
+  user-select: none;
+  border: #39BAF6 7.5px solid;
+  border-radius: 50%;
+}
+
+.hat_title
+{
+  position: absolute;
+  margin: 0 0 0 190px;
+  line-height: 1;
+  user-select: none;
+  font: 48px "Kurale";
+  color: white;
+}
+
+.main-space
+{
+
+}
+
+.form
+{
+  height: fit-content;
+  width: fit-content;
+}
+
+.authorization-form
+{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  border-radius: 30px;
+  box-shadow: 0 5px 5px 0 lightgray;
+  background-color: white;
+}
+
+.text-input
+{
+  box-sizing: border-box;
+  padding: 9px 12px;
+  font-size: 20px;
+  border-radius: 10px;
+  border: 3px solid #ddd;
+  background-color: white;
+  outline: none;
+}
+
+.text-input:focus
+{
+  border-color: #39BAF6;
+}
+
+.secure-text
+{
+  -webkit-text-security: disc;
+}
+
+.button
+{
+  box-sizing: border-box;
+  cursor: pointer;
+  border: none;
+  margin: 0;
+  font-weight: bold;
+}
+
+.general-button
+{
+  padding: 9px 12px;
+  font-size: 20px;
+  border-radius: 10px;
+  color: white;
+  box-shadow: 0 2px 5px 0 lightgray;
+  background: linear-gradient(
+          to right,
+          #39BAF6 0%,
+          #75D3FF 100%
+  );;
+}
+
+.button:hover
+{
+  opacity: 0.9;
+}
+
+.hat-button
+{
+  height: 100%;
+  width: fit-content;
+  padding: 15px;
+  font-size: 24px;
+  color: white;
+  border: none;
+  background-color: rgba(255, 255, 255, 0);
+  transition: background-color 0.1s linear;
+}
+
+.hat-button:hover
+{
+  background-color: rgba(255, 255, 255, 0.2);
+}
