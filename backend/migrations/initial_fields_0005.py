@@ -10,6 +10,7 @@ def create_initial_user_fields(apps, schema_editor):
         {
             'name': 'Фамилия',
             'englName': 'last_name',
+            'is_required': True,
             'placeholder': 'Ваша фамилия',
             'type': 'TEXT',
             'checkRegex': '^[а-яА-Я]+(-[а-яА-Я]+)*$',
@@ -18,6 +19,7 @@ def create_initial_user_fields(apps, schema_editor):
         {
             'name': 'Имя',
             'englName': 'first_name',
+            'is_required': True,
             'placeholder': 'Ваше имя',
             'type': 'TEXT',
             'checkRegex': '^[а-яА-Я]+(-[а-яА-Я]+)*$',
@@ -26,6 +28,7 @@ def create_initial_user_fields(apps, schema_editor):
         {
             'name': 'Отчество',
             'englName': 'patronymic',
+            'is_required': False,
             'placeholder': 'Ваше отчество',
             'type': 'TEXT',
             'checkRegex': '^[а-яА-Я]*$',

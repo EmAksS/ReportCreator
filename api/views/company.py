@@ -40,7 +40,7 @@ def register_company(request):
             username=username,
             password=password,
             company=company,
-            is_superuser_of_company=True,
+            is_company_superuser=True,
             is_staff=True  # для доступа к админке если нужно
         )
     except Exception as e:

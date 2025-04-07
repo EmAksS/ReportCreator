@@ -18,5 +18,5 @@ urlpatterns = [
     path('user/fields/', users.field_values_list, name='get_user_fields'),
     path('user/fields/fields/',users.get_user_fields, name='get_user_fields'),
     path('user/fields/create/', users.create_user_field, name='create_user_field'),
-    path('users/fields/<int:pk>/', users.field_value_detail, name='field_value_detail'),
+    path('user/fields/<int:pk>/', users.field_value_detail, name='field_value_detail'),
 ]

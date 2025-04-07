@@ -8,7 +8,7 @@ class IsCompanySuperuser(permissions.BasePermission):
         return bool(
             request.user and
             request.user.is_authenticated and
-            request.user.is_superuser_of_company
+            request.user.is_company_superuser
         )
 
 class IsDebug(permissions.BasePermission):
