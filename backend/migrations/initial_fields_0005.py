@@ -9,30 +9,30 @@ def create_initial_user_fields(apps, schema_editor):
     initial_fields = [
         {
             'name': 'Фамилия',
-            'englName': 'last_name',
+            'key_name': 'last_name',
             'is_required': True,
             'placeholder': 'Ваша фамилия',
             'type': 'TEXT',
-            'checkRegex': '^[а-яА-Я]+(-[а-яА-Я]+)*$',
-            'relatedItem': "User"
+            'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*$',
+            'related_item': "User"
         },
         {
             'name': 'Имя',
-            'englName': 'first_name',
+            'key_name': 'first_name',
             'is_required': True,
             'placeholder': 'Ваше имя',
             'type': 'TEXT',
-            'checkRegex': '^[а-яА-Я]+(-[а-яА-Я]+)*$',
-            'relatedItem': "User"
+            'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*$',
+            'related_item': "User"
         },
         {
             'name': 'Отчество',
-            'englName': 'patronymic',
+            'key_name': 'patronymic',
             'is_required': False,
             'placeholder': 'Ваше отчество',
             'type': 'TEXT',
-            'checkRegex': '^[а-яА-Я]*$',
-            'relatedItem': "User"
+            'validation_regex': '^[а-яА-Я]*$',
+            'related_item': "User"
         }
     ]
 

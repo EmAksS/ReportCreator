@@ -85,7 +85,7 @@ def register_user(request):
         )
     
     required_fields = Field.objects.filter(
-        relatedItem="User",
+        related_item="User",
         is_required=True
     )
 
@@ -93,7 +93,7 @@ def register_user(request):
         UsersValues.objects.create(
             user=user,
             field=field,
-            value=request.data.get(field.englName, "")
+            value=request.data.get(field.key_name, "")
         )
     
     return Response({
@@ -108,22 +108,22 @@ def register_user(request):
 @permission_classes([IsCompanySuperuser|IsDebug])
 def create_user_field(request):
     name = request.data.get("name")
-    englName = request.data.get("englName")
+    key_name = request.data.get("key_name")
     type = request.data.get("type")
     placeholder = request.data.get("placeholder")
-    check_regex = request.data.get("checkRegex")
+    validation_regex = request.data.get("validation_regex")
 
-    if not all([name, englName]):
-        return Response({"error": "Не указаны необходимые поля `name` или `englName`"}, status=status.HTTP_400_BAD_REQUEST)
+    if not all([name, key_name]):
+        return Response({"error": "Не указаны необходимые поля `name` или `key_name`"}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         field = Field.objects.create(
             name=name,
-            englName=englName,
+            key_name=key_name,
             type=type,
             placeholder=placeholder,
-            checkRegex=check_regex,
-            relatedItem="User",
+            validation_regex=validation_regex,
+            related_item="User",
         )
     except Exception as e:
         return Response(
@@ -141,11 +141,11 @@ def create_user_field(request):
 @permission_classes([AllowAny])
 def get_user_fields(request):
     # Проверяем существование обязательных полей
-    if not Field.objects.filter(relatedItem="User").exists():   
+    if not Field.objects.filter(related_item="User").exists():   
         from backend.migrations.initial_fields_0005 import create_initial_user_fields
         create_initial_user_fields()  # Ваша функция создания полей
     
-    field = Field.objects.filter(relatedItem="User")
+    field = Field.objects.filter(related_item="User")
     serializer = UserFieldSerializer(field, many=True)
     return Response(serializer.data)
 

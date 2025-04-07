@@ -51,7 +51,7 @@ def register_company(request):
         )
     
     required_fields = Field.objects.filter(
-        relatedItem="User",
+        related_item="User",
         is_required=True
     )
 
@@ -59,7 +59,7 @@ def register_company(request):
         UsersValues.objects.create(
             user=user,
             field=field,
-            value=request.data.get(field.englName, "")
+            value=request.data.get(field.key_name, "")
         )
     
     # Автоматический логин после регистрации

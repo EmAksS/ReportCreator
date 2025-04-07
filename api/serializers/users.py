@@ -35,7 +35,7 @@ class UserFieldSerializer(serializers.ModelSerializer):
 class UserFieldValueSerializer(serializers.ModelSerializer):
     field = UserFieldSerializer(read_only=True)
     field_id = serializers.PrimaryKeyRelatedField(
-        queryset=Field.objects.filter(relatedItem="User"),
+        queryset=Field.objects.filter(related_item="User"),
         write_only=True,
         source='field'
     )
@@ -47,7 +47,7 @@ class UserFieldValueSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # Проверяем, что поле принадлежит к типу "User"
-        if data.get('field') and data['field'].relatedItem != "User":
+        if data.get('field') and data['field'].related_item != "User":
             raise serializers.ValidationError(
                 "Field должен относиться к User"
             )

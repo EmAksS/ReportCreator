@@ -32,12 +32,12 @@ class UsersValues(models.Model):
     Вся информация касательно пользователей.
     """
 
-    user = models.ForeignKey(
+    user_id = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='user_values'
     )
-    field = models.ForeignKey(
+    field_id = models.ForeignKey(
         Field,
         on_delete=models.CASCADE,
         related_name='user_field'
@@ -47,7 +47,7 @@ class UsersValues(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('user', 'field')
+        unique_together = ('user_id', 'user_id')
 
     def __str__(self):
-        return f"{self.user} - {self.field}: {self.value}"
+        return f"{self.user_id} - {self.field_id}: {self.value}"
