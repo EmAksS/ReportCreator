@@ -1,6 +1,6 @@
 from django.db import models
 
-class Field(models.Model):
+class AbstractField(models.Model):
     FIELD_TYPES = [
         ("TEXT", "Текстовое поле"),
         ("PASSWORD", "Пароль"),
@@ -22,3 +22,9 @@ class Field(models.Model):
 
     def __str__(self):
         return self.key_name
+    
+    class Meta:
+        abstract = True
+
+class Field(AbstractField):
+    pass

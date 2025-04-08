@@ -41,3 +41,37 @@ class Contractor(CompanyAbstract):
     - Город-месторасположение компании, где происходит подпись документа.
     """
     contractor_city = models.CharField(max_length=64, null=False)
+
+class Person(models.Model):
+    """
+    Модель юридического лица.
+    Является абстрактной моделью, от которой будут наследоваться модели
+    юрлица-заказчика и юрлица-исполнителя.
+    НЕ ЯВЛЯЮТСЯ ПОЛЬЗОВАТЕЛЯМИ СИСТЕМЫ!
+    Они являются больше абстраткными обёртками, от имени которых будут подписываться документы.
+    - ФИО лица
+    - Должность лица
+    """
+
+    class Meta:
+        abstract = True
+
+    first_name = models.CharField(max_length=64, null=False)
+    last_name = models.CharField(max_length=64, null=False)
+    surname = models.CharField(max_length=64, null=False)
+    post = models.CharField(max_length=64, null=False)
+
+class ExecutorPerson(Person):
+    """
+    Модель юридического лица-исполнителя.
+    Наследует все поля из Person.
+    - Компания-исполнитель, которой принадлежит лицо
+    """
+    company = models.ForeignKey(Executor, on_delete=models.CASCADE)
+
+class ContractorPerson(Person):
+    """
+    Модель юридического лица-заказчика.
+    Наследует все поля из Person.
+    """
+    company = models.ForeignKey(Contractor, on_delete=models.CASCADE)

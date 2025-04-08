@@ -1,6 +1,7 @@
 from django.db import models
-from .company import Executor, Contractor
-
+from .company import ContractorPerson, ExecutorPerson
+from .fields import AbstractField
+import core.settings.base as core
 
 from django.db import models
 
@@ -24,12 +25,19 @@ class Template(models.Model):
 
     name = models.CharField(max_length=255, verbose_name="Название шаблона")
     type = models.CharField(max_length=10, choices=DOCUMENT_TYPES, verbose_name="Тип документа")
-    file = models.FileField(upload_to='docs/templates/', verbose_name="Файл шаблона")
-    custom = models.JSONField(default=dict, verbose_name="Дополнительные переменные") # Пока не работает но хз
-    related_company = models.ForeignKey(Contractor, on_delete=models.DO_NOTHING, null=True, blank=True, verbose_name="Связанная компания")
-
+    file = models.FileField(upload_to=core.BASE_DIR.parent/'docs/templates/', verbose_name="Файл шаблона")
+    related_contractor_person = models.ForeignKey(ContractorPerson, on_delete=models.DO_NOTHING, verbose_name="Представитель (юридическое лицо) заказчика", null=True, blank=True)
+    related_executor_person = models.ForeignKey(ExecutorPerson, on_delete=models.DO_NOTHING, verbose_name="Представитель (юридическое лицо) исполнителя", null=True, blank=True)
+    
     def __str__(self):
         return self.name
+
+
+class TemplateField(AbstractField):
+    """
+    Модель для хранение кастомных полей шаблона документов.
+    """
+    related_template = models.ForeignKey(Template, on_delete=models.DO_NOTHING, verbose_name="Связанный шаблон")
 
 
 class Document(models.Model):
@@ -39,22 +47,41 @@ class Document(models.Model):
 
         Есть поля:
         - id - уникальный номер документа
-        - contrator - компания-заказчик
-        - executor - компания-исполнитель
         - created_at - дата создания документа
         - showDate - дата, которая отображается в документе (фактически, первая рабочая неделя месяца)
-        - doc - файл с документом-шаблоном для изменения
+        - doc - путь к сохранённому документу
         - table - данные таблицы, если она там имеется с определёнными данными.
-            Задаётся в формате `list` по типу [{'поле1': 'значение1', 'поле2': 'значение2'}, ...]
-        - custom - дополнительные данные, которые вставляются в документ (задаются пользователем).
-            Задаётся в формате `dict` по типу {'поле1__тип-данных': 'значение1', 'поле2__тип-данных': 'значение2'}
+            check TODO
     """
     
     id = models.BigIntegerField(primary_key=True, verbose_name='Номер документа')
     template = models.ForeignKey(Template, on_delete=models.DO_NOTHING, verbose_name="Шаблон")
-    contrator = models.ForeignKey(Contractor, on_delete=models.DO_NOTHING, verbose_name="Заказчик")
-    executor = models.ForeignKey(Executor, on_delete=models.DO_NOTHING, verbose_name="Исполнитель")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
-    showDate = models.DateField(verbose_name="Отображаемая дата")
-    table = models.JSONField(default=list)
-    custom = models.JSONField(default=dict)
+    shown_date = models.DateField(verbose_name="Отображаемая дата")
+    save_path = models.CharField(max_length=255, verbose_name="Путь к сохранённому документу относительно /docs/", null=True, blank=True)
+    #TODO: table; Это будет ссылкой на другую модель базы данных, которая будет описана в `table.py`
+
+class DocumentsValues(models.Model):
+    """
+    Вся информация касательно пользователей.
+    """
+
+    document_id = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='document_values'
+    )
+    field_id = models.ForeignKey(
+        TemplateField,
+        on_delete=models.CASCADE,
+        related_name='document_field'
+    )
+    value = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('document_id', 'field_id')
+
+    def __str__(self):
+        return f"{self.document_id} - {self.field_id}: {self.value}"
