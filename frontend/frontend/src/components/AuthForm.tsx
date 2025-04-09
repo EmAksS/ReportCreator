@@ -23,10 +23,16 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         {
             case AuthFormMode.login:
                 return <Form
-                    textInputInfo={[
-                        ["Логин"],
-                        ["Пароль", {secureText: true}]]}
-                    buttonInfo={[{
+                    style={{width: "300px"}}
+                    inputs={[
+                        {inputData: {name: "text1", keyName: "name1", placeholder: "popa1", validationRegEx: new RegExp(/^[A-Za-zА-Яа-яЁё]+$/), isRequired: true, inputType: "text"}},
+                        {inputData: {name: "text2", keyName: "name2", placeholder: "popa2", validationRegEx: new RegExp(/^[A-Za-zА-Яа-яЁё]+$/), isRequired: true, inputType: "text"}}]}
+                    onSubmit={(data) =>
+                    {
+                        console.log(data)
+                    }}
+                    buttons={[{
+                        type: "submit",
                         text: "Войти",
                         onClick: ()=>{},
                         style: {width: "100%", marginTop: "18px"},
@@ -34,16 +40,22 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
 
             case AuthFormMode.registration:
                 return <Form
-                    textInputInfo={[
-                        ["Полное название компании"],
-                        ["ФИО директора"],
-                        ["Логин"],
-                        ["Пароль", {secureText: true}]]}
-                    buttonInfo={[{
-                        text: "Зарегистрироваться",
+                    inputs={[
+                        {inputData: {name: "text1", keyName: "name1", placeholder: "popa1", isRequired: true, inputType: "text", secureText: true}},
+                        {inputData: {name: "text2", keyName: "name2", placeholder: "popa2", isRequired: true, inputType: "text", secureText: true}}]}
+                    onSubmit={(data) =>
+                    {
+                        data.forEach((inputData) =>
+                        {
+                            console.log(inputData)
+                        })
+                    }}
+                    buttons={[{
+                        type: "submit",
+                        text: "Войти",
                         onClick: ()=>{},
                         style: {width: "100%", marginTop: "18px"},
-                        variant: ButtonType.general},]}/>;
+                        variant: ButtonType.general}]}/>;
         }
     }
 

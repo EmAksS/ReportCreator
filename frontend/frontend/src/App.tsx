@@ -13,7 +13,7 @@ function App() {
                  {text: "Личный кабинет", onClick: ()=>{}, variant: ButtonType.hat},
                  {text: "Выйти", onClick: ()=>{}, variant: ButtonType.hat}]}/>
 
-        <AuthForm mode={AuthFormMode.registration}/>
+        <AuthForm mode={AuthFormMode.login}/>
 
         <div className={"main-space"}>
 
