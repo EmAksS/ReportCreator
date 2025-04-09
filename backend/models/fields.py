@@ -3,7 +3,6 @@ from django.db import models
 class AbstractField(models.Model):
     FIELD_TYPES = [
         ("TEXT", "Текстовое поле"),
-        ("PASSWORD", "Пароль"),
         ("NUMBER", "Числовое поле"),
         ("DATE", "Дата и время"),
         ("CURRENCY", "Денежная сумма"),
@@ -19,6 +18,8 @@ class AbstractField(models.Model):
     type = models.CharField(max_length=10, verbose_name='Тип поля', choices=FIELD_TYPES)
     placeholder = models.CharField(max_length=50, null=True, verbose_name='Подсказка для заполнения поля')
     validation_regex = models.CharField(max_length=200, null=True, verbose_name='Регулярное выражение для валидации')
+    secure_text = models.BooleanField(default=False, verbose_name='Это защищённое поле?')
+    error_text = models.TextField(null=True, verbose_name='Текст ошибки при валидации')
 
     def __str__(self):
         return self.key_name

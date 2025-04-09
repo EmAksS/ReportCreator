@@ -90,6 +90,8 @@ def register_user(request):
     )
 
     for field in required_fields:
+        if field.key_name == "password" or field.key_name == "username":
+            continue
         UsersValues.objects.create(
             user=user,
             field=field,
@@ -142,7 +144,7 @@ def create_user_field(request):
 def get_user_fields(request):
     # Проверяем существование обязательных полей
     if not Field.objects.filter(related_item="User").exists():   
-        from backend.migrations.initial_fields_0005 import create_initial_user_fields
+        from backend.migrations.initial_fields import create_initial_user_fields
         create_initial_user_fields()  # Ваша функция создания полей
     
     field = Field.objects.filter(related_item="User")

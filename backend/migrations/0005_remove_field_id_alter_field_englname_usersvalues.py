@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend', 'initial_fields_0005'),
+        ('backend', '0004_alter_field_checkregex_alter_field_placeholder'),
     ]
 
     operations = [

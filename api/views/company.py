@@ -56,6 +56,8 @@ def register_company(request):
     )
 
     for field in required_fields:
+        if field.key_name == "password" or field.key_name == "username":
+            continue
         UsersValues.objects.create(
             user=user,
             field=field,
