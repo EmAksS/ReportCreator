@@ -1,5 +1,5 @@
-import {FC, ReactElement} from "react";
-import {Field} from "../types/types";
+import {FC, ReactElement, useEffect, useState} from "react";
+import {Field, InputPresentation, InputType} from "../types/api";
 
 export interface InputProps
 {
@@ -11,28 +11,52 @@ export interface InputProps
 
 const Input: FC<InputProps> = (props: InputProps) =>
 {
+    const [inputPresentation, setInputPresentation] = useState<InputPresentation>();
+
+    useEffect(() =>
+    {
+        setInputPresentation({
+                field: props.inputData,
+                value: {fieldId: props.inputData.keyName, fieldValue: ""}})
+    }, []);
+
+    useEffect(() =>
+    {
+        setValidationRegex(RegExp(props.inputData.validationRegex as string));
+    }, [props.inputData.validationRegex])
+
     const onInputChange = (event: React.ChangeEvent<HTMLInputElement>): void =>
     {
-        const passedValidation = validateValue(event.target.value);
-
-        const alertMessage = passedValidation ? "" : "Неверный формат значения в поле '" + props.inputData.name + "'";
-        props.alert?.(props.inputData.keyName, alertMessage);
-
+        updateAlertMessage(event.target.value);
         props.onChange?.(event);
+    }
+
+    const updateAlertMessage = (value: string): void =>
+    {
+        if (!props.alert) return;
+
+        const passedValidation: boolean = validateValue(value)
+
+        let alertMessage: string = (value !== "" && !passedValidation)
+            ? props.inputData.errorText || `Неверный формат значения в поле "${props.inputData.name}"`
+            : "";
+
+        props.alert(props.inputData.keyName, alertMessage);
     }
     
     const validateValue = (value: string): boolean =>
     {
-        return props.inputData.validationRegEx?.test(value) || value === "";
+        return props.inputData.type === InputType.Checkbox
+            || (validationRegex ? validationRegex.test(value) : true);
     }
 
     const getInputTag = (): ReactElement =>
     {
         const inputData = props.inputData;
 
-        switch (inputData.inputType)
+        switch (inputData.type)
         {
-            case "text":
+            case InputType.Text:
             {
                 return (<input type={"text"}
                                className={"text-input " + (inputData.secureText ? "secure-text" : "")}
@@ -40,11 +64,11 @@ const Input: FC<InputProps> = (props: InputProps) =>
                                style={props.style}
                                onChange={onInputChange}/>)
             }
-            case "table":
+            case InputType.Table:
             {
                 return (<div>eto tablitsa</div>)
             }
-            case "checkbox":
+            case InputType.Checkbox:
             {
                 return (<input type={"checkbox"} onChange={props.onChange}/>)
             }

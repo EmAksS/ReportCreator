@@ -1,7 +1,6 @@
 @font-face {
   font-family: 'Kurale';
-  src:
-          url("../public/assets/fonts/Kurale/Kurale-Regular.ttf") format('truetype');
+  src: url("../public/assets/fonts/Kurale/Kurale-Regular.ttf") format('truetype');
   font-style: normal;
 }
 
@@ -26,6 +25,7 @@ code {
 {
   height: calc(100vh - 30px);
   padding-top: 30px;
+  position: relative;
 }
 
 .hat
@@ -87,6 +87,7 @@ code {
   border-radius: 30px;
   box-shadow: 0 5px 5px 0 lightgray;
   background-color: white;
+  z-index: 3;
 }
 
 .text-input
@@ -161,4 +162,16 @@ code {
 .hat-button:hover
 {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.toggleable-button
+{
+  background: lightgray;
+  outline: none;
+  border: 2px solid darkgray;
+  border-radius: 5px;
+}
+.toggleable-button:checked
+{
+  background: gray;
 }

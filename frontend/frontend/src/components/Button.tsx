@@ -12,13 +12,15 @@ export interface ButtonProps
 export enum ButtonType
 {
     general,
-    hat
+    hat,
+    toggleable
 }
 
 const buttonCSSClasses =
     {
         [ButtonType.general]: "general-button",
         [ButtonType.hat]: "hat-button",
+        [ButtonType.toggleable]: "toggleable-button",
     }
 
 const Button: FC<ButtonProps> = (props: ButtonProps) =>
