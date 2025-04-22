@@ -7,10 +7,10 @@ def set_error_text_values(apps, schema_editor):
     Field = apps.get_model('backend', 'Field')
     error_texts = {
         "username": "Имя пользователя должно быть уникальным, не должно содержать пробелов и быть от 4 до 16 символов.",
-        "password": "Пароль должен быть длиннее 8 символов и содержать хотя бы одну цифру.",
+        "password": "Пароль должен быть длиннее 8 символов и содержать хотя бы одну цифру и заглавную букву.",
         "last_name": None,
         "first_name": None,
-        "patronymic": None,
+        "surname": None,
     }
 
     for field_name, error_text in error_texts.items():

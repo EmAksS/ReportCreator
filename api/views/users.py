@@ -12,6 +12,16 @@ from django.contrib.auth import authenticate, login, logout
 from backend.models.user import User, UsersValues
 from backend.models.fields import Field
 
+import json
+
+# --- Important ---
+
+def find_dataValue(data, name):
+    for item in data:
+        if item.get("field_id") == name:
+            return item.get("value")
+    return None
+
 # --- CSRF ---
 
 @api_view(["GET"])
@@ -36,8 +46,11 @@ def check_auth(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_view(request):
-    username = request.data.get("username")
-    password = request.data.get("password")
+    data = json.loads(request.data["data"])
+
+    username = find_dataValue(data, "username")
+    password = find_dataValue(data, "password")
+
     user = authenticate(request, username=username, password=password)
     
     if user is not None:
@@ -52,6 +65,19 @@ def login_view(request):
         status=status.HTTP_400_BAD_REQUEST
     )
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_login_fields(request):
+    # Вернуть Field.username и Field.password
+
+    fields = []
+    for field in Field.objects.all():
+        if field.key_name in ["username", "password"]:
+            fields.append(UserFieldSerializer(field).data)
+    
+    return Response(fields)
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
@@ -63,41 +89,47 @@ def logout_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsCompanySuperuser])
 def register_user(request):
-    username = request.data.get("username")
-    password = request.data.get("password")
-    
+    data = json.loads(request.data["data"])
+
+    username = find_dataValue(data, "username")
+    password = find_dataValue(data, "password")
+
     if not all([username, password]):
         return Response(
-            {"error": "Необходимы все поля"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    try:
-        user = User.objects.create_user(
-            username=username,
-            password=password,
-            company=request.user.company,  # Привязываем к компании суперпользователя
-        )
-    except Exception as e:
-        return Response(
-            {"error": str(e)},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    required_fields = Field.objects.filter(
-        related_item="User",
-        is_required=True
-    )
+            {"error": "Не удалось создать пользователя - отсутствуют поля `username` или `password`"},
+            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        try:
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                company=request.user.company,  # Привязываем к компании суперпользователя
+                is_company_superuser=False,
+                is_staff=False  # для доступа к админке если нужно
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    for field in required_fields:
-        if field.key_name == "password" or field.key_name == "username":
+    for item in data:
+        if item.get("field_id") in ["username", "password"]:
             continue
-        UsersValues.objects.create(
-            user=user,
-            field=field,
-            value=request.data.get(field.key_name, "")
-        )
-    
+        try:
+            UsersValues.objects.create(
+                id=f"{user}__{Field.objects.filter(key_name=item.get('field_id'))[0]}",
+                user_id=user,
+                field_id=Field.objects.filter(key_name=item.get('field_id'))[0],
+                value=item.get("value", ""),
+            )
+        except Exception as e:
+                user.delete()   # Удаляем пользователя, если произошла ошибка
+                return Response(
+                    {"error": str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
     return Response({
         "status": "success",
         "user": UserSerializer(user).data
@@ -159,12 +191,12 @@ def field_values_list(request):
     Получить и/или добавить значения полей для пользователя.
     """
     if request.method == "GET":
-        users_values = UsersValues.objects.filter(user=request.user)
+        users_values = UsersValues.objects.filter(user_id=request.user)
         serializer = UserFieldValueSerializer(users_values, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     elif request.method == "POST":
-        serializer = UserFieldValueSerializer(data=request.data)
+        serializer = UserFieldValueSerializer(data=request.data, user_id=request.user)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -178,7 +210,7 @@ def field_value_detail(request, pk):
     Получить, изменить или удалить иформацию о конкретном поле `pk` для пользователя.
     """
     try:
-        user_value = UsersValues.objects.get(pk=pk, user=request.user)
+        user_value = UsersValues.objects.get(pk=pk, user_id=request.user)
     except UsersValues.DoesNotExist:
         return Response({"error": "Поле не найдено"}, status=status.HTTP_404_NOT_FOUND)
     

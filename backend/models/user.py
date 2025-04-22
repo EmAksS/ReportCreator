@@ -19,19 +19,20 @@ class User(AbstractUser):
     patronymic - отчество пользователя.
     related_company - компания, которой принадлежит пользователь. Является полем таблицы `companies.Executor`.
     """
-    username = models.CharField(max_length=150, unique=True, null=False)
+    username = models.CharField(max_length=150, primary_key=True, null=False)
     company = models.ForeignKey(Executor, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     is_company_superuser = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
-    
+
 
 class UsersValues(models.Model):
     """
     Вся информация касательно пользователей.
     """
 
+    id = models.CharField(max_length=150, primary_key=True)
     user_id = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

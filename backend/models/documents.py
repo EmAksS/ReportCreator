@@ -33,7 +33,7 @@ class Template(models.Model):
         return self.name
 
 
-class TemplateField(AbstractField):
+class DocumentField(AbstractField):
     """
     Модель для хранение кастомных полей шаблона документов.
     """
@@ -72,7 +72,7 @@ class DocumentsValues(models.Model):
         related_name='document_values'
     )
     field_id = models.ForeignKey(
-        TemplateField,
+        DocumentField,
         on_delete=models.CASCADE,
         related_name='document_field'
     )

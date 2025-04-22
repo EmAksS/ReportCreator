@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 
+            'username', 
             'company', 'is_company_superuser',
         ]
         extra_kwargs = {
@@ -33,16 +33,16 @@ class UserFieldSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UserFieldValueSerializer(serializers.ModelSerializer):
-    field = UserFieldSerializer(read_only=True)
-    field_id = serializers.PrimaryKeyRelatedField(
-        queryset=Field.objects.filter(related_item="User"),
-        write_only=True,
-        source='field'
-    )
+    # field = UserFieldSerializer(read_only=True)
+    # field_id = serializers.PrimaryKeyRelatedField(
+    #     queryset=Field.objects.filter(related_item="User"),
+    #     write_only=True,
+    #     source='field'
+    # )
 
     class Meta:
         model = UsersValues
-        fields = ["id", "field", "field_id", "value", "created_at", "updated_at"]
+        fields = '__all__'
         read_only_fields = ["created_at", "updated_at"]
 
     def validate(self, data):

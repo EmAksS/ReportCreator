@@ -51,14 +51,35 @@ def create_initial_user_fields(apps, schema_editor):
         },
         {
             'name': 'Отчество',
-            'key_name': 'patronymic',
+            'key_name': 'surname',
             'is_required': False,
             'placeholder': 'Ваше отчество',
             'type': 'TEXT',
             'validation_regex': '^[а-яА-Я]*$',
             'related_item': "User",
             'secure_text': False,
-        }
+        },
+        # Информация о компании
+        {
+            'name': 'Полное наименование компании',
+            'key_name': 'company_fullName',
+            'is_required': False,
+            'placeholder': 'Введите полное название компании',
+            'type': 'TEXT',
+            'validation_regex': '^[а-яА-Я]*$',
+            'related_item': "Company",
+            'secure_text': False,
+        },
+        {
+            'name': 'Название компании',
+            'key_name': 'company_name',
+            'is_required': True,
+            'placeholder': 'Введите название компании с сокращёнными аббревиатурами',
+            'type': 'TEXT',
+            'validation_regex': '^[а-яА-Я]*$',
+            'related_item': "Company",
+            'secure_text': False,
+        },
     ]
 
     for field in initial_fields:
