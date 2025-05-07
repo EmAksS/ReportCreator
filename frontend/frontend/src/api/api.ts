@@ -1,18 +1,21 @@
 import axios, {AxiosError} from "axios";
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
-import {DataValue, Field} from "../types/api";
+import {CsrfToken, DataValue, Field} from "../types/api";
 
-const BASE_API_URL = "http://26.213.134.143:8000";
+const BASE_API_URL = "https://26.213.134.143:8000";
 const LOGIN_FIELDS_URL = "/login/fields";
 const USER_REGISTRATION_FIELDS_URL = "/user/values/fields/";
 const COMPANY_REGISTRATION_FIELDS_URL = "/company/fields/";
 const CREATE_USER_URL = "/register/user/";
 const CREATE_COMPANY_URL = "/register/company/";
 const LOGIN_URL = "/login/";
+const CSRF_URL = "/csrf/";
 
-axios.defaults.baseURL = BASE_API_URL;
-axios.defaults.withCredentials = true;
+const api = axios.create({
+    withCredentials: true,
+    baseURL: BASE_API_URL
+})
 
 
 export async function getLoginFields(): Promise<Field[]>
@@ -34,7 +37,7 @@ async function getFields(URL: string): Promise<Field[]>
 {
     try
     {
-        const response = await axios.get(URL, {transformResponse: [snakeToCamel]});
+        const response = await api.get(URL, {transformResponse: [snakeToCamel]});
         return response.data as Field[];
     }
     catch (error)
@@ -46,34 +49,58 @@ async function getFields(URL: string): Promise<Field[]>
 
 export async function requestCreateUser(userRegistrationData: DataValue[]): Promise<void>
 {
-    try {postDataValue(CREATE_USER_URL, userRegistrationData)}
+    try { await postDataValue(CREATE_USER_URL, userRegistrationData)}
     catch (error) {console.error('Ошибка при регистрации пользователя:', error)}
 }
 
 export async function requestCreateCompany(companyRegistrationData: DataValue[]): Promise<void>
 {
-    try {postDataValue(CREATE_COMPANY_URL, companyRegistrationData)}
+    try { await postDataValue(CREATE_COMPANY_URL, companyRegistrationData) }
     catch (error) {console.error('Ошибка при регистрации компании:', error)}
 }
 
 export async function requestLogin(userLoginData: DataValue[]): Promise<void>
 {
-    try {postDataValue(LOGIN_URL, userLoginData)}
+    try { await postDataValue(LOGIN_URL, userLoginData)}
     catch (error) {console.error('Ошибка при логине:', error)}
 }
 
-async function postDataValue(URL: string, userLoginData: DataValue[])
+async function postDataValue(URL: string, data: DataValue[])
 {
+    console.log("постим на " + URL + " вот это:")
+    console.log(camelToSnake(data));
+
     try
     {
-        const response = await axios.post(URL,
-            {
-                data: JSON.stringify(camelToSnake(userLoginData))
+        const token = await getCsrfToken();
+        console.log(token);
+        const response = await api.post(URL,
+            { data: camelToSnake(data), csrfmiddlewaretoken: token},
+            { headers:
+                    {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": token
+                    }
             });
     }
     catch (error)
     {
         if (error instanceof AxiosError) console.log(error.response);
+    }
+}
+
+async function getCsrfToken(): Promise<string>
+{
+    try
+    {
+        const response = await api.get(CSRF_URL, {transformResponse: [snakeToCamel]});
+        const token = response.data as CsrfToken;
+        return token.csrfToken;
+    }
+    catch (error)
+    {
+        if (error instanceof AxiosError) console.log(error.response);
+        throw error
     }
 }
 
@@ -92,24 +119,12 @@ function snakeToCamel(data: any): any
 
 function camelToSnake(data: any): any
 {
-    if (typeof data === 'string') {
-        try {
-            data = JSON.parse(data);
-        } catch {
-            return data; // Если не JSON, возвращаем строку как есть
-        }
-    }
-
-    // Если data — массив, обрабатываем каждый элемент рекурсивно
-    if (Array.isArray(data)) {
-        return data.map(item => camelToSnake(item));
-    }
-
-    // Если data — объект (и не null), применяем snakecaseKeys
-    if (typeof data === 'object' && data !== null) {
+    try
+    {
         return snakecaseKeys(data, { deep: true });
     }
-
-    // Для примитивов (числа, boolean, null, undefined) возвращаем как есть
-    return data;
+    catch (error)
+    {
+        return data;
+    }
 }

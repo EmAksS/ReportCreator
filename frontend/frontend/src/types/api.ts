@@ -1,7 +1,7 @@
 export interface DataValue
 {
     fieldId: string,
-    fieldValue: FieldValue
+    value: FieldValue
 }
 
 export enum InputType
@@ -11,7 +11,7 @@ export enum InputType
     Table = "TABLE"
 }
 
-export type FieldValue = string | boolean | FieldValue[][];
+export type FieldValue = string | boolean | FieldValue[][] | File;
 
 export interface Field
 {
@@ -27,6 +27,11 @@ export interface TextField extends Field
     placeholder?: string;
     validationRegex?: string;
     secureText?: boolean;
+}
+
+export interface FileField extends Field
+{
+    fileFormat: string;
 }
 
 export interface DocumentField extends TextField

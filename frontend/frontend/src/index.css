@@ -90,16 +90,20 @@ code {
   z-index: 3;
 }
 
-.text-input
+.form-item
 {
   width: 100%;
   box-sizing: border-box;
-  padding: 9px 12px;
-  font-size: 20px;
+  outline: none;
   border-radius: 10px;
   border: 3px solid #ddd;
+}
+
+.text-input
+{
+  padding: 9px 12px;
+  font-size: 20px;
   background-color: white;
-  outline: none;
 }
 
 .text-input:focus
@@ -166,12 +170,80 @@ code {
 
 .toggleable-button
 {
-  background: lightgray;
+  padding: 5px;
   outline: none;
-  border: 2px solid darkgray;
-  border-radius: 5px;
+  border-radius: 10px;
+  border: 3px solid #ddd;
+  background: white;
+
 }
-.toggleable-button:checked
+
+.table-input
 {
-  background: gray;
+  position: relative;
+  padding: 0;
+  margin-bottom: 48px;
+  border-radius: 15px;
+  background-color: white;
+  max-width: calc(100% - 12px);
+}
+
+.table-row
+{
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: fit-content;
+  flex-wrap: wrap;
+  border-bottom: 3px solid #ddd;
+}
+
+.table-input div:last-of-type
+{
+  border-bottom: none;
+}
+
+.table-row-remove-button
+{
+  position: absolute;
+  left: 100%;
+  top: -10%;
+  outline: none;
+  border: none;
+  background-color: transparent;
+  font-size: 64px;
+  color: #ff3c3c;
+  cursor: pointer;
+}
+
+.table-row-add-button
+{
+  position: absolute;
+  left: calc(100% - 6px);
+  top: calc(100% - 6px);
+  outline: none;
+  border: none;
+  background-color: transparent;
+  font-size: 48px;
+  color: #56e130;
+  cursor: pointer;
+}
+
+.table-cell
+{
+  flex: 1;
+  box-sizing: border-box;
+  border-right: 3px solid #ddd;
+  margin: 0;
+  padding: 10px;
+}
+
+.table-row div:last-of-type
+{
+  border-right: none;
+}
+
+.file-input
+{
+  width: 100%;
 }

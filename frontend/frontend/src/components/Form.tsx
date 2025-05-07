@@ -1,13 +1,13 @@
 import Input, {InputProps} from "./Input";
 import Button, {ButtonProps} from "./Button";
 import React, {FC, useEffect, useState} from "react";
-import {Field, InputType} from "../types/api";
+import {FieldValue, InputPresentation} from "../types/api";
 
 export interface FormProps
 {
     inputs: InputProps[];
     buttons: ButtonProps[];
-    onSubmit: (fields: Field[], values: Record<string, string | boolean>) => void;
+    onSubmit: (fields: InputPresentation[]) => void;
     alertMessage?: string;
     style?: React.CSSProperties;
     children?: React.ReactNode;
@@ -15,13 +15,16 @@ export interface FormProps
 
 const Form: FC<FormProps> = (props: FormProps) =>
 {
-    const [formFields, setFormFields] = useState<Field[]>([])
-    const [formValues, setFormValues] = useState<Record<string, string | boolean>>({})
+    const [fields, setFields] = useState<InputPresentation[]>([])
     const [alertMessages, setAlertMessages] = useState<Record<string, string>>({});
 
     useEffect(() =>
     {
-        setFormFields(props.inputs.map(input => input.inputData));
+        props.inputs.forEach((input) =>
+        {
+            fields.push({field: input.inputData, value: {fieldId: input.inputData.keyName}} as InputPresentation)
+        })
+
     }, [props.inputs]);
 
     useEffect(() =>
@@ -30,30 +33,24 @@ const Form: FC<FormProps> = (props: FormProps) =>
         setAlertMessage("form", message)
     }, [props.alertMessage]);
 
-    const handleInputChange = (key: string, event: React.ChangeEvent<HTMLInputElement>) =>
+    const onInputChange = (key: string, newValue: FieldValue) =>
     {
-        const newFormFieldsValues = { ...formValues }
-        const inputType = getInputPropsByKey(key)?.inputData.type;
+        const newFields = [...fields];
 
-        if (inputType === InputType.Checkbox) newFormFieldsValues[key] = event.target.checked;
-        else newFormFieldsValues[key] = event.target.value;
+        const changedFieldIndex: number = newFields.findIndex((field) => field.field.keyName === key);
+        newFields[changedFieldIndex].value.value = newValue;
 
-        setFormValues(newFormFieldsValues);
+        setFields(newFields);
     };
 
-    const getInputPropsByKey = (key: string) =>
+    const setAlertMessage = (inputKeyName: string, alertMessage: string) =>
     {
-        return props.inputs.find(input => input.inputData.keyName === key);
-    }
+        const newMessages = { ...alertMessages };
 
-    const setAlertMessage = (keyName: string, message: string) =>
-    {
-        const newAlertMessages = { ...alertMessages }
+        if (alertMessage === "") delete newMessages[inputKeyName];
+        else newMessages[inputKeyName] = alertMessage;
 
-        if (message === "") delete newAlertMessages[keyName];
-        else newAlertMessages[keyName] = message;
-
-        setAlertMessages(newAlertMessages);
+        setAlertMessages(newMessages);
     };
 
     const getFirstAlertMessage = (): string =>
@@ -70,13 +67,13 @@ const Form: FC<FormProps> = (props: FormProps) =>
                 return (
                     <div key={inputData.keyName}>
                         <p style={{margin: "8px 0"}}>{inputData.name + (inputData.isRequired ? "" : " (необязательно)")}</p>
-                        <Input style={{width: "100%"}} alert={setAlertMessage} inputData={inputData} onChange={(e) => handleInputChange(inputData.keyName, e)} />
+                        <Input style={{width: "100%"}} alert={setAlertMessage} inputData={inputData} onChange={onInputChange} />
                     </div>)
             })}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
 
-            <Button {...props.buttons[0]} onClick={() => props.onSubmit(formFields, formValues)} />
+            <Button {...props.buttons[0]} onClick={() => props.onSubmit(fields)} />
         </div>)
 }
 

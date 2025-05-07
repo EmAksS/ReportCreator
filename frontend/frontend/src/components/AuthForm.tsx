@@ -5,10 +5,10 @@ import {
     getLoginFields,
     getRegisterCompanyFields,
     requestCreateCompany,
-    requestCreateUser,
     requestLogin
 } from "../api/api";
-import {DataValue, Field} from "../types/api";
+import {DataValue, Field, InputPresentation} from "../types/api";
+import {data} from "react-router-dom";
 
 export enum AuthFormMode
 {
@@ -38,10 +38,13 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
     {
         try
         {
-            const fetchedLoginFields = await getLoginFields();
-            setLoginFields(fetchedLoginFields);
-            const fetchedRegisterCompanyFields = await getRegisterCompanyFields();
-            setRegisterCompanyFields(fetchedRegisterCompanyFields);
+            const loginFieldsPromise = getLoginFields();
+            const registerCompanyFieldsPromise = getRegisterCompanyFields();
+
+            const loginFields = await loginFieldsPromise;
+            setLoginFields(loginFields);
+            const registerCompanyFields = await registerCompanyFieldsPromise;
+            setRegisterCompanyFields(registerCompanyFields);
         }
         catch (error)
         {
@@ -54,11 +57,22 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         }
     };
 
-    const sendCompanyCreateRequest = (fields: Field[], values: Record<string, string | boolean>)=>
+    const sendCompanyCreateRequest = (inputs: InputPresentation[]) =>
     {
         try
         {
-            const dataValues: DataValue[] = getDataValueArray(fields, values);
+            const dataValues: DataValue[] = getDataValueArray(inputs);
+
+            for (let i = 0; i < dataValues.length; i++)
+            {
+                const field = dataValues[i];
+                if ((field.value === undefined || field.value === "") && inputs[i].field.isRequired)
+                {
+                    setAlertMessage("Заполните поле " + field.fieldId);
+                    return;
+                }
+            }
+            setAlertMessage("");
             requestCreateCompany(dataValues)
         }
         catch (error)
@@ -67,33 +81,35 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         }
     }
 
-    const sendLoginRequest = (fields: Field[], values: Record<string, string | boolean>)=>
+    const sendLoginRequest = (fields: InputPresentation[]) =>
     {
-        try
-        {
-            const dataValues: DataValue[] = getDataValueArray(fields, values);
-            requestLogin(dataValues)
-        }
-        catch (error)
-        {
-            if (error instanceof Error) setAlertMessage(error.message)
-        }
-
+        // try
+        // {
+        //     const dataValues: DataValue[] = getDataValueArray(fields, values);
+        //     requestLogin(dataValues)
+        // }
+        // catch (error)
+        // {
+        //     if (error instanceof Error) setAlertMessage(error.message)
+        // }
     }
 
-    const getDataValueArray = (fields: Field[], values: Record<string, string | boolean>): DataValue[] =>
+    const getDataValueArray = (fields: InputPresentation[]): DataValue[] =>
     {
         const dataValues: DataValue[] = [];
 
         for (let i = 0; i < fields.length; i++)
         {
-            const field = fields[i];
-            const value = values[field.keyName]
-            if (field.isRequired && !value)
+            const input = fields[i];
+            const field = input.field
+            const value = input.value
+
+            if (!value.value)
             {
-                throw Error(`Поле "${field.name}" должно быть заполнено`)
+                if (!field.isRequired) input.value.value = "";
+                else throw Error(`Поле "${field.name}" должно быть заполнено`)
             }
-            dataValues.push({fieldId: field.keyName, fieldValue: value})
+            dataValues.push({fieldId: value.fieldId, value: value.value} as DataValue)
         }
 
         return dataValues
@@ -120,7 +136,7 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             case AuthFormMode.registration:
                 return <Form
                     style={{width: "400px"}}
-                    inputs={[...registerCompanyFields, ...loginFields].map((field) =>
+                    inputs={registerCompanyFields.map((field) =>
                     {
                         return {inputData: field}
                     })}
