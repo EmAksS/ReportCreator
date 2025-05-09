@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend', '0007_rename_englname_field_key_name_and_more'),
+        ('backend', '0009_remove_user_patronymic_field_is_required_and_more'),
     ]
 
     operations = [

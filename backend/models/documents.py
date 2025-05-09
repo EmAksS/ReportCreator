@@ -1,9 +1,7 @@
 from django.db import models
 from .company import ContractorPerson, ExecutorPerson
 from .fields import AbstractField
-import core.settings.base as core
-
-from django.db import models
+from core.settings.base import TEMPLATES_FOLDER, DOCUMENTS_FOLDER
 
 class Template(models.Model):
     """
@@ -15,19 +13,11 @@ class Template(models.Model):
         ('REPORT', 'Отчёт'),
     ]
 
-    DATA_TYPES = [
-        ('text', 'Текст'),
-        ('number', 'Число'),
-        ('date', 'Дата'),
-        ('money', 'Денежная сумма'),
-        ('person', 'Личность'),
-    ]
-
     name = models.CharField(max_length=255, verbose_name="Название шаблона")
     type = models.CharField(max_length=10, choices=DOCUMENT_TYPES, verbose_name="Тип документа")
-    file = models.FileField(upload_to=core.BASE_DIR.parent/'docs/templates/', verbose_name="Файл шаблона")
-    related_contractor_person = models.ForeignKey(ContractorPerson, on_delete=models.DO_NOTHING, verbose_name="Представитель (юридическое лицо) заказчика", null=True, blank=True)
-    related_executor_person = models.ForeignKey(ExecutorPerson, on_delete=models.DO_NOTHING, verbose_name="Представитель (юридическое лицо) исполнителя", null=True, blank=True)
+    file = models.FileField(upload_to=TEMPLATES_FOLDER, verbose_name="Файл шаблона")
+    related_contractor_person = models.ForeignKey(ContractorPerson, on_delete=models.CASCADE, verbose_name="Представитель (юридическое лицо) заказчика", null=True, blank=True)
+    related_executor_person = models.ForeignKey(ExecutorPerson, on_delete=models.CASCADE, verbose_name="Представитель (юридическое лицо) исполнителя", null=True, blank=True)
     
     def __str__(self):
         return self.name
@@ -37,7 +27,14 @@ class DocumentField(AbstractField):
     """
     Модель для хранение кастомных полей шаблона документов.
     """
-    related_template = models.ForeignKey(Template, on_delete=models.DO_NOTHING, verbose_name="Связанный шаблон")
+    related_template = models.ForeignKey(Template, on_delete=models.CASCADE, verbose_name="Связанный шаблон")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['key_name', 'related_item'], name='document_field_key_name_related_item_combination'
+            )
+        ]
 
 
 class Document(models.Model):
@@ -55,11 +52,11 @@ class Document(models.Model):
     """
     
     id = models.BigIntegerField(primary_key=True, verbose_name='Номер документа')
-    template = models.ForeignKey(Template, on_delete=models.DO_NOTHING, verbose_name="Шаблон")
+    template = models.ForeignKey(Template, on_delete=models.CASCADE, verbose_name="Шаблон")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     shown_date = models.DateField(verbose_name="Отображаемая дата")
-    save_path = models.CharField(max_length=255, verbose_name="Путь к сохранённому документу относительно /docs/", null=True, blank=True)
-    #TODO: table; Это будет ссылкой на другую модель базы данных, которая будет описана в `table.py`
+    save_path = models.CharField(max_length=255, verbose_name=f"Путь к сохранённому документу относительно {DOCUMENTS_FOLDER}", null=True, blank=True)
+    #table_id = models.ForeignKey(Table, on_delete=models.CASCADE, null=True, blank=True)
 
 class DocumentsValues(models.Model):
     """

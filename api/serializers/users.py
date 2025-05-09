@@ -3,6 +3,7 @@ from backend.models import User
 from backend.models.user import UsersValues
 from backend.models.fields import Field
 from .company import CompanySerializer
+from backend.scripts.field_validate import field_validate
 
 class UserSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
@@ -25,13 +26,6 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-class UserFieldSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=Field.FIELD_TYPES)
-
-    class Meta:
-        model = Field
-        fields = '__all__'
-
 class UserFieldValueSerializer(serializers.ModelSerializer):
     # field = UserFieldSerializer(read_only=True)
     # field_id = serializers.PrimaryKeyRelatedField(
@@ -47,6 +41,9 @@ class UserFieldValueSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         # Проверяем, что поле принадлежит к типу "User"
+        error = field_validate(data)
+        if error is not None:
+            return serializers.ValidationError(error, code=400)
         if data.get('field') and data['field'].related_item != "User":
             raise serializers.ValidationError(
                 "Field должен относиться к User"

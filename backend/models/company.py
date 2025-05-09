@@ -11,9 +11,6 @@ class CompanyAbstract(models.Model):
     - Уникальный идентификационный номер компании (создаётся автоматически)
     - Название компании
     - Полное название компании с расшифровкой всех абревиатур
-    - Название должности, от имени которого осуществляется подпись документа
-    - ФИО должности, от чьего имени осуществляется подпись документа
-    - Инициалы ФИО руководителя компании. TODO: сделать его автовычислимым согласно скрипту (ФАМИЛИЯ И. О.)
     """
     class Meta:
         abstract = True
@@ -40,6 +37,7 @@ class Contractor(CompanyAbstract):
     Наследует все поля из Company, а также добавляет:
     - Город-месторасположение компании, где происходит подпись документа.
     """
+    related_executor = models.ForeignKey(Executor, on_delete=models.CASCADE, related_name='related_executor', default=0)
     contractor_city = models.CharField(max_length=64, null=False)
 
 class Person(models.Model):
@@ -60,6 +58,9 @@ class Person(models.Model):
     last_name = models.CharField(max_length=64, null=False)
     surname = models.CharField(max_length=64, null=False)
     post = models.CharField(max_length=64, null=False)
+
+    def set_initials(self):
+        return f'{self.last_name} {self.first_name[0]}.{self.surname[0]}.'
 
 class ExecutorPerson(Person):
     """

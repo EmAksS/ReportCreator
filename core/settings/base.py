@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'backend',
     'frontend',
     'api',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -71,7 +72,17 @@ CORS_ALLOW_CREDENTIALS = True
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         'rest_framework.authentication.SessionAuthentication',
-    ]
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Report Creator API',
+    'VERSION': '1.0.0',
+    "SWAGGER_UI_SETTINGS": {
+        "filter": True, # включить поиск по тегам
+    },
+    "COMPONENT_SPLIT_REQUEST": True
 }
 
 ROOT_URLCONF = 'core.urls'
@@ -79,7 +90,9 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / "templates",
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -148,3 +161,15 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "backend.User"
+
+DOCUMENTS_FOLDER = BASE_DIR.parent / "docs"
+if not DOCUMENTS_FOLDER.exists():
+    DOCUMENTS_FOLDER.mkdir()
+
+TEMPLATES_FOLDER = DOCUMENTS_FOLDER / "templates"
+if not TEMPLATES_FOLDER.exists():
+    TEMPLATES_FOLDER.mkdir()
+
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
+# SESSION_COOKIE_AGE = 3600 * 24 * 7

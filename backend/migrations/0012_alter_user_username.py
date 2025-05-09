@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend', 'set_error_text_values'),
+        ('backend', '0011_field_error_text'),
     ]
 
     operations = [

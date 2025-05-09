@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Field',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('id', models.CharField(default='null__Null', max_length=128, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=50, verbose_name='Русское название поля (для отображения)')),
                 ('englName', models.CharField(max_length=50, verbose_name='Английское название поля (по которому будет доступ в API)')),
                 ('relatedItem', models.CharField(editable=False, max_length=30, verbose_name='К какому виду записи относится это поле (заполняется программно)')),

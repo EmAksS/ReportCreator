@@ -8,19 +8,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend', '0004_alter_field_checkregex_alter_field_placeholder'),
+        ('backend', '0006_documentfield_id_field_id_and_more'),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='field',
-            name='id',
-        ),
-        migrations.AlterField(
-            model_name='field',
-            name='englName',
-            field=models.CharField(max_length=50, primary_key=True, serialize=False, verbose_name='Английское название поля (по которому будет доступ в API)'),
-        ),
         migrations.CreateModel(
             name='UsersValues',
             fields=[
