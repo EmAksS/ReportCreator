@@ -3,8 +3,8 @@ import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
 import {CsrfToken, DataValue, Field} from "../types/api";
 
-const BASE_API_URL = "https://26.213.134.143:8000";
-const LOGIN_FIELDS_URL = "/login/fields";
+const BASE_API_URL = "http://26.213.134.143:8000";
+const LOGIN_FIELDS_URL = "/login/";
 const USER_REGISTRATION_FIELDS_URL = "/user/values/fields/";
 const COMPANY_REGISTRATION_FIELDS_URL = "/company/fields/";
 const CREATE_USER_URL = "/register/user/";
