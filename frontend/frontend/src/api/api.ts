@@ -1,130 +1,117 @@
 import axios, {AxiosError} from "axios";
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
-import {CsrfToken, DataValue, Field} from "../types/api";
+import {CsrfToken, DataValue, Field, IsAuthenticatedApiResponse} from "../types/api";
 
-const BASE_API_URL = "https://26.213.134.143:8000";
-const LOGIN_FIELDS_URL = "/login/fields";
-const USER_REGISTRATION_FIELDS_URL = "/user/values/fields/";
-const COMPANY_REGISTRATION_FIELDS_URL = "/company/fields/";
-const CREATE_USER_URL = "/register/user/";
-const CREATE_COMPANY_URL = "/register/company/";
-const LOGIN_URL = "/login/";
-const CSRF_URL = "/csrf/";
+const BASE_API_URL = "http://localhost:8000";
+const ENDPOINTS = {
+    CHECK_AUTH: "/check_auth/",
+    LOGIN_FIELDS: "/login/",
+    USER_REGISTRATION_FIELDS: "/user/values/fields/",
+    COMPANY_REGISTRATION_FIELDS: "/company/fields/",
+    CREATE_USER: "/register/user/",
+    CREATE_COMPANY: "/register/company/",
+    LOGIN: "/login/",
+    CSRF: "/csrf/"
+}
 
 const api = axios.create({
     withCredentials: true,
-    baseURL: BASE_API_URL
+    baseURL: BASE_API_URL,
+    xsrfHeaderName: "X-CSRFToken",
+    xsrfCookieName: "csrftoken",
+    headers: { "Content-Type": "application/json" },
+    timeout: 10000,
+    validateStatus: (status) => true // Не считать ошибкой статусы
 })
 
-
-export async function getLoginFields(): Promise<Field[]>
+api.interceptors.request.use((config) =>
 {
-    return await getFields(LOGIN_FIELDS_URL);
-}
-
-export async function getRegisterCompanyFields(): Promise<Field[]>
-{
-    return await getFields(COMPANY_REGISTRATION_FIELDS_URL);
-}
-
-export async function getRegisterUserFields(): Promise<Field[]>
-{
-    return await getFields(USER_REGISTRATION_FIELDS_URL);
-}
-
-async function getFields(URL: string): Promise<Field[]>
-{
-    try
+    const data = config.data;
+    if (data)
     {
-        const response = await api.get(URL, {transformResponse: [snakeToCamel]});
-        return response.data as Field[];
+        config.data = camelToSnake(data);
     }
-    catch (error)
+    return config;
+});
+
+api.interceptors.response.use(
+    (response) =>
     {
-        if (error instanceof AxiosError) console.log(error.response);
-        throw error
-    }
-}
-
-export async function requestCreateUser(userRegistrationData: DataValue[]): Promise<void>
-{
-    try { await postDataValue(CREATE_USER_URL, userRegistrationData)}
-    catch (error) {console.error('Ошибка при регистрации пользователя:', error)}
-}
-
-export async function requestCreateCompany(companyRegistrationData: DataValue[]): Promise<void>
-{
-    try { await postDataValue(CREATE_COMPANY_URL, companyRegistrationData) }
-    catch (error) {console.error('Ошибка при регистрации компании:', error)}
-}
-
-export async function requestLogin(userLoginData: DataValue[]): Promise<void>
-{
-    try { await postDataValue(LOGIN_URL, userLoginData)}
-    catch (error) {console.error('Ошибка при логине:', error)}
-}
-
-async function postDataValue(URL: string, data: DataValue[])
-{
-    console.log("постим на " + URL + " вот это:")
-    console.log(camelToSnake(data));
-
-    try
+        const data = response.data;
+        if (data)
+        {
+            response.data = snakeToCamel(data);
+        }
+        return response;
+    },
+    (error) =>
     {
-        const token = await getCsrfToken();
-        console.log(token);
-        const response = await api.post(URL,
-            { data: camelToSnake(data), csrfmiddlewaretoken: token},
-            { headers:
-                    {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": token
-                    }
-            });
-    }
-    catch (error)
-    {
-        if (error instanceof AxiosError) console.log(error.response);
-    }
-}
-
-async function getCsrfToken(): Promise<string>
-{
-    try
-    {
-        const response = await api.get(CSRF_URL, {transformResponse: [snakeToCamel]});
-        const token = response.data as CsrfToken;
-        return token.csrfToken;
-    }
-    catch (error)
-    {
-        if (error instanceof AxiosError) console.log(error.response);
-        throw error
-    }
-}
+        console.error(error);
+        return Promise.reject(error);
+    });
 
 function snakeToCamel(data: any): any
 {
-    try
-    {
-        const parsedData = JSON.parse(data);
-        return camelcaseKeys(parsedData, { deep: true });
-    }
-    catch (error)
-    {
-        return data;
-    }
+    return camelcaseKeys(data, { deep: true });
 }
 
 function camelToSnake(data: any): any
 {
-    try
-    {
-        return snakecaseKeys(data, { deep: true });
-    }
-    catch (error)
-    {
-        return data;
-    }
+    return snakecaseKeys(data, { deep: true });
+}
+
+export async function isAuthenticated(): Promise<boolean>
+{
+    return (await api.get<IsAuthenticatedApiResponse>(ENDPOINTS.CHECK_AUTH)).data.status == 200;
+}
+
+export async function getLoginFields(): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.LOGIN_FIELDS);
+}
+
+export async function getRegisterCompanyFields(): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.COMPANY_REGISTRATION_FIELDS);
+}
+
+export async function getRegisterUserFields(): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.USER_REGISTRATION_FIELDS);
+}
+
+async function getFields(URL: string): Promise<Field[]>
+{
+    const response = await api.get<Field[]>(URL);
+    const data = response.data;
+    console.log(data);
+    return data;
+}
+
+export async function requestCreateUser(userRegistrationData: DataValue[]): Promise<void>
+{
+    await postDataValue(ENDPOINTS.CREATE_USER, userRegistrationData)
+}
+
+export async function requestCreateCompany(companyRegistrationData: DataValue[]): Promise<void>
+{
+    await postDataValue(ENDPOINTS.CREATE_COMPANY, companyRegistrationData)
+}
+
+export async function requestLogin(userLoginData: DataValue[])
+{
+    const response = await postDataValue<IsAuthenticatedApiResponse>(ENDPOINTS.LOGIN, userLoginData);
+    if (!response.user) throw new Error(response.details);
+    return response
+}
+
+async function postDataValue<TResponseValue>(URL: string, data: DataValue[]): Promise<TResponseValue>
+{
+    return (await api.post<DataValue[]>(URL, { data: data })).data as TResponseValue;
+}
+
+async function getCsrfToken(): Promise<string>
+{
+    return (await api.get<CsrfToken>(ENDPOINTS.CSRF)).data.csrfToken;
 }

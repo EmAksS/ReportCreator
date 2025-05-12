@@ -6,7 +6,6 @@ import {FieldValue, InputPresentation} from "../types/api";
 export interface FormProps
 {
     inputs: InputProps[];
-    buttons: ButtonProps[];
     onSubmit: (fields: InputPresentation[]) => void;
     alertMessage?: string;
     style?: React.CSSProperties;
@@ -58,6 +57,12 @@ const Form: FC<FormProps> = (props: FormProps) =>
         return alertMessages[Object.keys(alertMessages)[0]];
     }
 
+    const onSubmitButtonClick = () =>
+    {
+        props.onSubmit(fields);
+        console.log("нажата кнопка формы")
+    }
+
     return (
         <div className={"form"} style={props.style}>
             {props.children}
@@ -72,8 +77,6 @@ const Form: FC<FormProps> = (props: FormProps) =>
             })}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
-
-            <Button {...props.buttons[0]} onClick={() => props.onSubmit(fields)} />
         </div>)
 }
 

@@ -4,11 +4,11 @@ import Button, {ButtonType} from "./Button";
 import {
     getLoginFields,
     getRegisterCompanyFields,
+    isAuthenticated,
     requestCreateCompany,
     requestLogin
 } from "../api/api";
 import {DataValue, Field, InputPresentation} from "../types/api";
-import {data} from "react-router-dom";
 
 export enum AuthFormMode
 {
@@ -21,18 +21,47 @@ export interface AuthFormProps
     mode: AuthFormMode
 }
 
+interface FormConfig
+{
+    fields: Field[];
+    submitHandler: (inputs: InputPresentation[]) => Promise<void>;
+    alertMessage: string;
+}
+
 const AuthForm: FC<AuthFormProps> = ({mode}) =>
 {
     const [menuMode, setMenuMode] = useState<AuthFormMode>(mode);
-    const [registerCompanyFields, setRegisterCompanyFields] = useState<Field[]>([]);
-    const [loginFields, setLoginFields] = useState<Field[]>([]);
+    const [formConfig, setFormConfig] = useState<Record<AuthFormMode, FormConfig>>({
+        [AuthFormMode.login]: {
+            fields: [],
+            submitHandler: async () => {},
+            alertMessage: ""
+        },
+        [AuthFormMode.registration]: {
+            fields: [],
+            submitHandler: async () => {},
+            alertMessage: ""
+        }
+    });
     const [loading, setLoading] = useState<boolean>(true);
-    const [alertMessage, setAlertMessage] = useState<string>("");
 
     useEffect(() =>
     {
         requestAndLoadFields();
     }, []);
+
+    const updateFormConfig = (mode: AuthFormMode, newConfig: Partial<FormConfig>) => {
+        setFormConfig(prev => {
+            if (!prev) return { [mode]: newConfig } as Record<AuthFormMode, FormConfig>;
+            return {
+                ...prev,
+                [mode]: {
+                    ...prev[mode],
+                    ...newConfig
+                }
+            };
+        });
+    };
 
     const requestAndLoadFields = async () =>
     {
@@ -42,14 +71,24 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             const registerCompanyFieldsPromise = getRegisterCompanyFields();
 
             const loginFields = await loginFieldsPromise;
-            setLoginFields(loginFields);
             const registerCompanyFields = await registerCompanyFieldsPromise;
-            setRegisterCompanyFields(registerCompanyFields);
+
+            const config: Record<AuthFormMode, FormConfig> = {
+                [AuthFormMode.login]: {
+                    fields: loginFields,
+                    submitHandler: sendLoginRequest,
+                    alertMessage: ""},
+                [AuthFormMode.registration]: {
+                    fields: registerCompanyFields,
+                    submitHandler: sendCompanyCreateRequest,
+                    alertMessage: ""}}
+
+            setFormConfig(config)
         }
         catch (error)
         {
-            console.error('Failed to load form fields:', error);
-            setAlertMessage('Не удалось загрузить форму');
+            console.log('Failed to load form fields:', error);
+            updateFormConfig(menuMode, {alertMessage: "Не удалось загрузить форму"})
         }
         finally
         {
@@ -57,44 +96,58 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         }
     };
 
-    const sendCompanyCreateRequest = (inputs: InputPresentation[]) =>
+    const sendCompanyCreateRequest = async (inputs: InputPresentation[]) =>
     {
         try
         {
-            const dataValues: DataValue[] = getDataValueArray(inputs);
-
-            for (let i = 0; i < dataValues.length; i++)
+            if (requiredFieldsNotEmpty(inputs))
             {
-                const field = dataValues[i];
-                if ((field.value === undefined || field.value === "") && inputs[i].field.isRequired)
-                {
-                    setAlertMessage("Заполните поле " + field.fieldId);
-                    return;
-                }
+                const dataValues: DataValue[] = getDataValues(inputs);
+                updateFormConfig(menuMode, {alertMessage: ""})
+                requestCreateCompany(dataValues);
             }
-            setAlertMessage("");
-            requestCreateCompany(dataValues)
         }
         catch (error)
         {
-            if (error instanceof Error) setAlertMessage(error.message)
+            if (error instanceof Error) updateFormConfig(menuMode, {alertMessage: error.message})
         }
     }
 
-    const sendLoginRequest = (fields: InputPresentation[]) =>
+    const sendLoginRequest = async (inputs: InputPresentation[]) =>
     {
-        // try
-        // {
-        //     const dataValues: DataValue[] = getDataValueArray(fields, values);
-        //     requestLogin(dataValues)
-        // }
-        // catch (error)
-        // {
-        //     if (error instanceof Error) setAlertMessage(error.message)
-        // }
+        try
+        {
+            if (requiredFieldsNotEmpty(inputs))
+            {
+                const dataValues: DataValue[] = getDataValues(inputs);
+                updateFormConfig(menuMode, {alertMessage: ""})
+                await requestLogin(dataValues);
+            }
+        }
+        catch (error)
+        {
+            if (error instanceof Error) {
+                console.log("поймана ошибка: " + error.message)
+                updateFormConfig(menuMode, {alertMessage: error.message})
+            }
+        }
     }
 
-    const getDataValueArray = (fields: InputPresentation[]): DataValue[] =>
+    const requiredFieldsNotEmpty = (inputs: InputPresentation[]): boolean =>
+    {
+        for (let i = 0; i < inputs.length; i++)
+        {
+            const field = inputs[i];
+            if ((field.value.value === undefined || field.value.value === "") && inputs[i].field.isRequired)
+            {
+                updateFormConfig(menuMode, {alertMessage: "Заполните поле " + field.field.name})
+                return false;
+            }
+        }
+        return true;
+    }
+
+    const getDataValues = (fields: InputPresentation[]): DataValue[] =>
     {
         const dataValues: DataValue[] = [];
 
@@ -117,38 +170,16 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
 
     const getForm = (): ReactElement =>
     {
-        switch (menuMode)
-        {
-            case AuthFormMode.login:
-                return <Form
-                    style={{width: "400px"}}
-                    inputs={loginFields.map((field) => {
-                        return {inputData: field}
-                    })}
-                    onSubmit={sendLoginRequest}
-                    buttons={[{
-                        type: "submit",
-                        text: "Войти",
-                        onClick: ()=>{},
-                        style: {width: "100%", marginTop: "18px"},
-                        variant: ButtonType.general}]}/>;
+        if (!formConfig) return <div>Загрузка формы</div>
 
-            case AuthFormMode.registration:
-                return <Form
-                    style={{width: "400px"}}
-                    inputs={registerCompanyFields.map((field) =>
-                    {
-                        return {inputData: field}
-                    })}
-                    onSubmit={sendCompanyCreateRequest}
-                    alertMessage={alertMessage}
-                    buttons={[{
-                        type: "submit",
-                        text: "Зарегистрировать компанию",
-                        onClick: ()=>{},
-                        style: {width: "100%", marginTop: "18px"},
-                        variant: ButtonType.general}]}></Form>;
-        }
+        const config = formConfig[menuMode];
+
+        return <Form
+            inputs={config.fields.map((field) => {
+                return {inputData: field}
+            })}
+            onSubmit={config.submitHandler}
+            alertMessage={config.alertMessage}/>;
     }
 
     return (
@@ -164,6 +195,7 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
                         variant={ButtonType.toggleable}/>
             </div>
             {loading ? <div>Загрузка</div> : getForm()}
+            <Button onClick={async () => console.log("аутентифицирован: " + await isAuthenticated())} variant={ButtonType.general} text={"Аутентифицирован?"}/>
         </div>
     )
 }

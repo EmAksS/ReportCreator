@@ -1,3 +1,5 @@
+import {User} from "./core";
+
 export interface DataValue
 {
     fieldId: string,
@@ -54,4 +56,15 @@ export interface InputPresentation
 {
     field: Field;
     value: DataValue;
+}
+
+interface ApiResponse
+{
+    status: number;
+    details?: string;
+}
+
+export interface IsAuthenticatedApiResponse extends ApiResponse
+{
+    user: User
 }
