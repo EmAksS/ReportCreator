@@ -76,10 +76,10 @@ class CompanyRegisterView(generics.ListCreateAPIView):
 
         error = field_validate(data, "Executor")
         if error is not None:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Неправильный формат значения в поле `{error['field_id']}`."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
         username = None
         password = None
@@ -103,10 +103,10 @@ class CompanyRegisterView(generics.ListCreateAPIView):
                 searched_data.append(item)
         
         if not company_name:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Отсутствует необходимое поле `company_name`."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Отсутствует необходимое поле `company_name`."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
         
         if not company_fullName:
             company_fullName = company_name
@@ -125,10 +125,10 @@ class CompanyRegisterView(generics.ListCreateAPIView):
         # Создаем суперпользователя компании
 
         if not all([username, password]):
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Не удалось создать пользователя - отсутствуют поля `username` или `password`"
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Не удалось создать пользователя - отсутствуют поля `username` или `password`"
+            }).data, status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
                 user = User.objects.create_user(
@@ -199,10 +199,10 @@ class CompanyInfoView(generics.GenericAPIView):
 
     def get(self, request):
         if not request.user.company:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"У текущего пользователя нет компании."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_204_NO_CONTENT,
+                "details": f"У текущего пользователя нет компании."
+            }).data, status=status.HTTP_204_NO_CONTENT)
 
         company = request.user.company
         return Response(self.serializer_class(company).data, status=status.HTTP_200_OK)
@@ -266,10 +266,10 @@ class ContratorCreateView(generics.ListCreateAPIView):
 
         error = field_validate(data, "Contractor")
         if error is not None:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Неправильный формат значения в поле `{error['field_id']}`."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             contractor = Contractor.objects.create(
@@ -284,10 +284,10 @@ class ContratorCreateView(generics.ListCreateAPIView):
                     details=f"Ошибка при создании пользователя: {str(e)}"
                 ).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        return Response(ItemDetailsSerializer(
-            status=status.HTTP_201_CREATED,
-            details=ContractorSerializer(contractor).data
-        ).data, status=status.HTTP_201_CREATED)
+        return Response(ItemDetailsSerializer({
+            "status": status.HTTP_201_CREATED,
+            "details": ContractorSerializer(contractor).data
+        }).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Contractors"])

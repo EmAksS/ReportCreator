@@ -107,10 +107,10 @@ class TemplateListCreateView(generics.ListCreateAPIView):
 
         error = field_validate(data, "Template")
         if error is not None:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Неправильный формат значения в поле `{error['field_id']}`."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
         
         # Загрузка документа
         uploaded_file = request.FILES['template_file']
@@ -118,10 +118,10 @@ class TemplateListCreateView(generics.ListCreateAPIView):
 
         # Проверяем расширение .docx
         if not uploaded_file.name.lower().endswith('.docx'):
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Файл должен быть в формат *.docx."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Файл должен быть в формат *.docx."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
         # TODO # Проверяем MIME-тип (дополнительная защита)
         # mime = Magic(mime=True)
@@ -148,18 +148,18 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         try: 
             contractor = ContractorPerson.objects.get(id=find_dataValue(data, 'related_contractor_person'))
         except:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Не найдено юридическое лицо заказчика с ID {find_dataValue(data, 'related_contractor_person')}"
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_400_BAD_REQUEST,
+                'details': f"Не найдено юридическое лицо заказчика с ID {find_dataValue(data, 'related_contractor_person')}"
+            }).data, status=status.HTTP_400_BAD_REQUEST)
         
         try: 
             executor = ExecutorPerson.objects.get(id=find_dataValue(data, 'related_executor_person'))
         except:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Не найдено юридическое лицо исполнителя с ID {find_dataValue(data, 'related_executor_person')}"
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_400_BAD_REQUEST,
+                'details': f"Не найдено юридическое лицо исполнителя с ID {find_dataValue(data, 'related_executor_person')}"
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             template = Template(
@@ -170,10 +170,10 @@ class TemplateListCreateView(generics.ListCreateAPIView):
                 related_executor_person=executor,
             )
         except Exception as e:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                details=e
-            ).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
+                'details': f"Ошибка создания объекта модели `Template`. {e}"
+            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         template.save()
         return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
@@ -246,10 +246,10 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
         error = field_validate(data, "Executor")
         if error is not None:
             return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail=f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
-                ).data,
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Неправильный формат значения в поле `{error['field_id']}`."
+                }).data,
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -258,10 +258,10 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
 
         if missing_fields:
             return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail="Отсутствуют необходимые поля: {missing_fields}"
-                ).data,
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Отсутствуют необходимые поля: {', '.join(missing_fields)}"
+                }).data,
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -269,10 +269,10 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
             template = Template.objects.get(id=self.kwargs.get('tid'))
         except Template.DoesNotExist:
             return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail="Шаблон с TID={tid} не найден."
-                ).data,
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Шаблон с TID={self.kwargs.get('tid')} не найден."
+                }).data,
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -297,10 +297,10 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
             )
         except Exception as e:
             return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail=f"Ошибка при создании документа: {e}"
-                ).data,
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Ошибка создания объекта модели `DocumentField`. {e}"
+                }).data,
                 status=status.HTTP_400_BAD_REQUEST
             )
 
