@@ -231,7 +231,7 @@ class UserRegisterView(generics.CreateAPIView):
         if error is not None:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_400_BAD_REQUEST,
-                'detail': "Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
+                'details': "Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
             }).data, status=status.HTTP_400_BAD_REQUEST)
 
         username = find_dataValue(data, "username")
@@ -240,7 +240,7 @@ class UserRegisterView(generics.CreateAPIView):
         if not all([username, password]):
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_400_BAD_REQUEST,
-                'detail': "Не удалось создать пользователя - отсутствуют поля `username` или `password`"
+                'details': "Не удалось создать пользователя - отсутствуют поля `username` или `password`"
             }).data, status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
@@ -254,7 +254,7 @@ class UserRegisterView(generics.CreateAPIView):
             except Exception as e:
                 return Response(DetailAndStatsSerializer({
                     'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    'detail': f"Внутренняя ошибка сервера: {e}"
+                    'details': f"Внутренняя ошибка сервера: {e}"
                 }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         for item in data:
@@ -271,7 +271,7 @@ class UserRegisterView(generics.CreateAPIView):
                     user.delete()   # Удаляем пользователя, если произошла ошибка
                     return Response(DetailAndStatsSerializer({
                         'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        'detail': f"Внутренняя ошибка сервера: {e}"
+                        'details': f"Внутренняя ошибка сервера: {e}"
                     }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(ItemDetailsSerializer({
@@ -329,7 +329,7 @@ class UserFieldListView(generics.ListCreateAPIView):
         if not request.user.is_company_superuser:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_403_FORBIDDEN,
-                'detail': "Создавать поля пользователей может только суперпользователь."
+                'details': "Создавать поля пользователей может только суперпользователь."
             }), status=status.HTTP_403_FORBIDDEN)
         
         data = json.loads(json.dumps(request.data["data"]))
@@ -338,7 +338,7 @@ class UserFieldListView(generics.ListCreateAPIView):
         if error is not None:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_400_BAD_REQUEST,
-                'detail': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
+                'details': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
             }), status=status.HTTP_400_BAD_REQUEST)
         
         name = find_dataValue(data, "name")
@@ -350,7 +350,7 @@ class UserFieldListView(generics.ListCreateAPIView):
         if not all([name, key_name, type]):
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_400_BAD_REQUEST,
-                'detail': "Не удалось создать поле пользователя - отсутствуют поля `name`, `key_name` или `type`"
+                'details': "Не удалось создать поле пользователя - отсутствуют поля `name`, `key_name` или `type`"
             }), status=status.HTTP_400_BAD_REQUEST)
         
         try:
@@ -367,7 +367,7 @@ class UserFieldListView(generics.ListCreateAPIView):
         except Exception as e:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                'detail': f"Внутренняя ошибка сервера: {e}"
+                'details': f"Внутренняя ошибка сервера: {e}"
             }), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(ItemDetailsSerializer({
@@ -444,7 +444,7 @@ class UserFieldValueView(generics.ListCreateAPIView):
         if error is not None:
             return Response(DetailAndStatsSerializer({
             'status': status.HTTP_400_BAD_REQUEST,
-            'detail': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
+            'details': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
         }), status=status.HTTP_400_BAD_REQUEST)
         
         serializer = self.serializer_class(
@@ -459,10 +459,10 @@ class UserFieldValueView(generics.ListCreateAPIView):
                 'details': serializer.data
             }), status=status.HTTP_201_CREATED)
 
-        return Response(DetailAndStatsSerializer(
-            status=status.HTTP_400_BAD_REQUEST,
-            detail="Ошибка валидации данных при сохранении значения поля пользователя."
-        ), status=status.HTTP_400_BAD_REQUEST)
+        return Response(DetailAndStatsSerializer({
+            'status': status.HTTP_400_BAD_REQUEST,
+            'details': "Ошибка валидации данных при сохранении значения поля пользователя."
+        }), status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=['User Fields Value'])
@@ -535,7 +535,7 @@ class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
         except UsersValues.DoesNotExist:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_404_NOT_FOUND,
-                'detail': "Поле не найдено"
+                'details': "Поле не найдено"
             }), status=status.HTTP_404_NOT_FOUND)
 
     def get(self, request, *args, **kwargs):
@@ -551,7 +551,7 @@ class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
         if error is not None:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_400_BAD_REQUEST,
-                'detail': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
+                'details': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
             }).data, status=status.HTTP_400_BAD_REQUEST)
         
         to_change = {}
@@ -572,7 +572,7 @@ class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
             }).data, status=status.HTTP_200_OK)
         return Response(DetailAndStatsSerializer({
             'status': status.HTTP_400_BAD_REQUEST,
-            'detail': "Ошибка валидации данных при сохранении значения поля пользователя."
+            'details': "Ошибка валидации данных при сохранении значения поля пользователя."
         }), status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, *args, **kwargs):
