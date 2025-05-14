@@ -1,5 +1,5 @@
 import Input, {InputProps} from "./Input";
-import Button, {ButtonProps} from "./Button";
+import Button, {ButtonType} from "./Button";
 import React, {FC, useEffect, useState} from "react";
 import {FieldValue, InputPresentation} from "../types/api";
 
@@ -19,11 +19,14 @@ const Form: FC<FormProps> = (props: FormProps) =>
 
     useEffect(() =>
     {
+        const newFields: InputPresentation[] = []
+
         props.inputs.forEach((input) =>
         {
-            fields.push({field: input.inputData, value: {fieldId: input.inputData.keyName}} as InputPresentation)
+            newFields.push({field: input.inputData, value: {fieldId: input.inputData.keyName}} as InputPresentation)
         })
 
+        setFields(newFields);
     }, [props.inputs]);
 
     useEffect(() =>
@@ -34,10 +37,14 @@ const Form: FC<FormProps> = (props: FormProps) =>
 
     const onInputChange = (key: string, newValue: FieldValue) =>
     {
+        console.log(fields);
         const newFields = [...fields];
+        console.log(newFields);
 
         const changedFieldIndex: number = newFields.findIndex((field) => field.field.keyName === key);
+        console.log(changedFieldIndex);
         newFields[changedFieldIndex].value.value = newValue;
+        console.log(newValue);
 
         setFields(newFields);
     };
@@ -77,6 +84,7 @@ const Form: FC<FormProps> = (props: FormProps) =>
             })}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
+            <Button text={"fa"} variant={ButtonType.general} onClick={() => props.onSubmit(fields)}/>
         </div>)
 }
 

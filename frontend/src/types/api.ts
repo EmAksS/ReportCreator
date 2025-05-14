@@ -58,7 +58,7 @@ export interface InputPresentation
     value: DataValue;
 }
 
-interface ApiResponse
+export interface ApiResponse
 {
     status: number;
     details?: string;

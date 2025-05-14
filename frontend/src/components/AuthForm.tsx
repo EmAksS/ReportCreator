@@ -6,7 +6,7 @@ import {
     getRegisterCompanyFields,
     isAuthenticated,
     requestCreateCompany,
-    requestLogin
+    requestLogin, requestLogout
 } from "../api/api";
 import {DataValue, Field, InputPresentation} from "../types/api";
 
@@ -104,7 +104,9 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             {
                 const dataValues: DataValue[] = getDataValues(inputs);
                 updateFormConfig(menuMode, {alertMessage: ""})
-                requestCreateCompany(dataValues);
+                const b = await requestCreateCompany(dataValues);
+                console.log(b.status + " " + b.details)
+                console.log(b.details)
             }
         }
         catch (error)
@@ -121,7 +123,9 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             {
                 const dataValues: DataValue[] = getDataValues(inputs);
                 updateFormConfig(menuMode, {alertMessage: ""})
-                await requestLogin(dataValues);
+                const a = await requestLogin(dataValues);
+                console.log(a.status + " " + a.details)
+                console.log(a.details)
             }
         }
         catch (error)
@@ -174,30 +178,32 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
 
         const config = formConfig[menuMode];
 
-        return <Form
-            inputs={config.fields.map((field) => {
-                return {inputData: field}
-            })}
-            onSubmit={config.submitHandler}
-            alertMessage={config.alertMessage}/>;
+        return (
+            <div className={"authorization-form"}>
+                <div style={{display: "flex", flexDirection: "row", justifyContent: "space-around"}}>
+                    <Button style={{width: "45%"}}
+                            text={"Вход"}
+                            onClick={() => setMenuMode(AuthFormMode.login)}
+                            variant={ButtonType.toggleable}/>
+                    <Button style={{width: "45%"}}
+                            text={"Регистрация компании"}
+                            onClick={() => setMenuMode(AuthFormMode.registration)}
+                            variant={ButtonType.toggleable}/>
+                </div>
+
+                <Form
+                    inputs={config.fields.map((field) => {
+                        return {inputData: field}
+                    })}
+                    onSubmit={config.submitHandler}
+                    alertMessage={config.alertMessage}/>
+
+                <Button onClick={async () => console.log("аутентифицирован: " + await isAuthenticated())} variant={ButtonType.general} text={"Аутентифицирован?"}/>
+                <Button onClick={async () => console.log("отправлен запрос на logout: " + await requestLogout())} variant={ButtonType.general} text={"Выйти"}/>
+            </div>)
     }
 
-    return (
-        <div className={"authorization-form"}>
-            <div style={{display: "flex", flexDirection: "row", justifyContent: "space-around"}}>
-                <Button style={{width: "45%"}}
-                        text={"Вход"}
-                        onClick={() => setMenuMode(AuthFormMode.login)}
-                        variant={ButtonType.toggleable}/>
-                <Button style={{width: "45%"}}
-                        text={"Регистрация компании"}
-                        onClick={() => setMenuMode(AuthFormMode.registration)}
-                        variant={ButtonType.toggleable}/>
-            </div>
-            {loading ? <div>Загрузка</div> : getForm()}
-            <Button onClick={async () => console.log("аутентифицирован: " + await isAuthenticated())} variant={ButtonType.general} text={"Аутентифицирован?"}/>
-        </div>
-    )
+    return loading ? <div>Загрузка</div> : getForm();
 }
 
 export default AuthForm;

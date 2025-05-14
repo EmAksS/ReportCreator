@@ -1,17 +1,17 @@
-import axios, {AxiosError} from "axios";
+import axios from "axios";
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
-import {CsrfToken, DataValue, Field, IsAuthenticatedApiResponse} from "../types/api";
+import {ApiResponse, CsrfToken, DataValue, Field, IsAuthenticatedApiResponse} from "../types/api";
 
 const BASE_API_URL = "http://localhost:8000";
 const ENDPOINTS = {
     CHECK_AUTH: "/check_auth/",
-    LOGIN_FIELDS: "/login/",
     USER_REGISTRATION_FIELDS: "/user/values/fields/",
-    COMPANY_REGISTRATION_FIELDS: "/company/fields/",
+    COMPANY_REGISTRATION: "/register/company/",
     CREATE_USER: "/register/user/",
     CREATE_COMPANY: "/register/company/",
     LOGIN: "/login/",
+    LOGOUT: "/logout/",
     CSRF: "/csrf/"
 }
 
@@ -31,6 +31,17 @@ api.interceptors.request.use((config) =>
     if (data)
     {
         config.data = camelToSnake(data);
+    }
+    return config;
+});
+
+api.interceptors.request.use(async (config) =>
+{
+    if (config.url && config.url !== ENDPOINTS.CSRF)
+    {
+        const token = await getCsrfToken();
+        console.log("токен" + token);
+        config.headers["X-CSRFToken"] = token;
     }
     return config;
 });
@@ -68,12 +79,12 @@ export async function isAuthenticated(): Promise<boolean>
 
 export async function getLoginFields(): Promise<Field[]>
 {
-    return await getFields(ENDPOINTS.LOGIN_FIELDS);
+    return await getFields(ENDPOINTS.LOGIN);
 }
 
 export async function getRegisterCompanyFields(): Promise<Field[]>
 {
-    return await getFields(ENDPOINTS.COMPANY_REGISTRATION_FIELDS);
+    return await getFields(ENDPOINTS.COMPANY_REGISTRATION);
 }
 
 export async function getRegisterUserFields(): Promise<Field[]>
@@ -94,16 +105,26 @@ export async function requestCreateUser(userRegistrationData: DataValue[]): Prom
     await postDataValue(ENDPOINTS.CREATE_USER, userRegistrationData)
 }
 
-export async function requestCreateCompany(companyRegistrationData: DataValue[]): Promise<void>
+export async function requestCreateCompany(companyRegistrationData: DataValue[])
 {
-    await postDataValue(ENDPOINTS.CREATE_COMPANY, companyRegistrationData)
+    const response = await postDataValue<IsAuthenticatedApiResponse>(ENDPOINTS.COMPANY_REGISTRATION, companyRegistrationData);
+    console.log("отпрвляем запрос регистрации компании " + companyRegistrationData);
+    if (!response.user) throw new Error(response.details);
+    return response
 }
 
 export async function requestLogin(userLoginData: DataValue[])
 {
     const response = await postDataValue<IsAuthenticatedApiResponse>(ENDPOINTS.LOGIN, userLoginData);
+    console.log("отпрвляем запрос логина " + userLoginData);
     if (!response.user) throw new Error(response.details);
     return response
+}
+
+export async function requestLogout()
+{
+    const response = await api.post<void, void>(ENDPOINTS.LOGOUT);
+    console.log("отправляем запрос logout");
 }
 
 async function postDataValue<TResponseValue>(URL: string, data: DataValue[]): Promise<TResponseValue>
@@ -113,5 +134,8 @@ async function postDataValue<TResponseValue>(URL: string, data: DataValue[]): Pr
 
 async function getCsrfToken(): Promise<string>
 {
-    return (await api.get<CsrfToken>(ENDPOINTS.CSRF)).data.csrfToken;
+    const response = await api.get<ApiResponse>(ENDPOINTS.CSRF);
+    const token = response.data.details;
+    if (!token) throw new Error("Не удалось получить CSRF-токен");
+    return token;
 }
