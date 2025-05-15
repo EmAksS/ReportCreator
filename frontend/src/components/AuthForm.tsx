@@ -1,4 +1,4 @@
-import {FC, ReactElement, useEffect, useState} from "react";
+import React, {FC, ReactElement, useContext, useEffect, useState} from "react";
 import Form from "./Form";
 import Button, {ButtonType} from "./Button";
 import {
@@ -9,6 +9,8 @@ import {
     requestLogin, requestLogout
 } from "../api/api";
 import {DataValue, Field, InputPresentation} from "../types/api";
+import {AuthContext, ROUTES} from "../App";
+import {Navigate} from "react-router-dom";
 
 export enum AuthFormMode
 {
@@ -30,6 +32,8 @@ interface FormConfig
 
 const AuthForm: FC<AuthFormProps> = ({mode}) =>
 {
+    const [redirectTo, setRedirectTo] = useState<string | null>(null);
+    const { authState, setAuthState, checkAuth } = useContext(AuthContext);
     const [menuMode, setMenuMode] = useState<AuthFormMode>(mode);
     const [formConfig, setFormConfig] = useState<Record<AuthFormMode, FormConfig>>({
         [AuthFormMode.login]: {
@@ -104,9 +108,12 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             {
                 const dataValues: DataValue[] = getDataValues(inputs);
                 updateFormConfig(menuMode, {alertMessage: ""})
-                const b = await requestCreateCompany(dataValues);
-                console.log(b.status + " " + b.details)
-                console.log(b.details)
+                const user = await requestCreateCompany(dataValues);
+                if (user)
+                {
+                    await checkAuth()
+                    if (authState) setRedirectTo(ROUTES.WELCOME);
+                }
             }
         }
         catch (error)
@@ -123,15 +130,17 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             {
                 const dataValues: DataValue[] = getDataValues(inputs);
                 updateFormConfig(menuMode, {alertMessage: ""})
-                const a = await requestLogin(dataValues);
-                console.log(a.status + " " + a.details)
-                console.log(a.details)
+                const user = await requestLogin(dataValues);
+                if (user)
+                {
+                    await checkAuth()
+                    if (authState) setRedirectTo(ROUTES.WELCOME);
+                }
             }
         }
         catch (error)
         {
             if (error instanceof Error) {
-                console.log("поймана ошибка: " + error.message)
                 updateFormConfig(menuMode, {alertMessage: error.message})
             }
         }
@@ -195,14 +204,16 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
                     inputs={config.fields.map((field) => {
                         return {inputData: field}
                     })}
-                    onSubmit={config.submitHandler}
-                    alertMessage={config.alertMessage}/>
+                    onSubmit={config.submitHandler}/>
+                <p>{config.alertMessage}</p>
 
-                <Button onClick={async () => console.log("аутентифицирован: " + await isAuthenticated())} variant={ButtonType.general} text={"Аутентифицирован?"}/>
-                <Button onClick={async () => console.log("отправлен запрос на logout: " + await requestLogout())} variant={ButtonType.general} text={"Выйти"}/>
+                <Button onClick={async () => console.log("аутентифицирован: " + await isAuthenticated())} variant={ButtonType.general} text={"Аутентифицирован?"}/><br/>
             </div>)
     }
 
+    if (redirectTo) {
+        return <Navigate to={redirectTo} replace/>;
+    }
     return loading ? <div>Загрузка</div> : getForm();
 }
 

@@ -47,24 +47,14 @@ export interface TableField extends Field
     fields: Field[];
 }
 
-export interface CsrfToken
-{
-    csrfToken: string;
-}
-
 export interface InputPresentation
 {
     field: Field;
     value: DataValue;
 }
 
-export interface ApiResponse
+export interface ApiResponse<T>
 {
     status: number;
-    details?: string;
-}
-
-export interface IsAuthenticatedApiResponse extends ApiResponse
-{
-    user: User
+    details?: T;
 }

@@ -1,69 +1,86 @@
-import React, {createContext, useContext, useEffect, useState} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import "./App.css";
 import Hat from "./components/Hat";
-import {ButtonType} from "./components/Button";
-import {AuthFormMode} from "./components/AuthForm";
-import {BrowserRouter, Navigate, Route, Routes, useLocation} from "react-router-dom";
+import { ButtonType } from "./components/Button";
+import { AuthFormMode } from "./components/AuthForm";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AuthPage from "./components/pages/AuthPage";
 import WelcomePage from "./components/pages/WelcomePage";
-import {isAuthenticated} from "./api/api";
+import { isAuthenticated, requestLogout } from "./api/api";
 
-const AuthContext = createContext<boolean>(false);
-
-const ROUTES = {
+export const ROUTES = {
     LOGIN: "/login",
     REGISTRATION: "/register",
     WELCOME: "/welcome"
 }
 
-function AppContent()
-{
-    const isAuthenticated = useContext(AuthContext);
-    const location = useLocation();
-    const shouldShowHatButtons = location.pathname === ROUTES.WELCOME;
+export interface AuthContextType {
+    authState: boolean | null; // null - проверка ещё не завершена
+    setAuthState: (value: boolean) => void;
+    checkAuth: () => Promise<void>;
+}
 
-    if (!isAuthenticated && location.pathname !== ROUTES.LOGIN) { return <Navigate to={ROUTES.LOGIN} replace/>; }
+export const AuthContext = createContext<AuthContextType>({
+    authState: null,
+    setAuthState: () => {},
+    checkAuth: async () => {}
+});
+
+function AppContent() {
+    const { authState } = useContext(AuthContext);
+    const location = useLocation();
+
+    if (authState === null) { return <div>Загрузка...</div>; }
+
+    if (!authState && location.pathname !== ROUTES.LOGIN) {
+        return <Navigate to={ROUTES.LOGIN} replace />;
+    }
 
     return (
         <div className={"page"}>
             <Hat
                 imageSrc={"/assets/images/report_creator_logo.png"}
                 title={"Report Creator"}
-                buttonProps={shouldShowHatButtons
-                    ? [{text: "Личный кабинет", onClick: ()=>{}, variant: ButtonType.hat},
-                       {text: "Выйти", onClick: ()=>{}, variant: ButtonType.hat}]
-                    : []}
-            />
+                buttonProps={authState
+                    ? [{ text: "Личный кабинет", onClick: () => {}, variant: ButtonType.hat },
+                        {text: "Выйти", onClick: async () => {await requestLogout(); window.location.reload(); }, variant: ButtonType.hat}]
+                    : []}/>
 
             <div className={"main-space"}>
                 <Routes>
-                    <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration}/>} />
-                    <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login}/>} />
-                    <Route path={ROUTES.WELCOME} element={<WelcomePage/>} />
+                    <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration} />} />
+                    <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login} />} />
+                    <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
                 </Routes>
             </div>
-        </div>);
+        </div>
+    );
 }
 
-function App()
-{
-    const [authState, setAuthState] = useState<boolean>(false);
+function App() {
+    const [authState, setAuthState] = useState<boolean | null>(null);
+
+    const checkAuth = async () => {
+        try {
+            const isAuth = await isAuthenticated();
+            setAuthState(isAuth);
+        } catch (error) {
+            console.error("Auth check failed:", error);
+            setAuthState(false);
+        }
+    };
 
     useEffect(() => {
         checkAuth();
-    }, [])
-
-    const checkAuth = async () =>
-    {
-        setAuthState(await isAuthenticated());
-    };
+    }, []);
 
     return (
         <BrowserRouter>
-            <AuthContext.Provider value={authState}>
+            <AuthContext.Provider value={{ authState, setAuthState, checkAuth}}>
                 <AppContent/>
             </AuthContext.Provider>
-        </BrowserRouter>);
+        </BrowserRouter>
+    );
 }
 
 export default App;

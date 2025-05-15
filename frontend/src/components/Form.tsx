@@ -7,7 +7,6 @@ export interface FormProps
 {
     inputs: InputProps[];
     onSubmit: (fields: InputPresentation[]) => void;
-    alertMessage?: string;
     style?: React.CSSProperties;
     children?: React.ReactNode;
 }
@@ -29,23 +28,11 @@ const Form: FC<FormProps> = (props: FormProps) =>
         setFields(newFields);
     }, [props.inputs]);
 
-    useEffect(() =>
-    {
-        const message = props.alertMessage ? props.alertMessage : "";
-        setAlertMessage("form", message)
-    }, [props.alertMessage]);
-
     const onInputChange = (key: string, newValue: FieldValue) =>
     {
-        console.log(fields);
         const newFields = [...fields];
-        console.log(newFields);
-
         const changedFieldIndex: number = newFields.findIndex((field) => field.field.keyName === key);
-        console.log(changedFieldIndex);
         newFields[changedFieldIndex].value.value = newValue;
-        console.log(newValue);
-
         setFields(newFields);
     };
 

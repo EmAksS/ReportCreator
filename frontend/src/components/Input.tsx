@@ -26,11 +26,7 @@ const Input: FC<InputProps> = (props: InputProps) =>
 
             case InputType.Checkbox: return <CheckboxInput {...props} />
 
-            default:
-            {
-                console.error("Not valid input type provided " + inputData.type);
-                return (<div>Not valid input type</div>);
-            }
+            default: throw new Error("Предоставлен не валидный объект Field")
         }
     }
 
