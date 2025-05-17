@@ -44,10 +44,36 @@ import json
 @extend_schema(tags=["Company"])
 @extend_schema_view(
     get=extend_schema(
+        summary="Получить поля создания компании",
         description="Получить поля для создания компании и её суперпользователя",
         responses={
-            status.HTTP_200_OK: FieldSerializer(many=True),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Успешный ответ",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получены поля для создания. Для простоты понимания структуры, показывается только один элемент поля",
+                        value={
+                            "data": [
+                                {
+                                    'name': 'Краткое название компании',
+                                    'key_name': 'company_name',
+                                    'is_required': True,
+                                    'placeholder': 'Название компании с сокращёнными аббревиатурами',
+                                    'type': 'TEXT',
+                                    'validation_regex': '^[a-zA-Z0-9_\"\'\-«»а-яА-Я\s\.\,]{0,64}$',
+                                    'related_item': "Executor",
+                                    'related_info': None,
+                                    'secure_text': False,
+                                    'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
+                                },
+                            ]
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -56,10 +82,71 @@ import json
     post=extend_schema(
         description="Создать компанию и её суперпользователя",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                description="Создать компанию `reportcreator` и её суперпользователя Anon",
+                value={
+                    "data": [
+                        { "field_id": "company_name", "value": "ИПР \"РепортКреатор\"" },
+                        { "field_id": "company_fullName", "value": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)" },
+                        { "field_id": "username", "value": "anon" },
+                        { "field_id": "password", "value": "ReportCreator1048" },
+                        { "field_id": "last_name", "value": "Анонов" },
+                        { "field_id": "first_name", "value": "Анон" },
+                        { "field_id": "middle_name", "value": "Анонович" },
+                    ]
+                }
+            )
+        ],
         responses={
-            status.HTTP_201_CREATED: ItemDetailsSerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Созданы суперпользователь и компания.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        value={
+                            "status": 201,
+                            "details": {
+                                "company": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                                "superuser": {
+                                    "username": "anon",
+                                    "company": {
+                                        "id": 123,
+                                        "company_name": "ИПР \"РепортКреатор\"",
+                                        "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                        "created_at": "2025-04-24 00:00:00.00000",
+                                        "updated_at": "2023-05-01 00:00:00.00000"
+                                    },
+                                    "is_company_superuser": True,
+                                },
+                            }
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -184,9 +271,38 @@ class CompanyRegisterView(generics.ListCreateAPIView):
     get=extend_schema(
         summary="Получить информацию о компании, в которой находится пользователь.",
         responses={
-            status.HTTP_200_OK: CompanySerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=CompanySerializer,
+                description="Информация о компании.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        value={
+                            "id": 123,
+                            "company_name": "ИПР \"РепортКреатор\"",
+                            "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                            "created_at": "2025-04-24 00:00:00.00000",
+                            "updated_at": "2023-05-01 00:00:00.00000"
+                        }
+                    )
+                ]
+            ),
+            #403:
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -213,8 +329,31 @@ class CompanyInfoView(generics.GenericAPIView):
     get=extend_schema(
         description="Получить список пользователей компании, в которой находится пользователь.",
         responses={
-            status.HTTP_200_OK: UserSerializer(many=True),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=UserSerializer(many=True),
+                description="Список пользователей компании.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список пользователей компании. Для простоты понимания структуры показан только один элемент списка",
+                        value=[
+                            {
+                                "username": "anon",
+                                "company": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                                "is_company_superuser": True,
+                            }
+                        ]
+                    )
+                ]
+            ),
+            #403:
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -236,8 +375,31 @@ class CompanyUsersView(generics.ListAPIView):
     get=extend_schema(
         summary="Получить список полей для создания заказчика компании",
         responses={
-            status.HTTP_200_OK: FieldSerializer(many=True),
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Список полей для создания заказчика компании.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список полей для создания заказчика компании. Для простоты понимания структуры показан только один элемент списка",
+                        value=[
+                            {
+                                'name': 'Краткое название компании',
+                                'key_name': 'company_name',
+                                'is_required': True,
+                                'placeholder': 'Название компании с сокращёнными аббревиатурами',
+                                'type': 'TEXT',
+                                'validation_regex': '^[a-zA-Z0-9_\"\'\-«»а-яА-Я\s\.\,]{0,64}$',
+                                'related_item': "Contractor",
+                                'related_info': None,
+                                'secure_text': False,
+                                'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
+                            },
+                        ]
+                    )
+                ]
+            ),
+            200: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -246,9 +408,56 @@ class CompanyUsersView(generics.ListAPIView):
     post=extend_schema(
         description="Создать заказчика компании",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                description="Создание заказчика компании",
+                value={
+                    "data": [
+                        { "field_id": "company_name", "value": "ООО \"Аниме\"" },
+                        { "field_id": "company_fullName", "value": "Общество с Ограниченной Ответственностью \"Аниме\"" },
+                        { "field_id": "contractor_city", "value": "г. Москва" },
+                    ]
+                }
+            )
+        ],
         responses={
-            status.HTTP_201_CREATED: ItemDetailsSerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer,
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создание заказчика компании",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Создание заказчика компании.",
+                        value={
+                            "status": 201,
+                            "details": {
+                                "id": 1,
+                                "company_name": "ООО \"Аниме\"",
+                                "company_fullName": "Общество с Ограниченной Ответственностью \"Аниме\"",
+                                "contractor_city": "г. Москва",
+                                "created_at": "2023-05-01 00:00:00.00000",
+                                "updated_at": "2023-05-01 00:00:00.00000",
+                            },
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            #403:
             status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -295,7 +504,33 @@ class ContratorCreateView(generics.ListCreateAPIView):
     get=extend_schema(
         summary="Получить информацию по всем заказчикам текущей компании.",
         responses={
-            status.HTTP_200_OK: ContractorSerializer(many=True),
+            200: OpenApiResponse(
+                response=ContractorSerializer(many=True),
+                description="Получение списка заказчиков компании",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список полей заказчиков текущей компании пользователя.",
+                        value=[
+                            {
+                                "id": 1,
+                                "company_name": "ООО \"Аниме\"",
+                                "company_fullName": "Общество с Ограниченной Ответственностью \"Аниме\"",
+                                "contractor_city": "г. Москва",
+                                "created_at": "2023-07-19T17:04:23.933070Z",
+                                "updated_at": "2023-07-19T17:04:23.933070Z",
+                                "related_executor": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                            },
+                        ]
+                    )
+                ]
+            ),
             status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
