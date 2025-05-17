@@ -445,7 +445,7 @@ FIELD = [
     },
     {
         'name': 'Регулярное выражение для проверки',
-        'key_name': 'placeholder',
+        'key_name': 'validation_regex',
         'is_required': False,
         'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
         'type': 'TEXT',
@@ -457,7 +457,7 @@ FIELD = [
     },
     {
         'name': 'Текст при ошибке валидации',
-        'key_name': 'placeholder',
+        'key_name': 'error_text',
         'is_required': False,
         'placeholder': 'Текст ошибки при несоответствии `validation_regex`.',
         'type': 'TEXT',

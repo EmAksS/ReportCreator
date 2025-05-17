@@ -76,9 +76,30 @@ class CsrfView(generics.GenericAPIView):
     get=extend_schema(
         summary="Проверить статус аутентификации текущего пользователя в системе.",
         responses={
-            status.HTTP_200_OK: ItemDetailsSerializer,
-                #status=status.HTTP_200_OK,
-                #description="Будет получен код ответа, а также информация о пользователе."
+            200: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Будет получен код ответа и информация о пользователе.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит код ответа и информацию о пользователе.",
+                        value={
+                            'status': status.HTTP_200_OK,
+                            'details': {
+                                "username": "anon",
+                                "company": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                                "is_company_superuser": True,
+                            }
+                        }
+                    )
+                ]
+            ),
             401: OpenApiResponse(
                 response=StatusSerializer,
                 description="Пользователь неавторизирован в системе",
@@ -120,7 +141,30 @@ class AuthCheckView(generics.GenericAPIView):
     get=extend_schema(
         summary="Получить поля для аутентификации пользователя",
         responses={
-            status.HTTP_200_OK: FieldSerializer(many=True),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Будет получен список полей для аутентификации пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит список полей для аутентификации пользователя. Для удобства понимания информации показывается только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Логин',
+                                'key_name': 'username',
+                                'is_required': True,
+                                'placeholder': 'Ваш логин пользователя',
+                                'type': 'TEXT',
+                                'validation_regex': '^[a-zA-Z0-9_-]{4,16}$',
+                                'related_item': "User",
+                                'related_info': None,
+                                'secure_text': False,
+                                'error_text': "Имя пользователя должно быть уникальным, не должно содержать пробелов и быть от 4 до 16 символов.",
+                            },
+                        ]
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -131,13 +175,43 @@ class AuthCheckView(generics.GenericAPIView):
         summary="Выполнить аутентификацию пользователя в систему.",
         request=DataInputSerializer,
         responses={
-            status.HTTP_200_OK: ItemDetailsSerializer(
-                #status=status.HTTP_200_OK,
-                #description="Будет получен код ответа, а также информация о пользователе. Кроме того, пользователь станет авторизирован в системе."
+            200: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Будет получен код ответа и информация о пользователе.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит код ответа и информацию о пользователе.",
+                        value={
+                            'status': status.HTTP_200_OK,
+                            'details': {
+                                "username": "anon",
+                                "company": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                                "is_company_superuser": True,
+                            }
+                        }
+                    )
+                ]
             ),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer(
-                #status=status.HTTP_400_BAD_REQUEST,
-                #details="Неверный логин и/или пароль."
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
             ),
             500: OpenApiResponse(
                 response=None,
@@ -180,9 +254,19 @@ class UserAuthView(generics.ListCreateAPIView):
     post=extend_schema(
         summary="Выполнить выход из ситемы для текущего пользователя системы.",
         responses={
-            status.HTTP_200_OK: StatusSerializer(
-                #status=status.HTTP_200_OK
-                ),
+            200: OpenApiResponse(
+                response=StatusSerializer,
+                description="Будет получен код ответа и выполнен выход из системы.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Будет получен код ответа и выполнен выход из системы.",
+                        value={
+                            'status': status.HTTP_200_OK,
+                        }
+                    )
+                ]
+            ),
             401: OpenApiResponse(
                 response=StatusSerializer,
                 description="Пользователь неавторизирован в системе",
@@ -221,9 +305,30 @@ class UserLogoutView(APIView):
     get=extend_schema(
         summary="Получить поля для регистрации пользователя суперпользователем.",
         responses={
-            status.HTTP_200_OK: FieldSerializer(many=True,
-                                                # related_item="User"
-                                                ),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Будет получен список полей для регистрации пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит список полей для регистрации пользователя суперпользователем. Для понимаия структуры, выведен только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Логин',
+                                'key_name': 'username',
+                                'is_required': True,
+                                'placeholder': 'Ваш логин пользователя',
+                                'type': 'TEXT',
+                                'validation_regex': '^[a-zA-Z0-9_-]{4,16}$',
+                                'related_item': "User",
+                                'related_info': None,
+                                'secure_text': False,
+                                'error_text': "Имя пользователя должно быть уникальным, не должно содержать пробелов и быть от 4 до 16 символов.",
+                            },
+                        ]
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -234,13 +339,43 @@ class UserLogoutView(APIView):
         summary="Выполнить регистрацию пользователя в системе.",
         request=DataInputSerializer,
         responses={
-            status.HTTP_201_CREATED: ItemDetailsSerializer(
-                #status=status.HTTP_201_CREATED,
-                #description="Будет получен код ответа и информация о пользователе."
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Будет получен код ответа и информация о созданном пользователе.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит код ответа и информацию о пользователе.",
+                        value={
+                            'status': status.HTTP_201_OK,
+                            'details': {
+                                "username": "anon",
+                                "company": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                                "is_company_superuser": True,
+                            }
+                        }
+                    )
+                ]
             ),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer(
-                #status=status.HTTP_400_BAD_REQUEST,
-                #description="Получены неверные данные для регистрации пользователя."
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получены неверные данные для регистрации пользователя.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
             ),
             500: OpenApiResponse(
                 response=None,
@@ -318,7 +453,30 @@ class UserRegisterView(generics.CreateAPIView):
     get=extend_schema(
         summary="Получить поля для создания нового поля пользователя.",
         responses={
-            status.HTTP_200_OK: FieldSerializer(many=True),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Будет получен список полей для создания полей пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит список полей для создания кастомный полей пользователя. Для понимаия структуры, выведен только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Русское название поля',
+                                'key_name': 'name',
+                                'is_required': True,
+                                'placeholder': 'Введите русское название поля',
+                                'type': 'TEXT',
+                                'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+                                'related_item': "Field",
+                                'related_info': None,
+                                'secure_text': False,
+                                'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов",
+                            },
+                        ]
+                    )
+                ]
+            ),
             401: OpenApiResponse(
                 response=StatusSerializer,
                 description="Пользователь неавторизирован в системе",
@@ -341,14 +499,64 @@ class UserRegisterView(generics.CreateAPIView):
     post=extend_schema(
         summary="Создать новое поле пользователя. Может выполнять только суперпользователь",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                description="Создание нового поля пользователя. Пример запроса с параметром `data` в теле запроса.",
+                value={
+                    "data": [
+                        { "field_id": "name", "value": "Образование пользователя" },
+                        { "field_id": "key_name", "value": "education" },
+                        { "field_id": "is_required", "value": True },
+                        { "field_id": "placeholder", "value": "Введите образование пользователя" },
+                        { "field_id": "type", "value": "TEXT" },
+                        { "field_id": "validation_regex", "value": None },
+                        { "field_id": "error_text", "value": "Не введено образование!" },
+                    ]
+                }
+            )
+        ],
         responses={
-            status.HTTP_201_CREATED: ItemDetailsSerializer(
-                #status=status.HTTP_201_CREATED,
-                #detail=FieldSerializer,
-                #description="Будет получен код ответа и информация о поле пользователя. Стоит обратить внимание на то, что `key_name` будет равно `key_name__company-id` после сохранения."
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Будет получен объект созданного поля пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Создано поле пользователя.",
+                        value={
+                            'status': status.HTTP_201_CREATED,
+                            'details': {
+                                "id": 1,
+                                "name": "Образование пользователя",
+                                "key_name": "education__1",
+                                "related_item": "User",
+                                "related_info": None,
+                                "error_text": "Не введено образование!",
+                                "is_required": True,
+                                "placeholder": "Введите образование пользователя",
+                                "type": "TEXT",
+                                "validation_regex": None,
+                                "secure_text": False,
+                                "is_custom": True,
+                            }
+                        }
+                    )
+                ]
             ),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer(
-                #status=status.HTTP_400_BAD_REQUEST,
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
             ),
             401: OpenApiResponse(
                 response=StatusSerializer,
@@ -363,9 +571,19 @@ class UserRegisterView(generics.CreateAPIView):
                     )
                 ]
             ),
-            status.HTTP_403_FORBIDDEN: DetailAndStatsSerializer(
-                #status=status.HTTP_403_FORBIDDEN,
-                #detail="Создавать поля пользователей может только суперпользователь."
+            403: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Доступ запрещен",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Доступ запрещен",
+                        value={
+                            "status": 403,
+                            "details": "Создавать поля пользователей может только суперпользователь."
+                        }
+                    )
+                ]
             ),
             500: OpenApiResponse(
                 response=None,
@@ -437,7 +655,32 @@ class UserFieldListView(generics.ListCreateAPIView):
     get=extend_schema(
         summary="Получить все кастомные поля для текущей компании.",
         responses={
-            status.HTTP_200_OK: FieldSerializer(many=True),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Будет получен список кастомный полей пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит список кастомный полей пользователя. Для понимаия структуры, выведен только один элемент списка.",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Образование пользователя",
+                                "key_name": "education__1",
+                                "related_item": "User",
+                                "related_info": None,
+                                "error_text": "Не введено образование!",
+                                "is_required": True,
+                                "placeholder": "Введите образование пользователя",
+                                "type": "TEXT",
+                                "validation_regex": None,
+                                "secure_text": False,
+                                "is_custom": True,
+                            },
+                        ]
+                    )
+                ]
+            ),
             401: OpenApiResponse(
                 response=StatusSerializer,
                 description="Пользователь неавторизирован в системе",
@@ -472,7 +715,49 @@ class UserCustomFieldsView(generics.ListAPIView):
     get=extend_schema(
         summary="Получить все значения полей текущего пользователя.",
         responses={
-            status.HTTP_200_OK: UserFieldValueSerializer(many=True),
+            200: OpenApiResponse(
+                response=UserFieldValueSerializer(many=True),
+                description="Будет получен список значений полей пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Содержит список значений полей пользователя. Для простоты понимания структуры выведен только один элемент списка.",
+                        value=[
+                            {
+                                "id": "username__key_name",
+                                "value": "КФУ",
+                                "field_id": {
+                                    "id": "education__1__User",
+                                    "name": "Образование пользователя",
+                                    "key_name": "education__1",
+                                    "related_item": "User",
+                                    "related_info": None,
+                                    "error_text": "Не введено образование!",
+                                    "is_required": True,
+                                    "placeholder": "Введите образование пользователя",
+                                    "type": "TEXT",
+                                    "validation_regex": None,
+                                    "secure_text": False,
+                                    "is_custom": True,
+                                },
+                                "user_id": {
+                                    "username": "anon",
+                                    "company": {
+                                        "id": 123,
+                                        "company_name": "ИПР \"РепортКреатор\"",
+                                        "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                        "created_at": "2025-04-24 00:00:00.00000",
+                                        "updated_at": "2023-05-01 00:00:00.00000"
+                                    },
+                                    "is_company_superuser": True,
+                                },
+                                "created_at": "2023-08-18T11:55:44.826260+03:00",
+                                "updated_at": "2023-08-18T11:55:44.826260+03:00"
+                            }
+                        ]
+                    )
+                ]
+            ),
             401: OpenApiResponse(
                 response=StatusSerializer,
                 description="Пользователь неавторизирован в системе",
@@ -495,13 +780,77 @@ class UserCustomFieldsView(generics.ListAPIView):
     post=extend_schema(
         summary="Создать новое значение поля пользователя.",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                description="Запрос на создание нового значения поля пользователя.",
+                value={
+                    "data": {
+                        { 'field_id': 'user_id', 'value': 'anon' },
+                        { 'field_id': 'field_id', 'value': 'education__1__User' },
+                        { 'field_id': 'value', 'value': 'КФУ' }
+                    }
+                }
+            )
+        ],
         responses={
-            status.HTTP_201_CREATED: ItemDetailsSerializer(
-                #status=status.HTTP_201_CREATED,
-                #detail=UserFieldValueSerializer
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Будет создано новое значение поля пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Будет создано новое значение поля пользователя.",
+                        value={
+                            "status": 201,
+                            "details": {
+                                "id": "username__key_name",
+                                "value": "КФУ",
+                                "field_id": {
+                                    "id": 1,
+                                    "name": "Образование пользователя",
+                                    "key_name": "education__1",
+                                    "related_item": "User",
+                                    "related_info": None,
+                                    "error_text": "Не введено образование!",
+                                    "is_required": True,
+                                    "placeholder": "Введите образование пользователя",
+                                    "type": "TEXT",
+                                    "validation_regex": None,
+                                    "secure_text": False,
+                                    "is_custom": True,
+                                },
+                                "user_id": {
+                                    "username": "anon",
+                                    "company": {
+                                        "id": 123,
+                                        "company_name": "ИПР \"РепортКреатор\"",
+                                        "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                        "created_at": "2025-04-24 00:00:00.00000",
+                                        "updated_at": "2023-05-01 00:00:00.00000"
+                                    },
+                                    "is_company_superuser": True,
+                                },
+                                "created_at": "2023-08-18T11:55:44.826260+03:00",
+                                "updated_at": "2023-08-18T11:55:44.826260+03:00"
+                            }
+                        }
+                    )
+                ]
             ),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer(
-                #status=status.HTTP_400_BAD_REQUEST,
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
             ),
             401: OpenApiResponse(
                 response=StatusSerializer,
@@ -565,8 +914,49 @@ class UserFieldValueView(generics.ListCreateAPIView):
         summary="Получить значение поля `pk` текущего пользователя.",
         responses={
             status.HTTP_200_OK: UserFieldValueSerializer,
-            status.HTTP_403_FORBIDDEN: DetailAndStatsSerializer(
-                #status=status.HTTP_403_FORBIDDEN
+            200: OpenApiResponse(
+                response=UserFieldValueSerializer,
+                description="Получить значение поля пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получить значение поля пользователя.",
+                        value={
+                            "status": 200,
+                            "details": {
+                                "id": "username__key_name",
+                                "value": "КФУ",
+                                "field_id": {
+                                    "id": 1,
+                                    "name": "Образование пользователя",
+                                    "key_name": "education__1",
+                                    "related_item": "User",
+                                    "related_info": None,
+                                    "error_text": "Не введено образование!",
+                                    "is_required": True,
+                                    "placeholder": "Введите образование пользователя",
+                                    "type": "TEXT",
+                                    "validation_regex": None,
+                                    "secure_text": False,
+                                    "is_custom": True,
+                                },
+                                "user_id": {
+                                    "username": "anon",
+                                    "company": {
+                                        "id": 123,
+                                        "company_name": "ИПР \"РепортКреатор\"",
+                                        "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                        "created_at": "2025-04-24 00:00:00.00000",
+                                        "updated_at": "2023-05-01 00:00:00.00000"
+                                    },
+                                    "is_company_superuser": True,
+                                },
+                                "created_at": "2023-08-18T11:55:44.826260+03:00",
+                                "updated_at": "2023-08-18T11:55:44.826260+03:00"
+                            }
+                        }
+                    )
+                ]
             ),
             401: OpenApiResponse(
                 response=StatusSerializer,
@@ -581,9 +971,19 @@ class UserFieldValueView(generics.ListCreateAPIView):
                     )
                 ]
             ),
-            status.HTTP_404_NOT_FOUND: DetailAndStatsSerializer(
-                #status=status.HTTP_404_NOT_FOUND,
-                #detail="Поле не найдено"
+            404: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Поле не найдено",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Поле не найдено",
+                        value={
+                            "status": 404,
+                            "details": "Поле не найдено"
+                        }
+                    )
+                ]
             ),
             500: OpenApiResponse(
                 response=None,
@@ -594,13 +994,48 @@ class UserFieldValueView(generics.ListCreateAPIView):
     put=extend_schema(
         summary="Обновить значение поля пользователя.",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                description="Обновить значение поля `value` пользователя.",
+                value={
+                    "data": [
+                        { "field_id": "value", "value": "КФУ" }
+                    ]
+                }
+            )
+        ],
         responses={
-            status.HTTP_200_OK: ItemDetailsSerializer(
-                #status=status.HTTP_200_OK,
-                #details=UserFieldValueSerializer
+            200: OpenApiResponse(
+                response=UserFieldValueSerializer,
+                description="Получить значение обновлённых полей.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получить значение поля пользователя (обновлено только value).",
+                        value={
+                            "status": 200,
+                            "details": {
+                                "id": "username__key_name",
+                                "value": "КФУ",
+                            }
+                        }
+                    )
+                ]
             ),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer(
-                #status=status.HTTP_400_BAD_REQUEST,
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
             ),
             401: OpenApiResponse(
                 response=StatusSerializer,
@@ -615,9 +1050,19 @@ class UserFieldValueView(generics.ListCreateAPIView):
                     )
                 ]
             ),
-            status.HTTP_404_NOT_FOUND: DetailAndStatsSerializer(
-                #status=status.HTTP_404_NOT_FOUND,
-                #detail="Поле не найдено"
+            404: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Поле не найдено",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Поле не найдено",
+                        value={
+                            "status": 404,
+                            "details": "Поле не найдено"
+                        }
+                    )
+                ]
             ),
             500: OpenApiResponse(
                 response=None,
@@ -628,8 +1073,18 @@ class UserFieldValueView(generics.ListCreateAPIView):
     delete=extend_schema(
         summary="Удалить значение поля пользователя.",
         responses={
-            status.HTTP_204_NO_CONTENT: StatusSerializer(
-                #status=status.HTTP_204_NO_CONTENT
+            204: OpenApiResponse(
+                response=StatusSerializer,
+                description="Значение поля пользователя успешно удалено.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Значение поля успешно удалено",
+                        value={
+                            "status": 204
+                        }
+                    )
+                ]
             ),
             401: OpenApiResponse(
                 response=StatusSerializer,
@@ -644,9 +1099,19 @@ class UserFieldValueView(generics.ListCreateAPIView):
                     )
                 ]
             ),
-            status.HTTP_404_NOT_FOUND: DetailAndStatsSerializer(
-                #status=status.HTTP_404_NOT_FOUND,
-                #detail="Поле не найдено"
+            404: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Поле не найдено",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Поле не найдено",
+                        value={
+                            "status": 404,
+                            "details": "Поле не найдено"
+                        }
+                    )
+                ]
             ),
             500: OpenApiResponse(
                 response=None,
