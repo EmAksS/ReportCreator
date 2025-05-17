@@ -124,6 +124,7 @@ class AuthCheckView(generics.GenericAPIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
+        print(request.user)
         if request.user.is_authenticated:
             serializer = UserSerializer(request.user)
             return Response(ItemDetailsSerializer({
@@ -242,6 +243,9 @@ class UserAuthView(generics.ListCreateAPIView):
             }).data, status=status.HTTP_400_BAD_REQUEST)
         
         login(request, user)
+
+        print(request.user)
+        
         serializer = UserSerializer(user)
         return Response(ItemDetailsSerializer({
             'status': status.HTTP_200_OK,

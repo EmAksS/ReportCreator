@@ -1,7 +1,7 @@
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
-from serializers.schema import StatusSerializer
+from api.serializers.schema import StatusSerializer
 
 def custom_exception_handler(exc, context):
     if isinstance(exc, NotAuthenticated):
