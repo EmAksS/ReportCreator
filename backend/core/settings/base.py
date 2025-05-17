@@ -81,7 +81,9 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_SETTINGS": {
         "filter": True, # включить поиск по тегам
     },
-    "COMPONENT_SPLIT_REQUEST": True
+    "SERVE_INCLUDE_SCHEMA": True,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {},
 }
 
 ROOT_URLCONF = 'core.urls'
