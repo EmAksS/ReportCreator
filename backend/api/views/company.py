@@ -2,7 +2,8 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 # Permissions
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
+from permissions import IsAuthed
 # Serializers
 from api.serializers.users import UserSerializer
 from api.serializers.company import (
@@ -302,6 +303,19 @@ class CompanyRegisterView(generics.ListCreateAPIView):
                     )
                 ]
             ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -310,7 +324,7 @@ class CompanyRegisterView(generics.ListCreateAPIView):
     )
 )
 class CompanyInfoView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthed]
     serializer_class = CompanySerializer
 
     def get(self, request):
@@ -352,7 +366,19 @@ class CompanyInfoView(generics.GenericAPIView):
                     )
                 ]
             ),
-            #403:
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -361,7 +387,7 @@ class CompanyInfoView(generics.GenericAPIView):
     )
 )
 class CompanyUsersView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthed]
     serializer_class = UserSerializer
 
     def get_queryset(self):
@@ -531,6 +557,19 @@ class ContratorCreateView(generics.ListCreateAPIView):
                     )
                 ]
             ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
             status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -540,7 +579,7 @@ class ContratorCreateView(generics.ListCreateAPIView):
 )
 class ContractorListView(generics.ListAPIView):
     serializer_class = ContractorSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthed]
 
     def get_queryset(self):
         return Contractor.objects.filter(related_executor=self.request.user.company.id)
@@ -549,7 +588,7 @@ class ContractorListView(generics.ListAPIView):
 # --- Получение юридичеких лиц компании ---
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthed])
 def get_executor_persons(request):
     if request.method == "GET":
         persons = ExecutorPerson.objects.filter(company=request.user.company)
@@ -586,7 +625,7 @@ def get_executor_persons(request):
         })
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthed])
 def get_contractor_persons(request):
     if request.method == "GET":
         persons = ContractorPerson.objects.filter(company=request.user.company.id)

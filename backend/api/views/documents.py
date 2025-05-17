@@ -5,7 +5,7 @@ from rest_framework import status, generics
 from rest_framework.views import APIView
 # Permissions
 from rest_framework import permissions
-from api.permissions import IsCompanySuperuser, IsDebug
+from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # models 
 from backend.models.fields import Field
 from backend.models.documents import Template, Document, DocumentField
@@ -216,7 +216,7 @@ class DocumentTypesView(APIView):
 class TemplateListCreateView(generics.ListCreateAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
     
     def get(self, request, *args, **kwargs):
@@ -477,6 +477,19 @@ class TemplateListCreateView(generics.ListCreateAPIView):
                     )
                 ]
             ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -487,7 +500,7 @@ class TemplateListCreateView(generics.ListCreateAPIView):
 # endregion
 class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
     serializer_class = DocumentFieldSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
         template_id = self.kwargs.get('tid')
@@ -745,7 +758,7 @@ class TemplateCompanyListView(generics.ListAPIView):
 # endregion
 class TemplateCurrentCompanyListView(generics.ListAPIView):
     serializer_class = TemplateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthed]
 
     def get_queryset(self):
         return Template.objects.filter(related_executor_person__company=self.request.user.company)
