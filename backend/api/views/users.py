@@ -1,8 +1,8 @@
 from rest_framework import generics
 from rest_framework.views import APIView
 # Permissions
-from rest_framework.permissions import AllowAny, IsAuthed
-from api.permissions import IsCompanySuperuser, IsDebug
+from rest_framework.permissions import AllowAny
+from api.permissions import IsCompanySuperuser, IsDebug, IsAuthed
 # Serializers
 from api.serializers.users import UserSerializer, UserFieldValueSerializer
 from api.serializers.field import FieldSerializer
