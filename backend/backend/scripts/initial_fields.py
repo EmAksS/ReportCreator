@@ -211,7 +211,7 @@ TEMPLATE = [
     },
     {
         'name': 'Тип документа',
-        'key_name': 'related_executor_person',
+        'key_name': 'template_type',
         'is_required': True,
         'placeholder': 'Выберите тип создаваемого документа',
         'type': 'COMBOBOX',
@@ -553,7 +553,7 @@ DOCUMENT_FIELD = [
     },
     {
         'name': 'Регулярное выражение для проверки',
-        'key_name': 'placeholder',
+        'key_name': 'validation_regex',
         'is_required': False,
         'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
         'type': 'TEXT',
@@ -565,7 +565,7 @@ DOCUMENT_FIELD = [
     },
     {
         'name': 'Текст при ошибке валидации',
-        'key_name': 'placeholder',
+        'key_name': 'error_text',
         'is_required': False,
         'placeholder': 'Текст ошибки при несоответствии `validation_regex`.',
         'type': 'TEXT',

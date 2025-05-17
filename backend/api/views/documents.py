@@ -27,6 +27,7 @@ from api.serializers.schema import (
     DataInputSerializer,
     StatusSerializer, 
     DetailAndStatsSerializer,
+    ItemDetailsSerializer,
 )
 # scripts
 from backend.scripts.field_validate import field_validate
@@ -74,20 +75,139 @@ class DocumentTypesView(APIView):
     get=extend_schema(
         summary="Получить список полей для создания шаблона документа",
         responses={
-            status.HTTP_200_OK: TemplateSerializer(many=True),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Список полей для создания шаблона документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список полей для создания шаблона документа. Для понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Тип документа',
+                                'key_name': 'template_type',
+                                'is_required': True,
+                                'placeholder': 'Выберите тип создаваемого документа',
+                                'type': 'COMBOBOX',
+                                'validation_regex': None,
+                                'related_item': "Template",
+                                'related_info': {
+                                    'url': "document/types/",
+                                    'show_field': "name",
+                                    'save_field': "code",
+                                },
+                                'secure_text': False,
+                                'error_text': ""
+                            },
+                        ]
+                    )
+                ]
+            )
         }
     ),
     post=extend_schema(
         summary="Создать шаблон документа",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                summary="Пример запроса",
+                value={
+                    "data": [
+                        { "field_id": "template_name", "value": "Аниме_Акт_1" },
+                        { "field_id": "template_file", "value": "TODO: понять как передаётся файл" },
+                        { "field_id": "template_type", "value": "один из `document/types/`" },
+                        { "field_id": "related_executor_person", "value": 12 },
+                        { "field_id": "related_contractor_person", "value": 4 },
+                    ]
+                }
+            )
+        ],
         responses={
-            status.HTTP_201_CREATED: TemplateSerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer, 
-            status.HTTP_401_UNAUTHORIZED: StatusSerializer,
-            status.HTTP_403_FORBIDDEN: DetailAndStatsSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создан шаблон документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        summary="Создан шаблон документа",
+                        description="Создан шаблон документа",
+                        value={
+                            "status": 201,
+                            "details": {
+                                "id": 1,
+                                "name": "Аниме_Акт_1",
+                                "type": "ACT",
+                                "template_file": "?????????????",
+                                "related_contractor_person": {
+                                    "todo": "contractor_person_documentation"
+                                },
+                                "related_executor_person": {
+                                    "todo": "executor_person_documentation"
+                                }
+                            },
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Доступ запрещён",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователю запрещён метод. Текст ошибки может отличаться.",
+                        value={
+                            "status": 403,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
-                description="Внутренняя ошибка сервера."
+                description="Ошибка на стороне сервера"
             )
         }
     )
@@ -176,7 +296,10 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         template.save()
-        return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
+        return Response(ItemDetailsSerializer({
+            "status": status.HTTP_201_CREATED,
+            "details": TemplateSerializer(template).data,
+        }).data, status=status.HTTP_201_CREATED)
 
 
 # region DocumentFields_docs
@@ -192,9 +315,61 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             description="ID шаблона документа"),
         ],
         responses={
-            status.HTTP_200_OK: DocumentFieldSerializer(many=True),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer,
-            status.HTTP_403_FORBIDDEN: StatusSerializer,
+            200: OpenApiResponse(
+                response=DocumentFieldSerializer(many=True),
+                description="Список полей для создания поля для документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список полей для создания поля для документа. Для простоты понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Русское название поля',
+                                'key_name': 'name',
+                                'is_required': True,
+                                'placeholder': 'Введите русское название поля',
+                                'type': 'TEXT',
+                                'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+                                'related_item': "DocumentField",
+                                'related_info': None,
+                                'secure_text': False,
+                                'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
+                            },
+                        ]
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                response=StatusSerializer,
+                description="Доступ запрещён",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователю запрещён метод.",
+                        value={
+                            "status": 403,
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
+                response=None,
+                description="Ошибка на стороне сервера"
+            )
         }
     ),
     post=extend_schema(
@@ -203,13 +378,17 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         examples=[
             OpenApiExample(
                 "Пример запроса",
-                description="Пример создания поля документа с `TID`=0",
+                description="Пример создания поля документа с `TID=1`",
                 value={
                     "data": [
-                        {
-                            "field_id": 1,
-                            "value": 123
-                        }
+                        { "field_id": "name", "value" : "Название договора" },
+                        { "field_id": "related_template", "value" : 1 },
+                        { "field_id": "key_name", "value" : "dogovor_name" },
+                        { "field_id": "is_required", "value" : True },
+                        { "field_id": "validation_regex", "value" : None },
+                        { "field_id": "type", "value" : 4 },
+                        { "field_id": "placeholder", "value" : "Название договора" },
+                        { "field_id": "error_text", "value" : None },
                     ]
                 },
                 status_codes=[
@@ -220,11 +399,85 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         )
         ],
         responses={
-            status.HTTP_201_CREATED: DocumentFieldSerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer, 
-            status.HTTP_401_UNAUTHORIZED: StatusSerializer,
-            status.HTTP_403_FORBIDDEN: DetailAndStatsSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создано новое поле для документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Создано новое поле для документа.",
+                        value={
+                            "status": 201,
+                            "details": {
+                                'name': 'Название договора',
+                                'key_name': '1__dogovor_name',
+                                'is_required': True,
+                                'placeholder': 'Название договора',
+                                'type': 'TEXT',
+                                'validation_regex': None,
+                                'related_item': "DocumentField",
+                                'error_text': None,
+                                "related_info": None,
+                                "secure_text": False,
+                                "related_template": {
+                                    "id": 1,
+                                    "name": "Аниме_Акт_1",
+                                    "type": "ACT",
+                                    "template_file": "?????????????",
+                                    "related_contractor_person": {
+                                        "todo": "contractor_person_documentation"
+                                    },
+                                    "related_executor_person": {
+                                        "todo": "executor_person_documentation"
+                                    }
+                                }
+                            },
+                        }
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Доступ запрещён",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователю запрещён метод. Текст ошибки может отличаться.",
+                        value={
+                            "status": 403,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -291,10 +544,10 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
                 related_template=Template.objects.filter(id=template), # Можно заменить на name но лучше не надо
             )
 
-            return Response(
-                DocumentFieldSerializer(doc_field).data,
-                status=status.HTTP_201_CREATED
-            )
+            return Response(ItemDetailsSerializer({
+                "status": status.HTTP_201_CREATED,
+                "details": DocumentFieldSerializer(doc_field).data,
+            }).data, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response(
                 DetailAndStatsSerializer({
@@ -311,7 +564,11 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
     get=extend_schema(
         summary="Получить список полей для создания объекта Template",
         responses={
-            status.HTTP_200_OK: DocumentFieldSerializer,
+            # Подробную документацию смотрите в TemplateListCreateView.GET.200.
+            500: OpenApiResponse(
+                response=None,
+                description="Ошибка на стороне сервера"
+            )
         }
     )
 )
@@ -328,10 +585,45 @@ class TemplateFieldsView(generics.ListAPIView):
     get=extend_schema(
         summary="Получить список полей для создания объекта Document",
         responses={
-            status.HTTP_200_OK: DocumentFieldSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=DocumentFieldSerializer(many=True),
+                description="Получен список полей для создания объекта `Document`",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получен список полей для создания объекта `Document`. Поля могут быть разные в зависимости от выбранного шаблона документа. Для удобства показан только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Название договора',
+                                'key_name': '1__dogovor_name',
+                                'is_required': True,
+                                'placeholder': 'Название договора',
+                                'type': 'TEXT',
+                                'validation_regex': None,
+                                'related_item': "DocumentField",
+                                'error_text': None,
+                                "related_info": None,
+                                "secure_text": False,
+                                "related_template": {
+                                    "id": 1,
+                                    "name": "Аниме_Акт_1",
+                                    "type": "ACT",
+                                    "template_file": "?????????????",
+                                    "related_contractor_person": {
+                                        "todo": "contractor_person_documentation"
+                                    },
+                                    "related_executor_person": {
+                                        "todo": "executor_person_documentation"
+                                    }
+                                }
+                            },
+                        ]
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
-                description="Ошибка на стороне сервера... или объект Document ещё не реализован))"
+                description="Ошибка на стороне сервера"
             )
         }
     )
@@ -359,10 +651,33 @@ class DocumentFieldsView(generics.ListAPIView):
             )
         ],
         responses={
-            status.HTTP_200_OK: TemplateSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=TemplateSerializer(many=True),
+                description="Получен список всех шаблонов (Templates) компании `company_id`",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получен список всех шаблонов (Templates) компании `company_id = 1`. Для удобства понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Аниме_Акт_1",
+                                "type": "ACT",
+                                "template_file": "?????????????",
+                                "related_contractor_person": {
+                                    "todo": "contractor_person_documentation"
+                                },
+                                "related_executor_person": {
+                                    "todo": "executor_person_documentation"
+                                }
+                            },
+                        ]
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
-                description="Ошибка на стороне сервера."
+                description="Ошибка на стороне сервера"
             )
         }
     )
@@ -383,8 +698,44 @@ class TemplateCompanyListView(generics.ListAPIView):
     get=extend_schema(
         summary="Получить список всех шаблонов (Templates) компании, в которой зарегестрирован пользователь.",
         responses={
-            status.HTTP_200_OK: TemplateSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=TemplateSerializer(many=True),
+                description="Получен список всех шаблонов (Templates) компании, куда авторизирован пользователь.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получен список всех шаблонов (Templates) текущей компании. Для удобства понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Аниме_Акт_1",
+                                "type": "ACT",
+                                "template_file": "?????????????",
+                                "related_contractor_person": {
+                                    "todo": "contractor_person_documentation"
+                                },
+                                "related_executor_person": {
+                                    "todo": "executor_person_documentation"
+                                }
+                            },
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера."
             )
@@ -397,7 +748,6 @@ class TemplateCurrentCompanyListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        company_id = self.kwargs.get('company_id')
         return Template.objects.filter(related_executor_person__company=self.request.user.company)
 
 
