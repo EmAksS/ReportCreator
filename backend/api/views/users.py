@@ -785,11 +785,11 @@ class UserCustomFieldsView(generics.ListAPIView):
                 "Пример запроса",
                 description="Запрос на создание нового значения поля пользователя.",
                 value={
-                    "data": {
+                    "data": [
                         { 'field_id': 'user_id', 'value': 'anon' },
                         { 'field_id': 'field_id', 'value': 'education__1__User' },
                         { 'field_id': 'value', 'value': 'КФУ' }
-                    }
+                    ]
                 }
             )
         ],
