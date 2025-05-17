@@ -347,7 +347,7 @@ class UserLogoutView(APIView):
                         "Пример ответа",
                         description="Содержит код ответа и информацию о пользователе.",
                         value={
-                            'status': status.HTTP_201_OK,
+                            'status': status.HTTP_201_CREATED,
                             'details': {
                                 "username": "anon",
                                 "company": {
