@@ -747,7 +747,7 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
-        return ContractorPerson.objects.filter(company=self.request.user.company)
+        return ContractorPerson.objects.filter(company__related_executor=self.request.user.company)
     
     def create(self, request, *args, **kwargs):
         data = json.loads(json.dumps(request.data["data"]))
