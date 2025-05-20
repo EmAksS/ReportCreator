@@ -19,10 +19,10 @@ urlpatterns = [
     path('company/contractors/', company.ContractorListView.as_view(), name='get_contractors'),
     path('company/contractors/fields/', company.ContratorCreateView.as_view(), name='get_contractor_fields'),
     
-    path('persons/executor/list/', company.get_executor_persons, name='executor_list'),
-    path('persons/contractor/list/', company.get_contractor_persons, name='contractor_list'),
-    path('persons/executor/fields/', company.get_executor_person_fields, name='get_executor_person_fields'),
-    path('persons/contractor/fields/', company.get_contractor_person_fields, name='get_contractor_person_fields'),
+    path('persons/executor/', company.ExecutorPersonListCreateView.as_view(), name='executor_list'),
+    path('persons/contractor/', company.ContractorPersonListCreateView.as_view(), name='contractor_list'),
+    path('persons/executor/fields/', company.ExecutorPersonFieldsListView.as_view(), name='get_executor_person_fields'),
+    path('persons/contractor/fields/', company.ContractorPersonFieldsListView.as_view(), name='get_contractor_person_fields'),
 
     path('user/values/', users.UserFieldValueView.as_view(), name='user_fields_values'),
     path('user/values/fields/',users.UserFieldListView.as_view(), name='user_fields'),

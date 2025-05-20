@@ -265,46 +265,41 @@ class TemplateListCreateView(generics.ListCreateAPIView):
 
         # Проверка юридических лиц
 
-        # try: 
-        #     contractor = ContractorPerson.objects.get(id=find_dataValue(data, 'related_contractor_person'))
-        # except:
-        #     return Response(DetailAndStatsSerializer({
-        #         'status': status.HTTP_400_BAD_REQUEST,
-        #         'details': f"Не найдено юридическое лицо заказчика с ID {find_dataValue(data, 'related_contractor_person')}"
-        #     }).data, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            contractor = ContractorPerson.objects.get(id=find_dataValue(data, 'related_contractor_person'))
+        except:
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_400_BAD_REQUEST,
+                'details': f"Не найдено юридическое лицо заказчика с ID {find_dataValue(data, 'related_contractor_person')}"
+            }).data, status=status.HTTP_400_BAD_REQUEST)
         
-        # try: 
-        #     executor = ExecutorPerson.objects.get(id=find_dataValue(data, 'related_executor_person'))
-        # except:
-        #     return Response(DetailAndStatsSerializer({
-        #         'status': status.HTTP_400_BAD_REQUEST,
-        #         'details': f"Не найдено юридическое лицо исполнителя с ID {find_dataValue(data, 'related_executor_person')}"
-        #     }).data, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            executor = ExecutorPerson.objects.get(id=find_dataValue(data, 'related_executor_person'))
+        except:
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_400_BAD_REQUEST,
+                'details': f"Не найдено юридическое лицо исполнителя с ID {find_dataValue(data, 'related_executor_person')}"
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
-        # try:
-        #     template = Template(
-        #         name=find_dataValue(data, 'name'),
-        #         type=find_dataValue(data, 'type'),
-        #         file=file_path,
-        #         related_contractor_person=contractor,
-        #         related_executor_person=executor,
-        #     )
-        # except Exception as e:
-        #     return Response(DetailAndStatsSerializer({
-        #         'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #         'details': f"Ошибка создания объекта модели `Template`. {e}"
-        #     }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            template = Template(
+                name=find_dataValue(data, 'name'),
+                type=find_dataValue(data, 'type'),
+                file=file_path,
+                related_contractor_person=contractor,
+                related_executor_person=executor,
+            )
+        except Exception as e:
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
+                'details': f"Ошибка создания объекта модели `Template`. {e}"
+            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # template.save()
-        # return Response(ItemDetailsSerializer({
-        #     "status": status.HTTP_201_CREATED,
-        #     "details": TemplateSerializer(template).data,
-        # }).data, status=status.HTTP_201_CREATED)
-
-        return Response(DetailAndStatsSerializer({
-            'status': status.HTTP_501_NOT_IMPLEMENTED,
-            'details': "Создание шаблона документа не реализовано в текущей версии приложения."
-        }).data, status=status.HTTP_501_NOT_IMPLEMENTED)
+        template.save()
+        return Response(ItemDetailsSerializer({
+            "status": status.HTTP_201_CREATED,
+            "details": TemplateSerializer(template).data,
+        }).data, status=status.HTTP_201_CREATED)
 
 
 # region DocumentFields_docs

@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 # Permissions
 from rest_framework.permissions import AllowAny
-from api.permissions import IsAuthed
+from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # Serializers
 from api.serializers.users import UserSerializer
 from api.serializers.company import (
@@ -587,23 +587,81 @@ class ContractorListView(generics.ListAPIView):
 
 # --- Получение юридичеких лиц компании ---
 
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthed])
-def get_executor_persons(request):
-    if request.method == "GET":
-        persons = ExecutorPerson.objects.filter(company=request.user.company)
-        return Response(
-            CompanyExecutorPersonSerializer(persons, many=True).data
-        )
+@extend_schema(tags=["Executor Person"])
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить всех юридичеких лиц текущей компании.",
+        responses={
+            200: OpenApiResponse(
+                response=CompanyExecutorPersonSerializer(many=True),
+                description="Получение списка юридичеких лиц текущей компании пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список юридичеких лиц текущей компании пользователя.",
+                        value=[
+                            #...
+                        ]
+                    )
+                ]
+            )
+        }
+    ),
+    post=extend_schema(
+        description="Создать юридичекого лица исполнителя текущей компании",
+        request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Запрос создания юридического лица исполнителя.",
+                description="Создание юридичекого лица исполнителя текущей компании",
+                value={
+
+                }
+            )
+        ],
+        responses={
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создание юридичекого лица исполнителя компании",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Создание юридичекого лица исполнителя компании.",
+                        value={
+                            #...
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                #...
+            ),
+            401: OpenApiResponse(
+                #...
+            ),
+            500: OpenApiResponse(
+                response=None,
+                description="Ошибка на стороне сервера"
+            )
+        }
+    )
+)
+class ExecutorPersonListCreateView(generics.ListCreateAPIView):
+    serializer_class = CompanyExecutorPersonSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        return ExecutorPerson.objects.filter(company=self.request.user.company)
     
-    if request.method == "POST":
+    def create(self, request, *args, **kwargs):
         data = json.loads(json.dumps(request.data["data"]))
 
         error = field_validate(data, "ExecutorPerson")
         if error is not None:
-            return Response({
-                "error": error,
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             person = ExecutorPerson.objects.create(
@@ -614,33 +672,92 @@ def get_executor_persons(request):
                 company=request.user.company,
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "details": f"Ошибка при создании юридичекого лица: {str(e)}"
+            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        return Response({
-            "status": "success",
-            "executor_person": CompanyExecutorPersonSerializer(person).data
-        })
+        return Response(ItemDetailsSerializer({
+            "status": status.HTTP_201_CREATED,
+            "details": self.serializer_class(person).data
+        }).data, status=status.HTTP_201_CREATED)
 
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthed])
-def get_contractor_persons(request):
-    if request.method == "GET":
-        persons = ContractorPerson.objects.filter(company=request.user.company.id)
-        return Response(
-            CompanyContractorPersonSerializer(persons, many=True).data
-        )
+
+@extend_schema(tags=["Contractor Person"])
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить всех юридичеких лиц заказчиков для текущей компании.",
+        responses={
+            200: OpenApiResponse(
+                response=CompanyContractorPersonSerializer(many=True),
+                description="Получение списка юридичеких лиц заказчиков для текущей компании пользователя.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список юридичеких лиц заказчиков для текущей компании пользователя.",
+                        value=[
+                            #...
+                        ]
+                    )
+                ]
+            )
+        }
+    ),
+    post=extend_schema(
+        description="Создать юридичекого лица заказчика текущей компании",
+        request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Запрос создания юридического лица заказчика.",
+                description="Создание юридичекого лица заказчика текущей компании",
+                value={
+
+                }
+            )
+        ],
+        responses={
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создание юридичекого лица заказчика компании",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Создание юридичекого лица заказчика компании.",
+                        value={
+                            #...
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                #...
+            ),
+            401: OpenApiResponse(
+                #...
+            ),
+            500: OpenApiResponse(
+                response=None,
+                description="Ошибка на стороне сервера"
+            )
+        }
+    )
+)
+class ContractorPersonListCreateView(generics.ListCreateAPIView):
+    serializer_class = CompanyContractorPersonSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        return ContractorPerson.objects.filter(company=self.request.user.company)
     
-    if request.method == "POST":
+    def create(self, request, *args, **kwargs):
         data = json.loads(json.dumps(request.data["data"]))
 
         error = field_validate(data, "ExecutorPerson")
         if error is not None:
-            return Response({
-                "error": error,
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_400_BAD_REQUEST,
+                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             contractor_id = Contractor.objects.get(id=find_dataValue(data, "company"))
@@ -659,28 +776,23 @@ def get_contractor_persons(request):
                 company=contractor_id,
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(DetailAndStatsSerializer({
+                "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "details": f"Ошибка при создании юридичекого лица: {str(e)}"
+            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        return Response({
-            "status": "success",
-            "contractor_person": CompanyContractorPersonSerializer(person).data
-        })
-    
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def get_executor_person_fields(request):
-    executor_person_fields = Field.objects.filter(related_item="ExecutorPerson")
-    return Response(
-        FieldSerializer(executor_person_fields, many=True).data
-    )
+        return Response(ItemDetailsSerializer({
+            "status": status.HTTP_201_CREATED,
+            "details": self.serializer_class(person).data
+        }).data, status=status.HTTP_201_CREATED)
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def get_contractor_person_fields(request):
-    contractor_person_fields = Field.objects.filter(related_item="ContractorPerson")
-    return Response(
-        FieldSerializer(contractor_person_fields, many=True).data
-    )
+
+class ExecutorPersonFieldsListView(generics.ListAPIView):
+    serializer_class = FieldSerializer
+    queryset = Field.objects.filter(related_item="ExecutorPerson")
+    permission_classes = [AllowAny]
+
+class ContractorPersonFieldsListView(generics.ListAPIView):
+    serializer_class = FieldSerializer
+    queryset = Field.objects.filter(related_item="ContractorPerson")
+    permission_classes = [AllowAny]
