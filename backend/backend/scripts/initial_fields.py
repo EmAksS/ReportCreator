@@ -234,7 +234,7 @@ TEMPLATE = [
         'validation_regex': None,
         'related_item': "Template",
         'related_info': {
-            'url': "persons/executor/list/",
+            'url': "persons/executor/",
             'show_field': "initials",
             'save_field': "id",
         },
@@ -250,7 +250,7 @@ TEMPLATE = [
         'validation_regex': None,
         'related_item': "Template",
         'related_info': {
-            'url': "persons/contractor/list/",
+            'url': "persons/contractor/",
             'show_field': "initials",
             'save_field': "id",
         },
@@ -479,7 +479,7 @@ DOCUMENT_FIELD = [
         'validation_regex': None,
         'related_item': "DocumentField",
         'related_info': {
-            'url': "url_для_вывода_всех_шаблонов_компании",
+            'url': "templates/company/current/",
             'show_field': "name",
             'save_field': "id",
         },
