@@ -68,7 +68,7 @@ code {
 
 .main-space
 {
-
+  padding: 25px
 }
 
 .form
@@ -246,4 +246,12 @@ code {
 .file-input
 {
   width: 100%;
+}
+
+.combobox-input
+{
+  width: 100%;
+  border-style: solid;
+  border-width: 3px;
+  border-radius: 10px;
 }

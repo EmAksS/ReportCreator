@@ -23,7 +23,7 @@ const FileInput: FC<FileInputProps> = (props: FileInputProps) =>
                    accept={props.inputData.fileFormat}
                    style={props.style}
                    onChange={handleChange}
-                   className={"toggleable-button"} />);
+                   className={"form-item text-input"} />);
 }
 
 export default FileInput;
