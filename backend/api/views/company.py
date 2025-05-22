@@ -510,7 +510,7 @@ class ContratorCreateView(generics.ListCreateAPIView):
             contractor = Contractor.objects.create(
                 company_name = find_dataValue(data, "company_name"),
                 company_fullName = find_dataValue(data, "company_fullName"),
-                related_executor=request.user.company.id,
+                related_executor=request.user.company,
                 contractor_city=find_dataValue(data, "contractor_city")
             )
         except Exception as e:
