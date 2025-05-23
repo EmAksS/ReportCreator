@@ -33,6 +33,7 @@ from api.serializers.schema import (
 from backend.scripts.field_validate import field_validate
 import json
 from backend.scripts.find_datavalue import find_dataValue
+from backend.scripts.load_data import load_data
 # file settings
 from django.conf import settings
 import os
@@ -223,7 +224,7 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         return TemplateFieldsView.as_view()(request._request)
 
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data, "Template")
         if error is not None:
@@ -507,7 +508,7 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
         return DocumentField.objects.filter(related_template_id=template_id)
     
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
         
         error = field_validate(data, "Executor")
         if error is not None:

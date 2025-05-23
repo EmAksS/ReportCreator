@@ -31,6 +31,7 @@ from backend.models.fields import Field
 # Validation
 from backend.scripts.field_validate import field_validate
 from backend.scripts.find_datavalue import find_dataValue
+from backend.scripts.load_data import load_data
 # autodoc
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
@@ -160,7 +161,7 @@ class CompanyRegisterView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data, "Executor")
         if error is not None:
@@ -497,7 +498,7 @@ class ContratorCreateView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data, "Contractor")
         if error is not None:
@@ -654,7 +655,7 @@ class ExecutorPersonListCreateView(generics.ListCreateAPIView):
         return ExecutorPerson.objects.filter(company=self.request.user.company)
     
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data, "ExecutorPerson")
         if error is not None:
@@ -750,7 +751,7 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
         return ContractorPerson.objects.filter(company__related_executor=self.request.user.company)
     
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data, "ExecutorPerson")
         if error is not None:

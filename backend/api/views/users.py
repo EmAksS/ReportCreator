@@ -28,6 +28,7 @@ from drf_spectacular.utils import (
 from backend.scripts.field_validate import field_validate
 # scripts
 from backend.scripts.find_datavalue import find_dataValue
+from backend.scripts.load_data import load_data
 
 import json
 
@@ -227,7 +228,7 @@ class UserAuthView(generics.ListCreateAPIView):
     serializer_class = FieldSerializer
 
     def post(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         username = find_dataValue(data, "username")
         password = find_dataValue(data, "password")
@@ -394,7 +395,7 @@ class UserRegisterView(generics.CreateAPIView):
     permission_classes = [IsCompanySuperuser]
 
     def post(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request)
 
         error = field_validate(data)
         if error is not None:
@@ -610,7 +611,7 @@ class UserFieldListView(generics.ListCreateAPIView):
                 'details': "Создавать поля пользователей может только суперпользователь."
             }), status=status.HTTP_403_FORBIDDEN)
         
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data)
         if error is not None:
@@ -885,7 +886,7 @@ class UserFieldValueView(generics.ListCreateAPIView):
         return Response(self.serializer_class(users_values, many=True).data, status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
 
         error = field_validate(data)
         if error is not None:
@@ -1145,7 +1146,7 @@ class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
         value = self.__get_user_value(kwargs.get("pk"), request.user)
 
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
         error = field_validate(data)
         if error is not None:
             return Response(DetailAndStatsSerializer({
