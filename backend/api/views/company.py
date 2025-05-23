@@ -761,7 +761,7 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
             }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            contractor_id = Contractor.objects.get(id=find_dataValue(data, "company"))
+            contractor_id = Contractor.objects.filter(id=find_dataValue(data, "company"))
         except:
             return Response(
                 {"error": f"Не найден заказчик с ID {find_dataValue(data, 'company')}"},
