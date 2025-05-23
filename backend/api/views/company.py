@@ -1,14 +1,11 @@
 from rest_framework import generics
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view, permission_classes
 # Permissions
 from rest_framework.permissions import AllowAny
 from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # Serializers
 from api.serializers.users import UserSerializer
 from api.serializers.company import (
-    CompanySerializer, 
-    #CompanyFieldSerializer, 
+    CompanySerializer,
     CompanyExecutorPersonSerializer, 
     CompanyContractorPersonSerializer,
     ContractorSerializer,
@@ -35,7 +32,7 @@ from backend.scripts.load_data import load_data
 # autodoc
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
-    OpenApiParameter, OpenApiExample, OpenApiResponse,
+    OpenApiExample, OpenApiResponse,
 )
 
 import json
@@ -492,7 +489,7 @@ class CompanyUsersView(generics.ListAPIView):
         }
     )
 )
-class ContratorCreateView(generics.ListCreateAPIView):
+class ContractorCreateView(generics.ListCreateAPIView):
     serializer_class = FieldSerializer
     queryset = Field.objects.filter(related_item="Contractor")
     permission_classes = [AllowAny]
