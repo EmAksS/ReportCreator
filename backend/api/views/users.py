@@ -432,9 +432,9 @@ class UserRegisterView(generics.CreateAPIView):
                 continue
             try:
                 UsersValues.objects.create(
-                    id=f"{user}__{Field.objects.filter(key_name=item.get('field_id'), related_item='User')[0]}",
+                    id=f"{user}__{Field.objects.filter(key_name=item.get('field_id'), related_item='User').first()}",
                     user_id=user,
-                    field_id=Field.objects.filter(key_name=item.get('field_id', related_item='User'))[0],
+                    field_id=Field.objects.filter(key_name=item.get('field_id', related_item='User')).first(),
                     value=item.get("value", ""),
                 )
             except Exception as e:

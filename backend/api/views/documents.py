@@ -545,7 +545,7 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
         
         try:
             doc_field = DocumentField.objects.create(
-                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).name).replace(' ', '_')}",
+                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().name).replace(' ', '_')}",
                 name=find_dataValue(data, 'name'),
                 key_name=find_dataValue(data, 'key_name'),
                 is_required=find_dataValue(data, 'is_required'),
@@ -555,7 +555,7 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
                 is_custom=True,
                 related_info=None,
                 placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
-                related_template=Template.objects.filter(id=template), # Можно заменить на name но лучше не надо
+                related_template=Template.objects.filter(id=template).first(), # Можно заменить на name но лучше не надо
             )
 
             return Response(ItemDetailsSerializer({

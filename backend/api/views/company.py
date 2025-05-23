@@ -239,9 +239,9 @@ class CompanyRegisterView(generics.ListCreateAPIView):
                 continue
             try:
                 UsersValues.objects.create(
-                    id=f"{str(user)}__{Field.objects.filter(key_name=item.get('field_id'), related_item='Executor')[0]}",
+                    id=f"{str(user)}__{Field.objects.filter(key_name=item.get('field_id'), related_item='Executor').first()}",
                     user_id=user,
-                    field_id=Field.objects.filter(key_name=item.get('field_id'), related_item='Executor')[0],
+                    field_id=Field.objects.filter(key_name=item.get('field_id'), related_item='Executor').first(),
                     value=item.get("value", ""),
                 )
             except Exception as e:
@@ -761,8 +761,14 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
             }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            contractor_id = Contractor.objects.filter(id=find_dataValue(data, "company"))
+            contractor_id = Contractor.objects.filter(id=int(find_dataValue(data, "company"))).first()
         except:
+            return Response(
+                {"error": f"Не найден заказчик с ID {find_dataValue(data, 'company')}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if contractor_id is None:
             return Response(
                 {"error": f"Не найден заказчик с ID {find_dataValue(data, 'company')}"},
                 status=status.HTTP_400_BAD_REQUEST
