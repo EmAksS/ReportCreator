@@ -18,7 +18,12 @@ def field_validate(data: list[dict], type:str):
 
         print("value = ", value)
         
-        field = Field.objects.get(key_name=field_id, related_item=type)
+        field = Field.objects.filter(key_name=field_id, related_item=type).first()
+        if field is None:
+            error = {
+                "field_id": field_id,
+                "error": "Поле не было найдено в списке полей"
+            }
         validation_regex = field.validation_regex
         if validation_regex is not None:
             re = regex.compile(validation_regex)
