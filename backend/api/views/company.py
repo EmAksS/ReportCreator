@@ -753,7 +753,7 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
 
-        error = field_validate(data, "ExecutorPerson")
+        error = field_validate(data, "ContractorPerson")
         if error is not None:
             return Response(DetailAndStatsSerializer({
                 "status": status.HTTP_400_BAD_REQUEST,
