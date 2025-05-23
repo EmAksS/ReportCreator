@@ -24,6 +24,8 @@ def field_validate(data: list[dict], type:str):
                 "field_id": field_id,
                 "error": "Поле не было найдено в списке полей"
             }
+            return error
+        
         validation_regex = field.validation_regex
         if validation_regex is not None:
             re = regex.compile(validation_regex)
