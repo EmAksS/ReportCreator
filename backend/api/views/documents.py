@@ -218,13 +218,25 @@ class TemplateListCreateView(generics.ListCreateAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
     permission_classes = [IsAuthedOrReadOnly]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = (MultiPartParser, FormParser)
     
     def get(self, request, *args, **kwargs):
         return TemplateFieldsView.as_view()(request._request)
 
     def create(self, request, *args, **kwargs):
-        data = load_data(request.data)
+        data = []
+
+        if 'template_file' in request.FILES:
+            data.append({
+                'field_id': 'template_file',
+                'value': request.FILES['template_file']
+            })
+
+        for key, value in request.data.items():
+            data.append({
+                'field_id': key,
+                'value': value
+            })
 
         error = field_validate(data, "Template")
         if error is not None:
@@ -232,39 +244,6 @@ class TemplateListCreateView(generics.ListCreateAPIView):
                 "status": status.HTTP_400_BAD_REQUEST,
                 "details": f"Неправильный формат значения в поле `{error['field_id']}`."
             }).data, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Загрузка документа
-        uploaded_file = request.FILES['template_file']
-        upload_dir = settings.TEMPLATES_FOLDER
-
-        # Проверяем расширение .docx
-        if not uploaded_file.name.lower().endswith('.docx'):
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Файл должен быть в формат *.docx."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
-
-        # TODO # Проверяем MIME-тип (дополнительная защита)
-        # mime = Magic(mime=True)
-        # file_mime_type = mime.from_buffer(uploaded_file.read(1024))
-        # uploaded_file.seek(0)  # Возвращаем курсор в начало файла
-
-        # if file_mime_type != 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        #     return Response(DetailAndStatsSerializer(
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #         details=f"Файл должен быть в формат *.docx."
-        #     ), status=status.HTTP_400_BAD_REQUEST)
-
-        if not os.path.exists(upload_dir):
-            os.makedirs(upload_dir)
-        
-        file_path = os.path.join(upload_dir, uploaded_file.name)
-        
-        with open(file_path, 'wb+') as destination:
-            for chunk in uploaded_file.chunks():
-                destination.write(chunk)
-
-        # Проверка юридических лиц
 
         try: 
             contractor = ContractorPerson.objects.get(id=find_dataValue(data, 'related_contractor_person'))
@@ -283,24 +262,31 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            template = Template(
-                name=find_dataValue(data, 'name'),
-                type=find_dataValue(data, 'type'),
-                file=file_path,
-                related_contractor_person=contractor,
-                related_executor_person=executor,
-            )
+            # template = Template(
+            #     name=find_dataValue(data, 'name'),
+            #     type=find_dataValue(data, 'type'),
+            #     file=file_path,
+            #     related_contractor_person=contractor,
+            #     related_executor_person=executor,
+            # )
+            serializer = self.serializer_class(data=data)
         except Exception as e:
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
                 'details': f"Ошибка создания объекта модели `Template`. {e}"
             }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        template.save()
-        return Response(ItemDetailsSerializer({
-            "status": status.HTTP_201_CREATED,
-            "details": TemplateSerializer(template).data,
-        }).data, status=status.HTTP_201_CREATED)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(ItemDetailsSerializer({
+                "status": status.HTTP_201_CREATED,
+                "details": serializer.data,
+            }).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(DetailAndStatsSerializer({
+                'status': status.HTTP_400_BAD_REQUEST,
+                'details': f"Ошибка при создании шаблона документа: {serializer.errors}."
+            }).datata, status=status.HTTP_400_BAD_REQUEST)
 
 
 # region DocumentFields_docs
