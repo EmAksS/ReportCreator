@@ -2,14 +2,28 @@ import axios from "axios";
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
 import {ApiResponse, DataValue, Field} from "../types/api";
-import {User} from "../types/core";
+import {Company, ContractorCompany, ContractorPerson, ExecutorPerson, User} from "../types/core";
 
 const BASE_API_URL = "http://localhost:8000";
-const ENDPOINTS = {
-    CHECK_AUTH: "/check_auth/",
-    USER_REGISTRATION_FIELDS: "/user/values/fields/",
+export const ENDPOINTS = {
     COMPANY_REGISTRATION: "/register/company/",
+
     USER_REGISTRATION: "/register/user/",
+    USER_REGISTRATION_FIELDS: "/user/values/fields/",
+
+    CONTRACTOR_COMPANY: "/company/contractors/",
+    CONTRACTOR_COMPANY_FIELDS: "/company/contractors/fields/",
+    CONTRACTOR_PERSONS: "/persons/contractor/",
+    CONTRACTOR_PERSONS_FIELDS: "/persons/contractor/fields/",
+
+    COMPANY: "/company/",
+    COMPANY_USERS: "/company/users",
+    EXECUTOR_PERSONS: "/persons/executor/",
+    EXECUTOR_PERSONS_FIELDS: "/persons/executor/fields/",
+
+    TEMPLATES: "/templates/",
+
+    CHECK_AUTH: "/check_auth/",
     LOGIN: "/login/",
     LOGOUT: "/logout/",
     CSRF: "/csrf/"
@@ -28,7 +42,7 @@ const api = axios.create({
 api.interceptors.request.use((config) =>
 {
     const data = config.data;
-    if (data)
+    if (data && config.headers["Content-Type"] === "application/json")
     {
         config.data = toSnake(data);
     }
@@ -39,8 +53,7 @@ api.interceptors.request.use(async (config) =>
 {
     if (config.url && config.url !== ENDPOINTS.CSRF)
     {
-        const token = await getCsrfToken();
-        config.headers["X-CSRFToken"] = token;
+        config.headers["X-CSRFToken"] = await getCsrfToken();
     }
     return config;
 });
@@ -61,21 +74,33 @@ api.interceptors.response.use(
         return Promise.reject(error);
     });
 
-function toCamel(data: any): any
+function toCamel(data: any): any { return camelcaseKeys(data, { deep: true }); }
+
+function toSnake(data: any): any { return snakecaseKeys(data, { deep: true }); }
+
+export async function getCompanyRegistrationFields(): Promise<Field[]>
 {
-    return camelcaseKeys(data, { deep: true });
+    return await getFields(ENDPOINTS.COMPANY_REGISTRATION);
 }
 
-function toSnake(data: any): any
+export async function getUserRegistrationFields(): Promise<Field[]>
 {
-    return snakecaseKeys(data, { deep: true });
+    return await getFields(ENDPOINTS.USER_REGISTRATION_FIELDS);
 }
 
-export async function isAuthenticated(): Promise<boolean>
+export async function getContractorCompanyFields(): Promise<Field[]>
 {
-    const response = await api.get<ApiResponse<User>>(ENDPOINTS.CHECK_AUTH);
-    const user = response.data.details;
-    return !(!user);
+    return await getFields(ENDPOINTS.CONTRACTOR_COMPANY_FIELDS);
+}
+
+export async function getContractorPersonFields(): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.CONTRACTOR_PERSONS_FIELDS);
+}
+
+export async function getExecutorPersonFields(): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.EXECUTOR_PERSONS_FIELDS);
 }
 
 export async function getLoginFields(): Promise<Field[]>
@@ -83,54 +108,137 @@ export async function getLoginFields(): Promise<Field[]>
     return await getFields(ENDPOINTS.LOGIN);
 }
 
-export async function getRegisterCompanyFields(): Promise<Field[]>
+export async function getDocumentTemplateFields(): Promise<Field[]>
 {
-    return await getFields(ENDPOINTS.COMPANY_REGISTRATION);
+    return await getFields(ENDPOINTS.TEMPLATES);
 }
 
-export async function getRegisterUserFields(): Promise<Field[]>
+
+export async function getCompany(): Promise<Company>
 {
-    return await getFields(ENDPOINTS.USER_REGISTRATION_FIELDS);
+    return (await api.get<Company>(ENDPOINTS.COMPANY)).data;
 }
 
-async function getFields(URL: string): Promise<Field[]>
+export async function getCompanyUsers(): Promise<User[]>
 {
-    const response = await api.get<Field[]>(URL);
-    const fields = response.data;
-    if (!fields) throw new Error("Не удалось запросить поля")
-    return fields;
+    return (await api.get<User[]>(ENDPOINTS.COMPANY_USERS)).data;
 }
 
-export async function requestCreateUser(userRegistrationData: DataValue[]): Promise<User>
+export async function getExecutorPersons(): Promise<ExecutorPerson[]>
 {
-    const response = await postDataValue<ApiResponse<User>>(ENDPOINTS.USER_REGISTRATION, userRegistrationData);
-    if (!response.details) throw new Error("Не удалось зарегистрировать пользователя");
+    return (await api.get<ExecutorPerson[]>(ENDPOINTS.EXECUTOR_PERSONS)).data;
+}
+
+export async function getContractorCompanies(): Promise<ContractorCompany[]>
+{
+    return (await api.get<ContractorCompany[]>(ENDPOINTS.CONTRACTOR_COMPANY)).data
+}
+
+export async function getContractorPersons(): Promise<ContractorPerson[]>
+{
+    return (await api.get<ContractorPerson[]>(ENDPOINTS.CONTRACTOR_PERSONS)).data
+}
+
+export async function getComboboxItems(URL: string): Promise<any[]>
+{
+    const response = await api.get(URL);
+    return toSnake(response.data);
+}
+
+export async function createCompany(companyRegistrationData: DataValue[]): Promise<User>
+{
+    const response = await api.post<DataValue[], ApiResponse<User>>(ENDPOINTS.COMPANY_REGISTRATION, companyRegistrationData);
+    if (!response.details) throw new Error();
     return response.details
 }
 
-export async function requestCreateCompany(companyRegistrationData: DataValue[]): Promise<User>
+export async function createUser(userRegistrationData: DataValue[]): Promise<User>
 {
-    const response = await postDataValue<ApiResponse<User>>(ENDPOINTS.COMPANY_REGISTRATION, companyRegistrationData);
-    if (!response.details) throw new Error("Не удалось зарегистрировать компанию");
-    return response.details
+    const response = await api.post<ApiResponse<User>>(ENDPOINTS.USER_REGISTRATION, userRegistrationData);
+    if (!response.data.details) throw new Error("Не удалось зарегистрировать пользователя");
+    return response.data.details
 }
 
-export async function requestLogin(userLoginData: DataValue[]): Promise<User>
+export async function createContractorCompany(userRegistrationData: DataValue[]): Promise<ContractorCompany>
 {
-    const response = await postDataValue<ApiResponse<User>>(ENDPOINTS.LOGIN, userLoginData);
+    const response = await api.post<ApiResponse<ContractorCompany>>(ENDPOINTS.CONTRACTOR_COMPANY_FIELDS, userRegistrationData);
+    return response.data.details as ContractorCompany;
+}
+
+export async function createContractorPerson(userRegistrationData: DataValue[]): Promise<any>
+{
+    const response = await api.post<any>(ENDPOINTS.CONTRACTOR_PERSONS, userRegistrationData);
+    return response.data.details
+}
+
+export async function createExecutorPerson(userRegistrationData: DataValue[]): Promise<any>
+{
+    const response = await api.post<ApiResponse<any>>(ENDPOINTS.EXECUTOR_PERSONS, userRegistrationData);
+    return response.data.details
+}
+
+export async function createDocumentTemplate(templateCreationData: DataValue[]): Promise<any>
+{
+    const response = await api.post(ENDPOINTS.TEMPLATES, templateCreationData,
+        { headers: { "Content-Type": "multipart/form-data" }
+    });
+    if (response.status !== 201) throw new Error(response.data.details);
+    return response.data.details
+}
+
+function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
+    const fd = form || new FormData();
+
+    for (const property in obj) {
+        if (!obj.hasOwnProperty(property) || obj[property] === undefined) continue;
+
+        const formKey = namespace ? `${namespace}[${property}]` : property;
+        const value = obj[property];
+
+        if (value instanceof Date) {
+            fd.append(formKey, value.toISOString());
+        } else if (value instanceof File || value instanceof Blob) {
+            fd.append(formKey, value);
+        } else if (Array.isArray(value)) {
+            value.forEach((element, index) => {
+                const arrayKey = `${formKey}[${index}]`;
+                if (typeof element === 'object' && element !== null) {
+                    objectToFormData(element, fd, arrayKey);
+                } else {
+                    fd.append(arrayKey, element);
+                }
+            });
+        } else if (typeof value === 'object' && value !== null) {
+            objectToFormData(value, fd, formKey);
+        } else {
+            fd.append(formKey, value);
+        }
+    }
+
+    return fd;
+}
+
+export async function login(userLoginData: DataValue[]): Promise<User>
+{
+    const response = await api.post<DataValue[], ApiResponse<User>>(ENDPOINTS.LOGIN, userLoginData);
     if (!response.details) throw new Error("Не удалось выполнить логин");
     return response.details;
 }
 
-export async function requestLogout()
+export async function logout()
 {
-    const response = await api.post<void, ApiResponse<string>>(ENDPOINTS.LOGOUT);
-    console.log("отправляем запрос logout " + response.details);
+    return await api.post<void, ApiResponse<string>>(ENDPOINTS.LOGOUT);
 }
 
-async function postDataValue<TResponseValue>(URL: string, data: DataValue[]): Promise<TResponseValue>
+export async function getUser(): Promise<User>
 {
-    return (await api.post<DataValue[]>(URL, { data: data })).data as TResponseValue;
+    const response = await api.get<ApiResponse<User>>(ENDPOINTS.CHECK_AUTH);
+    return response.data.details as User;
+}
+
+async function getFields(URL: string): Promise<Field[]>
+{
+    return (await api.get<Field[]>(URL)).data;
 }
 
 async function getCsrfToken(): Promise<string>

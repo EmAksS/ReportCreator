@@ -1,39 +1,36 @@
 import Input, {InputProps} from "./Input";
 import Button, {ButtonType} from "./Button";
-import React, {FC, useEffect, useState} from "react";
-import {FieldValue, InputPresentation} from "../types/api";
+import React, {FC, useState} from "react";
+import {DataValue, Field, FieldValue, InputPresentation} from "../types/api";
 
 export interface FormProps
 {
     inputs: InputProps[];
-    onSubmit: (fields: InputPresentation[]) => void;
+    onSubmit: (fields: DataValue[]) => void;
+    submitLabel: string;
     style?: React.CSSProperties;
-    children?: React.ReactNode;
 }
 
 const Form: FC<FormProps> = (props: FormProps) =>
 {
-    const [fields, setFields] = useState<InputPresentation[]>([])
+    const [inputs, setInputs] = useState<InputPresentation[]>(props.inputs.map(input => {
+        return {field: input.inputData, value: {fieldId: input.inputData.keyName}} as InputPresentation;}));
     const [alertMessages, setAlertMessages] = useState<Record<string, string>>({});
-
-    useEffect(() =>
-    {
-        const newFields: InputPresentation[] = []
-
-        props.inputs.forEach((input) =>
-        {
-            newFields.push({field: input.inputData, value: {fieldId: input.inputData.keyName}} as InputPresentation)
-        })
-
-        setFields(newFields);
-    }, [props.inputs]);
 
     const onInputChange = (key: string, newValue: FieldValue) =>
     {
-        const newFields = [...fields];
-        const changedFieldIndex: number = newFields.findIndex((field) => field.field.keyName === key);
-        newFields[changedFieldIndex].value.value = newValue;
-        setFields(newFields);
+        let newFields = [...inputs];
+
+        newFields = newFields.map(element =>
+        {
+            if (element.field.keyName === key)
+            {
+                return {...element, value: {...element.value, value: newValue}}
+            }
+            return element;
+        })
+
+        setInputs(newFields);
     };
 
     const setAlertMessage = (inputKeyName: string, alertMessage: string) =>
@@ -51,27 +48,60 @@ const Form: FC<FormProps> = (props: FormProps) =>
         return alertMessages[Object.keys(alertMessages)[0]];
     }
 
-    const onSubmitButtonClick = () =>
+    const InputPresentationToDataValue = (): DataValue[] =>
     {
-        props.onSubmit(fields);
-        console.log("нажата кнопка формы")
+        return inputs.map(input =>
+        {
+            const field = input.field
+            const value = input.value
+
+            if (!value.value)
+            {
+                if (!field.isRequired) input.value.value = "";
+                else throw Error(`Поле "${field.name}" должно быть заполнено`)
+            }
+
+            return {fieldId: value.fieldId, value: value.value} as DataValue
+        })
+    }
+
+    const tryToSubmit = () =>
+    {
+        if (getEmptyRequiredFields(inputs).length === 0 &&
+            Object.keys(alertMessages).length === 0)
+        {
+            props.onSubmit(InputPresentationToDataValue())
+        }
+    }
+
+    const getEmptyRequiredFields = (inputs: InputPresentation[]): Field[] =>
+    {
+        return inputs
+            .filter((element) =>
+            {
+                const fieldValue = element.value.value;
+                const field = element.field;
+
+                return (!fieldValue || fieldValue === "") && field.isRequired
+            })
+            .map((element) => element.field)
     }
 
     return (
         <div className={"form"} style={props.style}>
-            {props.children}
-            {props.inputs.map((inputProps) =>
+            {!inputs ? <p>Одну секунду...</p> : inputs.map((input) =>
             {
-                const inputData = inputProps.inputData;
+                const field = input.field;
+
                 return (
-                    <div key={inputData.keyName}>
-                        <p style={{margin: "8px 0"}}>{inputData.name + (inputData.isRequired ? "" : " (необязательно)")}</p>
-                        <Input style={{width: "100%"}} alert={setAlertMessage} inputData={inputData} onChange={onInputChange} />
+                    <div key={field.keyName}>
+                        <p style={{margin: "8px 0"}}>{field.name + (field.isRequired ? "" : " (необязательно)")}</p>
+                        <Input style={{width: "100%"}} alert={setAlertMessage} inputData={field} onChange={onInputChange} />
                     </div>)
             })}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
-            <Button text={"fa"} variant={ButtonType.general} onClick={() => props.onSubmit(fields)}/>
+            <Button text={props.submitLabel} variant={ButtonType.general} onClick={tryToSubmit}/>
         </div>)
 }
 

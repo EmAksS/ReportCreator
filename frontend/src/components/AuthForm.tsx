@@ -3,12 +3,11 @@ import Form from "./Form";
 import Button, {ButtonType} from "./Button";
 import {
     getLoginFields,
-    getRegisterCompanyFields,
-    isAuthenticated,
-    requestCreateCompany,
-    requestLogin, requestLogout
+    getCompanyRegistrationFields,
+    createCompany,
+    login
 } from "../api/api";
-import {DataValue, Field, InputPresentation} from "../types/api";
+import {DataValue, Field} from "../types/api";
 import {AuthContext, ROUTES} from "../App";
 import {Navigate} from "react-router-dom";
 
@@ -25,23 +24,27 @@ export interface AuthFormProps
 
 interface FormConfig
 {
+    submitLabel: string;
     fields: Field[];
-    submitHandler: (inputs: InputPresentation[]) => Promise<void>;
+    submitHandler: (inputs: DataValue[]) => Promise<void>;
     alertMessage: string;
 }
 
 const AuthForm: FC<AuthFormProps> = ({mode}) =>
 {
+    const { user, setUser, checkAuth } = useContext(AuthContext);
+
     const [redirectTo, setRedirectTo] = useState<string | null>(null);
-    const { authState, setAuthState, checkAuth } = useContext(AuthContext);
     const [menuMode, setMenuMode] = useState<AuthFormMode>(mode);
     const [formConfig, setFormConfig] = useState<Record<AuthFormMode, FormConfig>>({
         [AuthFormMode.login]: {
+            submitLabel: "",
             fields: [],
             submitHandler: async () => {},
             alertMessage: ""
         },
         [AuthFormMode.registration]: {
+            submitLabel: "",
             fields: [],
             submitHandler: async () => {},
             alertMessage: ""
@@ -72,17 +75,19 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         try
         {
             const loginFieldsPromise = getLoginFields();
-            const registerCompanyFieldsPromise = getRegisterCompanyFields();
+            const registerCompanyFieldsPromise = getCompanyRegistrationFields();
 
             const loginFields = await loginFieldsPromise;
             const registerCompanyFields = await registerCompanyFieldsPromise;
 
             const config: Record<AuthFormMode, FormConfig> = {
                 [AuthFormMode.login]: {
+                    submitLabel: "Войти",
                     fields: loginFields,
-                    submitHandler: sendLoginRequest,
+                    submitHandler: requestLogin,
                     alertMessage: ""},
                 [AuthFormMode.registration]: {
+                    submitLabel: "Зарегистрировать компанию",
                     fields: registerCompanyFields,
                     submitHandler: sendCompanyCreateRequest,
                     alertMessage: ""}}
@@ -100,20 +105,16 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         }
     };
 
-    const sendCompanyCreateRequest = async (inputs: InputPresentation[]) =>
+    const sendCompanyCreateRequest = async (dataValues: DataValue[]) =>
     {
         try
         {
-            if (requiredFieldsNotEmpty(inputs))
+            updateFormConfig(menuMode, {alertMessage: ""})
+            const user = await createCompany(dataValues);
+            if (user)
             {
-                const dataValues: DataValue[] = getDataValues(inputs);
-                updateFormConfig(menuMode, {alertMessage: ""})
-                const user = await requestCreateCompany(dataValues);
-                if (user)
-                {
-                    await checkAuth()
-                    if (authState) setRedirectTo(ROUTES.WELCOME);
-                }
+                await checkAuth()
+                if (user) setRedirectTo(ROUTES.MAIN);
             }
         }
         catch (error)
@@ -122,20 +123,16 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         }
     }
 
-    const sendLoginRequest = async (inputs: InputPresentation[]) =>
+    const requestLogin = async (dataValues: DataValue[]) =>
     {
         try
         {
-            if (requiredFieldsNotEmpty(inputs))
+            updateFormConfig(menuMode, {alertMessage: ""})
+            const user = await login(dataValues);
+            if (user)
             {
-                const dataValues: DataValue[] = getDataValues(inputs);
-                updateFormConfig(menuMode, {alertMessage: ""})
-                const user = await requestLogin(dataValues);
-                if (user)
-                {
-                    await checkAuth()
-                    if (authState) setRedirectTo(ROUTES.WELCOME);
-                }
+                await checkAuth()
+                if (user) setRedirectTo(ROUTES.MAIN);
             }
         }
         catch (error)
@@ -144,41 +141,6 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
                 updateFormConfig(menuMode, {alertMessage: error.message})
             }
         }
-    }
-
-    const requiredFieldsNotEmpty = (inputs: InputPresentation[]): boolean =>
-    {
-        for (let i = 0; i < inputs.length; i++)
-        {
-            const field = inputs[i];
-            if ((field.value.value === undefined || field.value.value === "") && inputs[i].field.isRequired)
-            {
-                updateFormConfig(menuMode, {alertMessage: "Заполните поле " + field.field.name})
-                return false;
-            }
-        }
-        return true;
-    }
-
-    const getDataValues = (fields: InputPresentation[]): DataValue[] =>
-    {
-        const dataValues: DataValue[] = [];
-
-        for (let i = 0; i < fields.length; i++)
-        {
-            const input = fields[i];
-            const field = input.field
-            const value = input.value
-
-            if (!value.value)
-            {
-                if (!field.isRequired) input.value.value = "";
-                else throw Error(`Поле "${field.name}" должно быть заполнено`)
-            }
-            dataValues.push({fieldId: value.fieldId, value: value.value} as DataValue)
-        }
-
-        return dataValues
     }
 
     const getForm = (): ReactElement =>
@@ -200,14 +162,15 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
                             variant={ButtonType.toggleable}/>
                 </div>
 
-                <Form
+                <Form key={menuMode}
+                    submitLabel={config.submitLabel}
                     inputs={config.fields.map((field) => {
                         return {inputData: field}
                     })}
                     onSubmit={config.submitHandler}/>
                 <p>{config.alertMessage}</p>
 
-                <Button onClick={async () => console.log("аутентифицирован: " + await isAuthenticated())} variant={ButtonType.general} text={"Аутентифицирован?"}/><br/>
+                <Button onClick={async () => console.log("аутентифицирован: " + user?.username + " " + user?.isCompanySuperuser)} variant={ButtonType.general} text={"Аутентифицирован?"}/><br/>
             </div>)
     }
 

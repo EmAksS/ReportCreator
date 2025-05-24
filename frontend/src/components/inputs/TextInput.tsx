@@ -9,10 +9,12 @@ export interface TextInputProps extends InputProps
 
 const TextInput: FC<TextInputProps> = (props: TextInputProps) =>
 {
-    const [validationRegExp, setValidationRegExp] = useState<RegExp>();
+    const [validationRegExp, setValidationRegExp] = useState<RegExp | null>();
 
-    useEffect(() => {
-        setValidationRegExp(new RegExp(props.inputData.validationRegex as string));
+    useEffect(() =>
+    {
+        const regExp = props.inputData.validationRegex;
+        setValidationRegExp(regExp ? new RegExp(regExp) : null);
     }, [props.inputData.validationRegex]);
 
 

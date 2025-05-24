@@ -11,13 +11,36 @@ export interface Credentials
     surname?: string
 }
 
-export interface User extends Credentials, UserLoginData
+export interface User
+{
+    username: string,
+    isCompanySuperuser: boolean,
+}
+
+export interface Person extends Credentials
+{
+    post: string
+}
+
+export interface ContractorPerson extends Person
+{
+    company: string
+}
+
+export interface ExecutorPerson extends Person
 {
 
 }
 
-export interface Executor extends User
+export interface Company
 {
     companyName: string,
     companyFullName: string,
+    createdAt: Date,
+    updatedAt: Date
+}
+
+export interface ContractorCompany extends Company
+{
+    contractorCity: string,
 }

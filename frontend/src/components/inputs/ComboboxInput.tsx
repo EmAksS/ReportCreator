@@ -17,12 +17,15 @@ const ComboboxInput: FC<ComboboxInputProps> = (props: ComboboxInputProps) =>
     const requestComboboxValues = async () =>
     {
         const items = await getComboboxItems(props.inputData.relatedInfo.url)
-        console.log(items);
-        if (Array.isArray(items)) setValues(items)
+
+        if (Array.isArray(items) && items.length > 0)
+        {
+            setValues(items)
+            props.onChange?.(props.inputData.keyName, items[0][props.inputData.relatedInfo.saveField])
+        }
     }
 
     useEffect(() => {
-        console.log(props.inputData)
         requestComboboxValues()
     }, []);
 

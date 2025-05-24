@@ -10,7 +10,9 @@ export enum InputType
 {
     Text = "TEXT",
     Checkbox = "CHECKBOX",
-    Table = "TABLE"
+    Table = "TABLE",
+    Combobox = "COMBOBOX",
+    File = "FILE"
 }
 
 export type FieldValue = string | boolean | FieldValue[][] | File;
@@ -34,6 +36,15 @@ export interface TextField extends Field
 export interface FileField extends Field
 {
     fileFormat: string;
+}
+
+export interface ComboboxField extends Field
+{
+    relatedInfo: {
+        url: string,
+        saveField: string,
+        showField: string
+    }
 }
 
 export interface DocumentField extends TextField

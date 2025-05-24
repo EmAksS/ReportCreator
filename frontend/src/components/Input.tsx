@@ -12,6 +12,7 @@ export interface InputProps
     onChange?: (keyName: string, value: FieldValue) => void;
     alert?: (keyName: string, message: string) => void;
     style?: React.CSSProperties;
+    canPassDefaultValue?: boolean;
 }
 
 const Input: FC<InputProps> = (props: InputProps) =>
