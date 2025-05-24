@@ -226,19 +226,42 @@ class TemplateListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = []
 
-        if 'template_file' in request.FILES:
-            data.append({
-                'field_id': 'template_file',
-                'value': request.FILES['template_file']
-            })
+        # Код ниже работает только для DRF-создания, но не через axios.
+        # if 'template_file' in request.FILES:
+        #     data.append({
+        #         'field_id': 'template_file',
+        #         'value': request.FILES['template_file']
+        #     })
 
-        for key, value in request.data.items():
-            if str(key).startswith('csrf'):
-                continue
+        # for key, value in request.data.items():
+        #     if str(key).startswith('csrf'):
+        #         continue
+        #     data.append({
+        #         'field_id': key,
+        #         'value': value
+        #     })
+
+        # Ниже код только для axios.
+        index = 0
+        while True:
+            field_id_key = f"{index}[fieldId]"
+            value_key = f"{index}[value]"
+
+            if field_id_key not in request.data:
+                break
+            field_id = request.data[field_id_key]
+
+            if value_key in request.FILES:
+                value = request.FILES[value_key]
+            else:
+                value = request.data.get(value_key)
+
             data.append({
-                'field_id': key,
+                'field_id': field_id,
                 'value': value
             })
+
+            index += 1
 
         error = field_validate(data, "Template")
         if error is not None:
