@@ -204,7 +204,7 @@ TEMPLATE = [
         'is_required': True,
         'placeholder': 'Отправьте файл шаблона в формате `.docx`',
         'type': 'FILE',
-        'validation_regex': '',
+        'validation_regex': None,
         'related_item': "Template",
         'secure_text': False,
         'error_text': ""

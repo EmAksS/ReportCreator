@@ -13,9 +13,9 @@ class Template(models.Model):
         ('REPORT', 'Отчёт'),
     ]
 
-    name = models.CharField(max_length=255, verbose_name="Название шаблона")
-    type = models.CharField(max_length=10, choices=DOCUMENT_TYPES, verbose_name="Тип документа")
-    file = models.FileField(upload_to=TEMPLATES_FOLDER, verbose_name="Файл шаблона")
+    template_name = models.CharField(max_length=255, verbose_name="Название шаблона")
+    template_type = models.CharField(max_length=10, choices=DOCUMENT_TYPES, verbose_name="Тип документа")
+    template_file = models.FileField(upload_to='templates/', verbose_name="Файл шаблона", null=True, blank=True)
     related_contractor_person = models.ForeignKey(ContractorPerson, on_delete=models.CASCADE, verbose_name="Представитель (юридическое лицо) заказчика", null=True, blank=True)
     related_executor_person = models.ForeignKey(ExecutorPerson, on_delete=models.CASCADE, verbose_name="Представитель (юридическое лицо) исполнителя", null=True, blank=True)
     

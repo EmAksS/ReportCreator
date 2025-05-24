@@ -4,7 +4,7 @@ from backend.scripts.field_validate import field_validate
 import os
 
 class TemplateSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=documents.Template.DOCUMENT_TYPES)
+    #type = serializers.ChoiceField(choices=documents.Template.DOCUMENT_TYPES)
     
     class Meta:
         model = documents.Template
@@ -36,11 +36,11 @@ class TemplateSerializer(serializers.ModelSerializer):
             return super().to_internal_value(data)
         
         # Обрабатываем массив полей из фронтенда
-        processed_data = {'file': None}
+        processed_data = {'template_file': None}
         
         for field in data:
-            if field['field_id'] == 'file':
-                processed_data['file'] = field['value']
+            if field['field_id'] == 'template_file':
+                processed_data['template_file'] = field['value']
             else:
                 processed_data[field['field_id']] = field['value']
         

@@ -159,6 +159,7 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 STATIC_URL = '/django-static/'
 STATIC_ROOT = BASE_DIR.parent / 'django-static/'
+MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -167,11 +168,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "backend.User"
 
-DOCUMENTS_FOLDER = BASE_DIR.parent / "docs"
+DOCUMENTS_FOLDER = MEDIA_ROOT / "docs"
 if not DOCUMENTS_FOLDER.exists():
     DOCUMENTS_FOLDER.mkdir()
 
-TEMPLATES_FOLDER = DOCUMENTS_FOLDER / "templates"
+TEMPLATES_FOLDER = MEDIA_ROOT / "templates"
 if not TEMPLATES_FOLDER.exists():
     TEMPLATES_FOLDER.mkdir()
 

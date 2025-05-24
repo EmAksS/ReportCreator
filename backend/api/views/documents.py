@@ -233,6 +233,8 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             })
 
         for key, value in request.data.items():
+            if str(key).startswith('csrf'):
+                continue
             data.append({
                 'field_id': key,
                 'value': value
@@ -242,7 +244,7 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         if error is not None:
             return Response(DetailAndStatsSerializer({
                 "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
+                "details": f"Неправильный формат значения в поле `{error['field_id']}`: {error['error']}."
             }).data, status=status.HTTP_400_BAD_REQUEST)
 
         try: 
@@ -286,7 +288,7 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             return Response(DetailAndStatsSerializer({
                 'status': status.HTTP_400_BAD_REQUEST,
                 'details': f"Ошибка при создании шаблона документа: {serializer.errors}."
-            }).datata, status=status.HTTP_400_BAD_REQUEST)
+            }).data, status=status.HTTP_400_BAD_REQUEST)
 
 
 # region DocumentFields_docs
