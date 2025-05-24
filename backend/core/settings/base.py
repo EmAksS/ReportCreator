@@ -160,6 +160,8 @@ MEDIA_URL = '/media/'
 STATIC_URL = '/django-static/'
 STATIC_ROOT = BASE_DIR.parent / 'django-static/'
 MEDIA_ROOT = BASE_DIR.parent / 'media'
+if not MEDIA_ROOT.exists():
+    MEDIA_ROOT.mkdir()
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
