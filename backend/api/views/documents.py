@@ -8,7 +8,7 @@ from rest_framework import permissions
 from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # models 
 from backend.models.fields import Field
-from backend.models.documents import Template, Document, DocumentField
+from backend.models.documents import Template, Document, DocumentField, TableField, DocumentsValues, TableValues
 from backend.models.company import ContractorPerson, ExecutorPerson 
 # autodocs
 from drf_spectacular.utils import (
@@ -21,6 +21,7 @@ from api.serializers.documents import (
     DocumentSerializer,
     DocumentFieldSerializer,
     DocumentFieldValueSerializer,
+    TableFieldSerializer,
 )
 from api.serializers.field import FieldSerializer
 from api.serializers.schema import (
@@ -31,6 +32,7 @@ from api.serializers.schema import (
 )
 # scripts
 from backend.scripts.field_validate import field_validate
+from backend.scripts.fill_document import fill_document
 import json
 from backend.scripts.find_datavalue import find_dataValue
 from backend.scripts.load_data import load_data
@@ -38,6 +40,8 @@ from backend.scripts.load_data import load_data
 from django.conf import settings
 import os
 #from magic import Magic
+from workalendar.europe import Russia
+from datetime import date
 
 # region DocTypes_docs
 @extend_schema(tags=["Documents"])
@@ -227,41 +231,41 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         data = []
 
         # Код ниже работает только для DRF-создания, но не через axios.
-        # if 'template_file' in request.FILES:
-        #     data.append({
-        #         'field_id': 'template_file',
-        #         'value': request.FILES['template_file']
-        #     })
-
-        # for key, value in request.data.items():
-        #     if str(key).startswith('csrf'):
-        #         continue
-        #     data.append({
-        #         'field_id': key,
-        #         'value': value
-        #     })
-
-        # Ниже код только для axios.
-        index = 0
-        while True:
-            field_id_key = f"{index}[fieldId]"
-            value_key = f"{index}[value]"
-
-            if field_id_key not in request.data:
-                break
-            field_id = request.data[field_id_key]
-
-            if value_key in request.FILES:
-                value = request.FILES[value_key]
-            else:
-                value = request.data.get(value_key)
-
+        if 'template_file' in request.FILES:
             data.append({
-                'field_id': field_id,
+                'field_id': 'template_file',
+                'value': request.FILES['template_file']
+            })
+
+        for key, value in request.data.items():
+            if str(key).startswith('csrf'):
+                continue
+            data.append({
+                'field_id': key,
                 'value': value
             })
 
-            index += 1
+        # # Ниже код только для axios.
+        # index = 0
+        # while True:
+        #     field_id_key = f"{index}[fieldId]"
+        #     value_key = f"{index}[value]"
+
+        #     if field_id_key not in request.data:
+        #         break
+        #     field_id = request.data[field_id_key]
+
+        #     if value_key in request.FILES:
+        #         value = request.FILES[value_key]
+        #     else:
+        #         value = request.data.get(value_key)
+
+        #     data.append({
+        #         'field_id': field_id,
+        #         'value': value
+        #     })
+
+        #     index += 1
 
         error = field_validate(data, "Template")
         if error is not None:
@@ -318,7 +322,7 @@ class TemplateListCreateView(generics.ListCreateAPIView):
 @extend_schema(tags=["DocumentField"])
 @extend_schema_view(
     get=extend_schema(
-        summary="Получить список полей для создания документа с ID шаблона `TID`",
+        summary="Получить список полей для создания поля документа с ID шаблона `TID`",
         parameters=[
             OpenApiParameter(
                 "tid",
@@ -394,7 +398,6 @@ class TemplateListCreateView(generics.ListCreateAPIView):
                 value={
                     "data": [
                         { "field_id": "name", "value" : "Название договора" },
-                        { "field_id": "related_template", "value" : 1 },
                         { "field_id": "key_name", "value" : "dogovor_name" },
                         { "field_id": "is_required", "value" : True },
                         { "field_id": "validation_regex", "value" : None },
@@ -521,7 +524,7 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
         
-        error = field_validate(data, "Executor")
+        error = field_validate(data, "DocumentField")
         if error is not None:
             return Response(
                 DetailAndStatsSerializer({
@@ -581,6 +584,92 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
                 }).data,
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+# TableFieldsListCreateView
+# Создать поле столбца таблицы
+class TableFieldsListCreateView(generics.ListCreateAPIView):
+    serializer_class = FieldSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        return Field.objects.filter(related_item="TableField", is_custom=False)
+
+    def create(self, request, *args, **kwargs):
+        data = load_data(request.data)
+
+        error = field_validate(data, "TableField")
+        if error is not None:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Неправильный формат значения в поле `{error['field_id']}`."
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
+        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+
+        if missing_fields:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Отсутствуют необходимые поля: {', '.join(missing_fields)}"
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        template_id = data.get('related_template')
+        try:
+            template = Template.objects.get(id=template_id)
+        except Template.DoesNotExist:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Шаблон с TID={template_id} не найден."
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            table_field = TableField.objects.create(
+                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().name).replace(' ', '_')}",
+                name=find_dataValue(data, 'name'),
+                key_name=find_dataValue(data, 'key_name'),
+                order= find_dataValue(data, 'order'),
+                is_required=find_dataValue(data, 'is_required'),
+                type=find_dataValue(data, 'type'),
+                validation_regex=find_dataValue(data, 'validation_regex'),
+                related_item="Template",
+                is_custom=True,
+                related_info=None,
+                placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
+                related_template=Template.objects.filter(id=template).first(), # Можно заменить на name но лучше не надо
+            )
+
+            return Response(ItemDetailsSerializer({
+                "status": status.HTTP_201_CREATED,
+                "details": DocumentFieldSerializer(table_field).data,
+            }).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Ошибка создания объекта модели `DocumentField`. {e}"
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+# Проверить список толбцов таблицы для шаблона TK
+class TemplateTableFieldsListView(generics.ListAPIView):
+    serializer_class = TableFieldSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        template_id = self.kwargs.get('tk')
+        return TableField.objects.filter(related_template=template_id)
 
 
 # region TemplatesFields_docs
@@ -651,14 +740,117 @@ class TemplateFieldsView(generics.ListAPIView):
                 description="Ошибка на стороне сервера"
             )
         }
+    ),
+    post=extend_schema(
+        summary="Создать объект `Document`",
+        #...
     )
 )
 # endregion
-class DocumentFieldsView(generics.ListAPIView):
-    # TODO: оказывается у нас нет методов для создания документа - надо бы это сделать.
-    queryset = Field.objects.filter(related_item="Document")
+class DocumentFieldsCreateView(generics.ListCreateAPIView):
     serializer_class = DocumentFieldSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        tid = self.kwargs.get('tid')
+        DocumentField.objects.filter(related_template=Template.objects.filter(id=tid).first())
+    
+    def create(self, request, *args, **kwargs):
+        data = load_data(request.data)
+
+        error = field_validate(data, "DocumentField")
+        if error is not None:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Неправильный формат значения в поле `{error['field_id']}`."
+                }).data, status=status.HTTP_400_BAD_REQUEST)
+
+        listfields = [columns.get('field_id') for columns in data if isinstance(columns.get('value'), list)]
+        
+        # Проверка что шаблон документа есть
+        tid = self.kwargs.get('tid')
+        template = Template.objects.filter(id=tid).first()
+        if not template:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Шаблон с TID={tid} не найден."
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Создаём документ
+        try:
+            doc = Document.objects.create(
+                related_template=template,
+                shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
+            )
+        except Exception as e:
+            return Response(
+                DetailAndStatsSerializer({
+                    'status': status.HTTP_400_BAD_REQUEST,
+                    'details': f"Ошибка создания объекта модели `Document`: {e}"
+                }).data,
+                status=status.HTTP_400_BAD_REQUEST)
+        
+        # Заполняем DocumentValues
+        document_data = {}
+
+        for field in data:
+            document_data[field.get('field_id')] = field.get("value")
+            try:
+                DocumentsValues.objects.create(
+                    document_id=doc,
+                    field_id=Field.objects.filter(id=field.get('field_id'), related_item="DocumentField").first(),
+                    value=field.get("value", ""),
+                )
+            except Exception as e:
+                    doc.delete()   # Удаляем документ, если произошла ошибка
+                    return Response(DetailAndStatsSerializer({
+                        'status': status.HTTP_400_BAD_REQUEST,
+                        'details': f"Ошибка распределение полей в объекте `Document`: {e}"
+                    }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER
+        ordered_lf = []
+        ordered = TableField.objects.filter(related_template=tid).order_by('order')
+        for row in ordered:
+            if row.key_name not in listfields:
+                continue
+            ordered_lf.append(row.key_name)
+        
+        maxlen = 0
+        for listfield in ordered_lf:
+            maxlen = max(maxlen, len(find_dataValue(data, listfield)))
+        
+        table = []
+        for row in range(len(maxlen)):
+            row = []
+            for listfield in ordered_lf:
+                try:
+                    row.append(find_dataValue(data, listfield)[row])
+                except:
+                    row.append("")
+            table.append(row)
+
+        # Создаём сам документ.
+        try:
+            info = fill_document(template.template_file.name, document_data, table)
+        except Exception as e:
+            doc.delete()   # Удаляем документ, если произошла ошибка
+            return Response(
+                DetailAndStatsSerializer({
+                    "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    'details': f"Ошибка создания документа: {e}. Информация: {info}"
+                    }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        print(info)
+        return Response(ItemDetailsSerializer({
+            'status': status.HTTP_201_CREATED,
+            'details': DocumentSerializer(doc).data,
+        }).data, status=status.HTTP_201_CREATED)
+
 
 
 # region TemplateOfCompany_docs

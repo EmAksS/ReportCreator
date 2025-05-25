@@ -73,3 +73,13 @@ class DocumentFieldValueSerializer(serializers.ModelSerializer):
                 "Field должен относиться к Document"
             )
         return data
+
+class TableFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = documents.TableField
+        fields = '__all__'
+
+class TableFieldValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = documents.TableValues
+        fields = '__all__'

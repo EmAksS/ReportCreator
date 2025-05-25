@@ -577,6 +577,126 @@ DOCUMENT_FIELD = [
     },
 ]
 
+TABLE_FIELD = [
+    {
+        'name': 'Связанный шаблон',
+        'key_name': 'related_template',
+        'is_required': True,
+        'placeholder': 'Выберите шаблон для создания поля.',
+        'type': 'COMBOBOX',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': {
+            'url': "templates/company/current/",
+            'show_field': "name",
+            'save_field': "id",
+        },
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Порядок поля',
+        'key_name': 'order',
+        'is_required': True,
+        'placeholder': 'Укажите порядок поля',
+        'type': 'NUMBER',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Русское название поля',
+        'key_name': 'name',
+        'is_required': True,
+        'placeholder': 'Введите русское название поля',
+        'type': 'TEXT',
+        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+){0,64}$',
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
+    },
+    {
+        'name': 'Ключевое название поля',
+        'key_name': 'key_name',
+        'is_required': True,
+        'placeholder': 'Введите ключевое название поля',
+        'type': 'TEXT',
+        'validation_regex': '^\w{0,64}$',
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Значение должно быть уникальным, содержать только латиницу, а также не более 64 символов"
+    },
+    {
+        'name': 'Необходимое поле?',
+        'key_name': 'is_required',
+        'is_required': True,
+        'placeholder': 'Это необходимое поле?',
+        'type': 'BOOL',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Предложение записи для пользователя',
+        'key_name': 'placeholder',
+        'is_required': False,
+        'placeholder': 'Укажите текст, который указывается в предложении.',
+        'type': 'TEXT',
+        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Текст должен состоять из кириллицы или латиницы."
+    },
+    {
+        'name': 'Тип поля',
+        'key_name': 'type',
+        'is_required': True,
+        'placeholder': 'Выберите тип поля из списка',
+        'type': 'COMBOBOX',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': {
+            # ! Не выводить COMBOBOX, так как их создание невозможно!
+            'url': "url_для_вывода_всех_FIELD_TYPES",
+            'show_field': "value",
+            'save_field': "id",
+        },
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Регулярное выражение для проверки',
+        'key_name': 'validation_regex',
+        'is_required': False,
+        'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
+        'type': 'TEXT',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None, 
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Текст при ошибке валидации',
+        'key_name': 'error_text',
+        'is_required': False,
+        'placeholder': 'Текст ошибки при несоответствии `validation_regex`.',
+        'type': 'TEXT',
+        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
+        'related_item': "TableField",
+        'related_info': None, 
+        'secure_text': False,
+        'error_text': "Неправильный формат текста."
+    },
+]
+
 
 ALL_ITEMS = [
     USER,
@@ -587,6 +707,7 @@ ALL_ITEMS = [
     CONTRACTOR_PERSON,
     FIELD,
     DOCUMENT_FIELD,
+    TABLE_FIELD,
 ]
 
 STR_ITEMS = [
@@ -598,4 +719,5 @@ STR_ITEMS = [
     "CONTRACTOR_PERSON",
     "FIELD",
     "DOCUMENT_FIELD",
+    "TABLE_FIELD",
 ]
