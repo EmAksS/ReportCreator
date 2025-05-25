@@ -31,14 +31,19 @@ export const AuthContext = createContext<UserContextType>({
     checkAuth: async () => {}
 });
 
-function AppContent() {
-    const { user } = useContext(AuthContext);
+function AppContent()
+{
+    const { user, checkAuth } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
 
-    if (!user && location.pathname !== ROUTES.LOGIN && location.pathname !== ROUTES.REGISTRATION) {
-        return <Navigate to={ROUTES.LOGIN} replace />;
-    }
+    useEffect(() =>
+    {
+        if (!user && location.pathname !== ROUTES.LOGIN && location.pathname !== ROUTES.REGISTRATION)
+        {
+            navigate(ROUTES.LOGIN);
+        }
+    }, [user, location.pathname, navigate]);
 
     return (
         <div className={"page"}>
@@ -46,9 +51,9 @@ function AppContent() {
                 imageSrc={"/assets/images/report_creator_logo.png"}
                 title={"Report Creator"}
                 buttonProps={user
-                    ? [{ text: "Компания", onClick: () => navigate(ROUTES.COMPANY), variant: ButtonType.hat },
-                        { text: "Личный кабинет", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat }, // Перенаправление на /main
-                        { text: "Выйти", onClick: async () => { await logout(); window.location.reload(); }, variant: ButtonType.hat }]
+                    ? [{ text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },
+                        { text: "Компания", onClick: () => navigate(ROUTES.COMPANY), variant: ButtonType.hat },
+                        { text: "Выйти", onClick: async () => { await logout(); await checkAuth(); navigate(ROUTES.MAIN); }, variant: ButtonType.hat }]
                     : []}/>
 
             <div className={"main-space"}>
@@ -64,26 +69,24 @@ function AppContent() {
     );
 }
 
-function App() {
-    const [authState, setAuthState] = useState<User | null>(null);
+function App()
+{
+    const [user, setUser] = useState<User | null>(null);
 
-    const checkAuth = async () => {
-        try {
-            const isAuth = await getUser();
-            setAuthState(isAuth);
-        } catch (error) {
-            console.error("Auth check failed:", error);
-            setAuthState(null);
-        }
+    const checkAuth = async () =>
+    {
+        const user = await getUser();
+        setUser(user);
     };
 
-    useEffect(() => {
+    useEffect(() =>
+    {
         checkAuth();
     }, []);
 
     return (
         <BrowserRouter>
-            <AuthContext.Provider value={{ user: authState, setUser: setAuthState, checkAuth}}>
+            <AuthContext.Provider value={{ user, setUser, checkAuth}}>
                 <AppContent/>
             </AuthContext.Provider>
         </BrowserRouter>

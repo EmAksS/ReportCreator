@@ -19,16 +19,10 @@ const Form: FC<FormProps> = (props: FormProps) =>
 
     const onInputChange = (key: string, newValue: FieldValue) =>
     {
-        let newFields = [...inputs];
+        const newFields = [...inputs];
 
-        newFields = newFields.map(element =>
-        {
-            if (element.field.keyName === key)
-            {
-                return {...element, value: {...element.value, value: newValue}}
-            }
-            return element;
-        })
+        const changedFieldIndex: number = newFields.findIndex((field) => field.field.keyName === key);
+        newFields[changedFieldIndex].value.value = newValue;
 
         setInputs(newFields);
     };

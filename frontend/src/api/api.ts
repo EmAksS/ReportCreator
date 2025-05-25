@@ -186,43 +186,11 @@ export async function createDocumentTemplate(templateCreationData: DataValue[]):
     return response.data.details
 }
 
-function objectToFormData(obj: any, form?: FormData, namespace?: string): FormData {
-    const fd = form || new FormData();
-
-    for (const property in obj) {
-        if (!obj.hasOwnProperty(property) || obj[property] === undefined) continue;
-
-        const formKey = namespace ? `${namespace}[${property}]` : property;
-        const value = obj[property];
-
-        if (value instanceof Date) {
-            fd.append(formKey, value.toISOString());
-        } else if (value instanceof File || value instanceof Blob) {
-            fd.append(formKey, value);
-        } else if (Array.isArray(value)) {
-            value.forEach((element, index) => {
-                const arrayKey = `${formKey}[${index}]`;
-                if (typeof element === 'object' && element !== null) {
-                    objectToFormData(element, fd, arrayKey);
-                } else {
-                    fd.append(arrayKey, element);
-                }
-            });
-        } else if (typeof value === 'object' && value !== null) {
-            objectToFormData(value, fd, formKey);
-        } else {
-            fd.append(formKey, value);
-        }
-    }
-
-    return fd;
-}
-
 export async function login(userLoginData: DataValue[]): Promise<User>
 {
-    const response = await api.post<DataValue[], ApiResponse<User>>(ENDPOINTS.LOGIN, userLoginData);
-    if (!response.details) throw new Error("Не удалось выполнить логин");
-    return response.details;
+    const response = (await api.post<ApiResponse<User | string>>(ENDPOINTS.LOGIN, userLoginData)).data;
+    if (response.status !== 200) throw new Error(response.details as string);
+    return response.details as User;
 }
 
 export async function logout()

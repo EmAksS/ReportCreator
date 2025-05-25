@@ -9,7 +9,8 @@ import {
 } from "../api/api";
 import {DataValue, Field} from "../types/api";
 import {AuthContext, ROUTES} from "../App";
-import {Navigate} from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {User} from "../types/core";
 
 export enum AuthFormMode
 {
@@ -30,12 +31,13 @@ interface FormConfig
     alertMessage: string;
 }
 
-const AuthForm: FC<AuthFormProps> = ({mode}) =>
+const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
 {
-    const { user, setUser, checkAuth } = useContext(AuthContext);
+    const { user, checkAuth } = useContext(AuthContext);
+    const navigate = useNavigate();
 
-    const [redirectTo, setRedirectTo] = useState<string | null>(null);
-    const [menuMode, setMenuMode] = useState<AuthFormMode>(mode);
+    const [menuMode, setMenuMode] = useState<AuthFormMode>(props.mode);
+    const [isLoading, setIsLoading] = useState(true);
     const [formConfig, setFormConfig] = useState<Record<AuthFormMode, FormConfig>>({
         [AuthFormMode.login]: {
             submitLabel: "",
@@ -50,12 +52,16 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             alertMessage: ""
         }
     });
-    const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() =>
     {
-        requestAndLoadFields();
-    }, []);
+        requestFields();
+    }, [props.mode]);
+
+    useEffect(() =>
+    {
+        if (user) navigate(ROUTES.MAIN);
+    }, [user])
 
     const updateFormConfig = (mode: AuthFormMode, newConfig: Partial<FormConfig>) => {
         setFormConfig(prev => {
@@ -70,15 +76,12 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
         });
     };
 
-    const requestAndLoadFields = async () =>
+    const requestFields = async () =>
     {
         try
         {
-            const loginFieldsPromise = getLoginFields();
-            const registerCompanyFieldsPromise = getCompanyRegistrationFields();
-
-            const loginFields = await loginFieldsPromise;
-            const registerCompanyFields = await registerCompanyFieldsPromise;
+            const [loginFields, registerCompanyFields] = await Promise.all(
+                [getLoginFields(), getCompanyRegistrationFields()]);
 
             const config: Record<AuthFormMode, FormConfig> = {
                 [AuthFormMode.login]: {
@@ -89,63 +92,57 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
                 [AuthFormMode.registration]: {
                     submitLabel: "Зарегистрировать компанию",
                     fields: registerCompanyFields,
-                    submitHandler: sendCompanyCreateRequest,
+                    submitHandler: requestCreateCompany,
                     alertMessage: ""}}
 
             setFormConfig(config)
+            setIsLoading(false)
         }
         catch (error)
         {
-            console.log('Failed to load form fields:', error);
-            updateFormConfig(menuMode, {alertMessage: "Не удалось загрузить форму"})
-        }
-        finally
-        {
-            setLoading(false);
+            if (error instanceof Error)
+            {
+                updateFormConfig(menuMode, {alertMessage: error.message});
+            }
+            console.log("Не удалось загрузить поля", error);
         }
     };
 
-    const sendCompanyCreateRequest = async (dataValues: DataValue[]) =>
+    const requestCreateCompany = async (dataValues: DataValue[]) =>
     {
-        try
-        {
-            updateFormConfig(menuMode, {alertMessage: ""})
-            const user = await createCompany(dataValues);
-            if (user)
-            {
-                await checkAuth()
-                if (user) setRedirectTo(ROUTES.MAIN);
-            }
-        }
-        catch (error)
-        {
-            if (error instanceof Error) updateFormConfig(menuMode, {alertMessage: error.message})
-        }
+        await authRequest(dataValues, createCompany)
     }
 
     const requestLogin = async (dataValues: DataValue[]) =>
     {
+        await authRequest(dataValues, login)
+    }
+
+    const authRequest = async (
+        dataValues: DataValue[],
+        requestFunction: (data: DataValue[]) => Promise<User>): Promise<void> =>
+    {
         try
         {
             updateFormConfig(menuMode, {alertMessage: ""})
-            const user = await login(dataValues);
-            if (user)
+            if (await requestFunction(dataValues))
             {
                 await checkAuth()
-                if (user) setRedirectTo(ROUTES.MAIN);
             }
         }
         catch (error)
         {
-            if (error instanceof Error) {
-                updateFormConfig(menuMode, {alertMessage: error.message})
+            if (error instanceof Error)
+            {
+                updateFormConfig(menuMode, {alertMessage: error.message});
             }
+            console.log("Не удалось аутентифицироваться", error);
         }
     }
 
     const getForm = (): ReactElement =>
     {
-        if (!formConfig) return <div>Загрузка формы</div>
+        if (isLoading) return <div>Загрузка формы</div>
 
         const config = formConfig[menuMode];
 
@@ -174,10 +171,7 @@ const AuthForm: FC<AuthFormProps> = ({mode}) =>
             </div>)
     }
 
-    if (redirectTo) {
-        return <Navigate to={redirectTo} replace/>;
-    }
-    return loading ? <div>Загрузка</div> : getForm();
+    return getForm();
 }
 
 export default AuthForm;
