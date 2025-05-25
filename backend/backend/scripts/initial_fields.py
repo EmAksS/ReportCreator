@@ -435,9 +435,8 @@ FIELD = [
         'validation_regex': None,
         'related_item': "Field",
         'related_info': {
-            # ! Не выводить COMBOBOX, так как их создание невозможно!
-            'url': "url_для_вывода_всех_FIELD_TYPES",
-            'show_field': "value",
+            'url': "field/types/",
+            'show_field': "name",
             'save_field': "id",
         },
         'secure_text': False,
@@ -543,9 +542,8 @@ DOCUMENT_FIELD = [
         'validation_regex': None,
         'related_item': "DocumentField",
         'related_info': {
-            # ! Не выводить COMBOBOX, так как их создание невозможно!
-            'url': "url_для_вывода_всех_FIELD_TYPES",
-            'show_field': "value",
+            'url': "field/types/",
+            'show_field': "name",
             'save_field': "id",
         },
         'secure_text': False,
@@ -663,9 +661,8 @@ TABLE_FIELD = [
         'validation_regex': None,
         'related_item': "TableField",
         'related_info': {
-            # ! Не выводить COMBOBOX, так как их создание невозможно!
-            'url': "url_для_вывода_всех_FIELD_TYPES",
-            'show_field': "value",
+            'url': "field/types/",
+            'show_field': "name",
             'save_field': "id",
         },
         'secure_text': False,
