@@ -11,6 +11,7 @@ import {DataValue, Field} from "../types/api";
 import {AuthContext, ROUTES} from "../App";
 import {useNavigate} from "react-router-dom";
 import {User} from "../types/core";
+import SimpleContainer from "./SimpleContainer";
 
 export enum AuthFormMode
 {
@@ -57,11 +58,6 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
     {
         requestFields();
     }, [props.mode]);
-
-    useEffect(() =>
-    {
-        if (user) navigate(ROUTES.MAIN);
-    }, [user])
 
     const updateFormConfig = (mode: AuthFormMode, newConfig: Partial<FormConfig>) => {
         setFormConfig(prev => {
@@ -127,7 +123,7 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
             updateFormConfig(menuMode, {alertMessage: ""})
             if (await requestFunction(dataValues))
             {
-                await checkAuth()
+                if (await checkAuth()) navigate(ROUTES.MAIN);
             }
         }
         catch (error)
@@ -147,7 +143,7 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
         const config = formConfig[menuMode];
 
         return (
-            <div className={"authorization-form"}>
+            <SimpleContainer style={{}} className={"authorization-form"}>
                 <div style={{display: "flex", flexDirection: "row", justifyContent: "space-around"}}>
                     <Button style={{width: "45%"}}
                             text={"Вход"}
@@ -165,10 +161,8 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
                         return {inputData: field}
                     })}
                     onSubmit={config.submitHandler}/>
-                <p>{config.alertMessage}</p>
-
-                <Button onClick={async () => console.log("аутентифицирован: " + user?.username + " " + user?.isCompanySuperuser)} variant={ButtonType.general} text={"Аутентифицирован?"}/><br/>
-            </div>)
+                <p className={"alert-message"}>{config.alertMessage}</p>
+            </SimpleContainer>)
     }
 
     return getForm();
