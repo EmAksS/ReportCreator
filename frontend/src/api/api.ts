@@ -1,8 +1,8 @@
-import axios from "axios";
+import axios, {AxiosRequestConfig} from "axios";
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
 import {ApiResponse, DataValue, Field} from "../types/api";
-import {Company, ContractorCompany, ContractorPerson, ExecutorPerson, User} from "../types/core";
+import {Company, ContractorCompany, ContractorPerson, DocumentTemplate, ExecutorPerson, User} from "../types/core";
 
 const BASE_API_URL = "http://localhost:8000";
 export const ENDPOINTS = {
@@ -22,11 +22,22 @@ export const ENDPOINTS = {
     EXECUTOR_PERSONS_FIELDS: "/persons/executor/fields/",
 
     TEMPLATES: "/templates/",
+    COMPANY_TEMPLATES: "/templates/company/",
+
+    DOCUMENTS: "/document/save/",
+    DOCUMENT_TYPES: "/document/types/",
 
     CHECK_AUTH: "/check_auth/",
     LOGIN: "/login/",
     LOGOUT: "/logout/",
     CSRF: "/csrf/"
+}
+
+const API_METHODS = {
+    GET: "GET",
+    POST: "POST",
+    PUT: "PUT",
+    DELETE: "DELETE",
 }
 
 const api = axios.create({
@@ -108,111 +119,176 @@ export async function getLoginFields(): Promise<Field[]>
     return await getFields(ENDPOINTS.LOGIN);
 }
 
-export async function getDocumentTemplateFields(): Promise<Field[]>
+export async function getDocumentTemplateCreationFields(): Promise<Field[]>
 {
     return await getFields(ENDPOINTS.TEMPLATES);
 }
 
+export async function getDocumentFields(id: number): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.DOCUMENTS + id);
+}
+
+async function getFields(url: string): Promise<Field[]>
+{
+    return await apiGet<Field[]>(url);
+}
+
+export async function getCompanyDocumentTemplates(companyId: number): Promise<DocumentTemplate[]>
+{
+    return await apiGet<DocumentTemplate[]>(ENDPOINTS.COMPANY_TEMPLATES + companyId);
+}
 
 export async function getCompany(): Promise<Company>
 {
-    return (await api.get<Company>(ENDPOINTS.COMPANY)).data;
+    return await apiGet<Company>(ENDPOINTS.COMPANY);
 }
 
 export async function getCompanyUsers(): Promise<User[]>
 {
-    return (await api.get<User[]>(ENDPOINTS.COMPANY_USERS)).data;
+    return await apiGet<User[]>(ENDPOINTS.COMPANY_USERS);
 }
 
 export async function getExecutorPersons(): Promise<ExecutorPerson[]>
 {
-    return (await api.get<ExecutorPerson[]>(ENDPOINTS.EXECUTOR_PERSONS)).data;
+    return await apiGet<ExecutorPerson[]>(ENDPOINTS.EXECUTOR_PERSONS);
 }
 
 export async function getContractorCompanies(): Promise<ContractorCompany[]>
 {
-    return (await api.get<ContractorCompany[]>(ENDPOINTS.CONTRACTOR_COMPANY)).data
+    return await apiGet<ContractorCompany[]>(ENDPOINTS.CONTRACTOR_COMPANY);
 }
 
 export async function getContractorPersons(): Promise<ContractorPerson[]>
 {
-    return (await api.get<ContractorPerson[]>(ENDPOINTS.CONTRACTOR_PERSONS)).data
+    return await apiGet<ContractorPerson[]>(ENDPOINTS.CONTRACTOR_PERSONS);
 }
 
 export async function getComboboxItems(URL: string): Promise<any[]>
 {
-    const response = await api.get(URL);
-    return toSnake(response.data);
+    return toSnake(await apiGet<any>(URL));
 }
 
 export async function createCompany(companyRegistrationData: DataValue[]): Promise<User>
 {
-    const response = await api.post<DataValue[], ApiResponse<User>>(ENDPOINTS.COMPANY_REGISTRATION, companyRegistrationData);
-    if (!response.details) throw new Error();
-    return response.details
+    return await apiPost<User>({url: ENDPOINTS.COMPANY_REGISTRATION, body: companyRegistrationData});
 }
 
 export async function createUser(userRegistrationData: DataValue[]): Promise<User>
 {
-    const response = await api.post<ApiResponse<User>>(ENDPOINTS.USER_REGISTRATION, userRegistrationData);
-    if (!response.data.details) throw new Error("Не удалось зарегистрировать пользователя");
-    return response.data.details
+    return await apiPost<User>({url: ENDPOINTS.USER_REGISTRATION, body: userRegistrationData});
 }
 
 export async function createContractorCompany(userRegistrationData: DataValue[]): Promise<ContractorCompany>
 {
-    const response = await api.post<ApiResponse<ContractorCompany>>(ENDPOINTS.CONTRACTOR_COMPANY_FIELDS, userRegistrationData);
-    return response.data.details as ContractorCompany;
+    return await apiPost<ContractorCompany>({url: ENDPOINTS.CONTRACTOR_COMPANY_FIELDS, body: userRegistrationData});
 }
 
 export async function createContractorPerson(userRegistrationData: DataValue[]): Promise<any>
 {
-    const response = await api.post<any>(ENDPOINTS.CONTRACTOR_PERSONS, userRegistrationData);
-    return response.data.details
+    return await apiPost<ContractorPerson>({url: ENDPOINTS.CONTRACTOR_PERSONS, body: userRegistrationData});
 }
 
 export async function createExecutorPerson(userRegistrationData: DataValue[]): Promise<any>
 {
-    const response = await api.post<ApiResponse<any>>(ENDPOINTS.EXECUTOR_PERSONS, userRegistrationData);
-    return response.data.details
+    return await apiPost<ExecutorPerson>({url: ENDPOINTS.EXECUTOR_PERSONS, body: userRegistrationData});
 }
 
-export async function createDocumentTemplate(templateCreationData: DataValue[]): Promise<any>
+export async function createDocumentTemplate(templateCreationData: DataValue[]): Promise<DocumentTemplate>
 {
-    const response = await api.post(ENDPOINTS.TEMPLATES, templateCreationData,
-        { headers: { "Content-Type": "multipart/form-data" }
-    });
-    if (response.status !== 201) throw new Error(response.data.details);
-    return response.data.details
+    return apiPost({
+        url: ENDPOINTS.TEMPLATES,
+        body: templateCreationData,
+        config: {headers: {"Content-Type": "multipart/form-data"}}});
 }
 
 export async function login(userLoginData: DataValue[]): Promise<User>
 {
-    const response = (await api.post<ApiResponse<User | string>>(ENDPOINTS.LOGIN, userLoginData)).data;
-    if (response.status !== 200) throw new Error(response.details as string);
-    return response.details as User;
+    return await apiPost<User>({url: ENDPOINTS.LOGIN, body: userLoginData})
 }
 
 export async function logout()
 {
-    return await api.post<void, ApiResponse<string>>(ENDPOINTS.LOGOUT);
+    return await apiPost<void>({url: ENDPOINTS.LOGOUT});
 }
 
 export async function getUser(): Promise<User>
 {
-    const response = await api.get<ApiResponse<User>>(ENDPOINTS.CHECK_AUTH);
-    return response.data.details as User;
-}
-
-async function getFields(URL: string): Promise<Field[]>
-{
-    return (await api.get<Field[]>(URL)).data;
+    return await apiGet<User>(ENDPOINTS.CHECK_AUTH);
 }
 
 async function getCsrfToken(): Promise<string>
 {
-    const response = await api.get<ApiResponse<string>>(ENDPOINTS.CSRF);
-    const token = response.data.details;
-    if (!token) throw new Error("Не удалось получить CSRF-токен");
-    return token;
+    return await apiGet<string>(ENDPOINTS.CSRF);
+}
+
+async function apiGet<TValue>(url: string, config?: AxiosRequestConfig<any>): Promise<TValue>
+{
+    return await apiRequest<TValue>({ url: url, method: API_METHODS.GET, config: config });
+}
+
+async function apiPost<TValue>(options: { url: string, body?: any, config?: AxiosRequestConfig<any>}): Promise<TValue>
+{
+    return await apiRequest<TValue>({
+        url: options.url,
+        method: API_METHODS.POST,
+        body: options.body,
+        config: options.config});
+}
+
+async function apiPut<TValue>(options: { url: string, body?: any, config?: AxiosRequestConfig<any>}): Promise<TValue>
+{
+    return await apiRequest<TValue>({
+        url: options.url,
+        method: API_METHODS.PUT,
+        body: options.body,
+        config: options.config});
+}
+
+async function apiDelete<TValue = void>(url: string, config?: AxiosRequestConfig<any>): Promise<TValue>
+{
+    return await apiRequest<TValue>({ url: url, method: API_METHODS.DELETE, config: config });
+}
+
+async function apiRequest<TValue>(config: ApiRequestConfig): Promise<TValue>
+{
+    const response = await api.request<ApiResponse<TValue>>({...config.config, url: config.url, method: config.method, data: config.body});
+    const data = response.data;
+
+    console.log(response);
+
+    if (!isSuccessfulResponse(response.status))
+    {
+        throw new Error(getFirstOrDefaultErrorMessage(data));
+    }
+
+    return data.details as TValue;
+}
+
+interface ApiRequestConfig
+{
+    url: string,
+    method: string,
+    body?: any,
+    config?: AxiosRequestConfig<any>
+}
+
+function isSuccessfulResponse(status: number): boolean
+{
+    return status >= 200 && status < 300;
+}
+
+function getFirstOrDefaultErrorMessage(response: ApiResponse<any>): string
+{
+    const errors = response.errors;
+    if (errors)
+    {
+        const keys = Object.keys(errors);
+        if (keys.length > 0)
+        {
+            const firstKey = keys[0];
+            return `${firstKey}: ${errors[firstKey]}`;
+        }
+    }
+    return "Произошла ошибка при запросе, попробуйте ещё раз";
 }

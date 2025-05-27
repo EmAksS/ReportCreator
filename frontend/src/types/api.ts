@@ -1,11 +1,5 @@
 import {User} from "./core";
 
-export interface DataValue
-{
-    fieldId: string,
-    value: FieldValue
-}
-
 export enum InputType
 {
     Text = "TEXT",
@@ -13,6 +7,12 @@ export enum InputType
     Table = "TABLE",
     Combobox = "COMBOBOX",
     File = "FILE"
+}
+
+export interface DataValue
+{
+    fieldId: string,
+    value: FieldValue
 }
 
 export type FieldValue = string | boolean | FieldValue[][] | File;
@@ -47,12 +47,12 @@ export interface ComboboxField extends Field
     }
 }
 
-export interface DocumentField extends TextField
+export interface DocumentField extends Field
 {
     relatedTemplate: string;
 }
 
-export interface TableField extends Field
+export interface TableField extends DocumentField
 {
     relatedTable: string;
     fields: Field[];
@@ -66,6 +66,6 @@ export interface InputPresentation
 
 export interface ApiResponse<T>
 {
-    status: number;
-    details?: T;
+    details: null | T;
+    errors: null | Record<string, string>;
 }
