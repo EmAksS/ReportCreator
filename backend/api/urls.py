@@ -22,6 +22,8 @@ urlpatterns = [
     
     path('persons/executor/', company.ExecutorPersonListCreateView.as_view(), name='executor_list'),
     path('persons/contractor/', company.ContractorPersonListCreateView.as_view(), name='contractor_list'),
+    path('persons/executor/<int:pk>/', company.ExecutorPersonDetailView.as_view(), name='executor_person_detail'),
+    path('persons/contractor/<int:pk>/', company.ContractorPersonDetailView.as_view(), name='contractor_person_detail'),
     path('persons/executor/fields/', company.ExecutorPersonFieldsListView.as_view(), name='get_executor_person_fields'),
     path('persons/contractor/fields/', company.ContractorPersonFieldsListView.as_view(), name='get_contractor_person_fields'),
 

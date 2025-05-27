@@ -681,6 +681,14 @@ class ExecutorPersonListCreateView(generics.ListCreateAPIView):
         }).data, status=status.HTTP_201_CREATED)
 
 
+# Выполняет конкретные действия с одним элементом pk.
+class ExecutorPersonDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CompanyExecutorPersonSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        return ExecutorPerson.objects.filter(pk=self.kwargs["pk"])
+
 @extend_schema(tags=["Contractor Person"])
 @extend_schema_view(
     get=extend_schema(
@@ -790,6 +798,14 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
             "details": self.serializer_class(person).data
         }).data, status=status.HTTP_201_CREATED)
 
+
+# Выполняет конкретные действия с одним элементом pk.
+class ContractorPersonDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CompanyContractorPersonSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        return ContractorPerson.objects.filter(pk=self.kwargs["pk"])
 
 class ExecutorPersonFieldsListView(generics.ListAPIView):
     serializer_class = FieldSerializer
