@@ -1,4 +1,6 @@
 from rest_framework import generics
+from api.views.schema import SchemaAPIView
+from rest_framework.exceptions import ValidationError
 # Permissions
 from rest_framework.permissions import AllowAny
 from api.permissions import IsAuthed, IsAuthedOrReadOnly
@@ -152,8 +154,9 @@ import json
         }
     )
 )
-class CompanyRegisterView(generics.ListCreateAPIView):
+class CompanyRegisterView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     queryset = Field.objects.filter(related_item="Executor")
     permission_classes = [AllowAny]
 
@@ -162,10 +165,7 @@ class CompanyRegisterView(generics.ListCreateAPIView):
 
         error = field_validate(data, "Executor")
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         username = None
         password = None
@@ -189,19 +189,13 @@ class CompanyRegisterView(generics.ListCreateAPIView):
                 searched_data.append(item)
         
         if not company_name:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Отсутствует необходимое поле `company_name`."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"company_name": "Отсутствует обязательное поле `company_name`"})
         
         if not company_fullName:
             company_fullName = company_name
 
         if Executor.objects.filter(company_name=company_name, company_fullName=company_fullName).exists():
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Компания с таким наименованием уже существует."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"company_name": "Компания с таким названием уже существует"})
 
         # Создаем компанию
         company = Executor.objects.create(
@@ -211,10 +205,7 @@ class CompanyRegisterView(generics.ListCreateAPIView):
         # Создаем суперпользователя компании
 
         if not all([username, password]):
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Не удалось создать пользователя - отсутствуют поля `username` или `password`"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"username": "Отсутствует обязательное поле `username`", "password": "Отсутствует обязательное поле `password`"})
         else:
             try:
                 user = User.objects.create_user(
@@ -226,10 +217,9 @@ class CompanyRegisterView(generics.ListCreateAPIView):
                 )
             except Exception as e:
                 company.delete()  # Откатываем создание компании при ошибке
-                return Response(DetailAndStatsSerializer({
-                    "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    "details": f"Ошибка при создании пользователя: {str(e)}"
-                }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({
+                    "errors": {"unknown": f"Ошибка создания значения поля ({e})"}
+                }, status=400)
 
         for item in data:
             if item in searched_data:
@@ -242,24 +232,17 @@ class CompanyRegisterView(generics.ListCreateAPIView):
                     value=item.get("value", ""),
                 )
             except Exception as e:
-                    company.delete()    # Откатываем создание компании при ошибке
-                    user.delete()       # Откатываем создание пользователя при ошибке
-                    return Response(DetailAndStatsSerializer({
-                        "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        "details": f"Ошибка при создании пользователя: {str(e)}"
-                    }
-                    ).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                company.delete()    # Откатываем создание компании при ошибке
+                user.delete()       # Откатываем создание пользователя при ошибке
+                return Response({
+                    "errors": {"unknown": f"Ошибка создания значения поля ({e})"}
+                }, status=400)
         
         # Автоматический логин после регистрации
         login(request, user)
-        return Response(ItemDetailsSerializer({
-            "status": status.HTTP_201_CREATED,
-            "details": {
-                "company": CompanySerializer(company).data,
-                "superuser": UserSerializer(user).data
-            }
-        }
-        ).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.serializer_class(user).data, status=status.HTTP_201_CREATED
+        )
 
 
 # --- Получение информации о компании и пользователях ---
@@ -321,19 +304,20 @@ class CompanyRegisterView(generics.ListCreateAPIView):
         }
     )
 )
-class CompanyInfoView(generics.GenericAPIView):
+class CompanyInfoView(SchemaAPIView, generics.GenericAPIView):
     permission_classes = [IsAuthed]
     serializer_class = CompanySerializer
+    details_serializer = CompanySerializer
+    error_messages = {
+        "company": "Не найдена компания, в которой находится пользователь."
+    }
 
     def get(self, request):
         if not request.user.company:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_204_NO_CONTENT,
-                "details": f"У текущего пользователя нет компании."
-            }).data, status=status.HTTP_204_NO_CONTENT)
+            raise ValidationError(self.error_messages["company"])
 
         company = request.user.company
-        return Response(self.serializer_class(company).data, status=status.HTTP_200_OK)
+        return Response(self.serializer_class(company).data)
 
 
 @extend_schema(tags=["Company"])
@@ -384,9 +368,11 @@ class CompanyInfoView(generics.GenericAPIView):
         }
     )
 )
-class CompanyUsersView(generics.ListAPIView):
+class CompanyUsersView(SchemaAPIView, generics.ListAPIView):
     permission_classes = [IsAuthed]
     serializer_class = UserSerializer
+    details_serializer = UserSerializer
+    error_messages = {}
 
     def get_queryset(self):
         if not self.request.user.company:
@@ -489,20 +475,22 @@ class CompanyUsersView(generics.ListAPIView):
         }
     )
 )
-class ContractorCreateView(generics.ListCreateAPIView):
+class ContractorCreateView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     queryset = Field.objects.filter(related_item="Contractor")
     permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        self.details_serializer = FieldSerializer
+        return super().get(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
 
         error = field_validate(data, "Contractor")
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         try:
             contractor = Contractor.objects.create(
@@ -512,15 +500,10 @@ class ContractorCreateView(generics.ListCreateAPIView):
                 contractor_city=find_dataValue(data, "contractor_city")
             )
         except Exception as e:
-            return Response(DetailAndStatsSerializer(
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    details=f"Ошибка при создании пользователя: {str(e)}"
-                ).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ValidationError({"unknown": f"Ошибка создания заказчика: {e}"})
         
-        return Response(ItemDetailsSerializer({
-            "status": status.HTTP_201_CREATED,
-            "details": ContractorSerializer(contractor).data
-        }).data, status=status.HTTP_201_CREATED)
+        self.details_serializer = ContractorSerializer
+        return Response(self.serializer_class(contractor).data ,status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Contractors"])
@@ -575,8 +558,9 @@ class ContractorCreateView(generics.ListCreateAPIView):
         }
     )
 )
-class ContractorListView(generics.ListAPIView):
+class ContractorListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = ContractorSerializer
+    details_serializer = ContractorSerializer
     permission_classes = [IsAuthed]
 
     def get_queryset(self):
@@ -644,8 +628,9 @@ class ContractorListView(generics.ListAPIView):
         }
     )
 )
-class ExecutorPersonListCreateView(generics.ListCreateAPIView):
+class ExecutorPersonListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = CompanyExecutorPersonSerializer
+    details_serializer = CompanyExecutorPersonSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
@@ -656,10 +641,7 @@ class ExecutorPersonListCreateView(generics.ListCreateAPIView):
 
         error = field_validate(data, "ExecutorPerson")
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         try:
             person = ExecutorPerson.objects.create(
@@ -670,20 +652,15 @@ class ExecutorPersonListCreateView(generics.ListCreateAPIView):
                 company=request.user.company,
             )
         except Exception as e:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
-                "details": f"Ошибка при создании юридичекого лица: {str(e)}"
-            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ValidationError({"unknown": f"Ошибка создания юридичекого лица исполнителя: {e}"})
         
-        return Response(ItemDetailsSerializer({
-            "status": status.HTTP_201_CREATED,
-            "details": self.serializer_class(person).data
-        }).data, status=status.HTTP_201_CREATED)
+        return Response(self.serializer_class(person).data, status=status.HTTP_201_CREATED)
 
 
 # Выполняет конкретные действия с одним элементом pk.
-class ExecutorPersonDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ExecutorPersonDetailView(SchemaAPIView, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CompanyExecutorPersonSerializer
+    details_serializer = CompanyExecutorPersonSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
@@ -748,8 +725,12 @@ class ExecutorPersonDetailView(generics.RetrieveUpdateDestroyAPIView):
         }
     )
 )
-class ContractorPersonListCreateView(generics.ListCreateAPIView):
+class ContractorPersonListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = CompanyContractorPersonSerializer
+    details_serializer = CompanyContractorPersonSerializer
+    error_messages = {
+        "company": "Не найден заказчик с ID",
+    }
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
@@ -760,24 +741,15 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
 
         error = field_validate(data, "ContractorPerson")
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Неправильный формат значения в поле `{error['field_id']}`."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         try:
             contractor_id = Contractor.objects.filter(id=int(find_dataValue(data, "company"))).first()
         except:
-            return Response(
-                {"error": f"Не найден заказчик с ID {find_dataValue(data, 'company')}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError(self.error_messages["company"] + find_dataValue(data, "company"))
         
         if contractor_id is None:
-            return Response(
-                {"error": f"Не найден заказчик с ID {find_dataValue(data, 'company')}"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError(self.error_messages["company"] + find_dataValue(data, "company"))
 
         try:
             person = ContractorPerson.objects.create(
@@ -788,31 +760,28 @@ class ContractorPersonListCreateView(generics.ListCreateAPIView):
                 company=contractor_id,
             )
         except Exception as e:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
-                "details": f"Ошибка при создании юридичекого лица: {str(e)}"
-            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ValidationError({"unknown": f"Ошибка создания юридичекого лица заказчика: {e}"})
         
-        return Response(ItemDetailsSerializer({
-            "status": status.HTTP_201_CREATED,
-            "details": self.serializer_class(person).data
-        }).data, status=status.HTTP_201_CREATED)
+        return Response(self.serializer_class(person).data, status=status.HTTP_201_CREATED)
 
 
 # Выполняет конкретные действия с одним элементом pk.
-class ContractorPersonDetailView(generics.RetrieveUpdateDestroyAPIView):
+class ContractorPersonDetailView(SchemaAPIView, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CompanyContractorPersonSerializer
+    details_serializer = CompanyContractorPersonSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
         return ContractorPerson.objects.filter(pk=self.kwargs["pk"])
 
-class ExecutorPersonFieldsListView(generics.ListAPIView):
+class ExecutorPersonFieldsListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     queryset = Field.objects.filter(related_item="ExecutorPerson")
     permission_classes = [AllowAny]
 
-class ContractorPersonFieldsListView(generics.ListAPIView):
+class ContractorPersonFieldsListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     queryset = Field.objects.filter(related_item="ContractorPerson")
     permission_classes = [AllowAny]

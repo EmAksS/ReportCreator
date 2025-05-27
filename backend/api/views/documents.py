@@ -3,6 +3,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.views import APIView
+from api.views.schema import SchemaAPIView
+from rest_framework.exceptions import ValidationError
 # Permissions
 from rest_framework import permissions
 from api.permissions import IsAuthed, IsAuthedOrReadOnly
@@ -58,20 +60,23 @@ class DocumentTypesView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
-        return Response([
-        {
-            "code": "ACT",
-            "name": "Акт"
-        },
-        {
-            "code": "ORDER",
-            "name": "Заказ"
-        },
-        {
-            "code": "REPORT",
-            "name": "Отчёт"
-        }
-    ])
+        return Response({
+            "details": [
+                {
+                    "code": "ACT",
+                    "name": "Акт"
+                },
+                {
+                    "code": "ORDER",
+                    "name": "Заказ"
+                },
+                {
+                    "code": "REPORT",
+                    "name": "Отчёт"
+                }
+            ],
+            "errors": None
+            }, status=status.HTTP_200_OK)
 
 
 class FieldTypesView(APIView):
@@ -90,7 +95,10 @@ class FieldTypesView(APIView):
                 "id": t[0],
                 "name": t[1],
             })
-        return Response(ans)
+        return Response({
+            "details": ans,
+            "errors": None
+        }, status=status.HTTP_200_OK)
 
 
 
@@ -238,9 +246,10 @@ class FieldTypesView(APIView):
     )
 )
 # endregion
-class TemplateListCreateView(generics.ListCreateAPIView):
+class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
     permission_classes = [IsAuthedOrReadOnly]
     parser_classes = (MultiPartParser, FormParser)
     
@@ -289,26 +298,17 @@ class TemplateListCreateView(generics.ListCreateAPIView):
 
         error = field_validate(data, "Template")
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "details": f"Неправильный формат значения в поле `{error['field_id']}`: {error['error']}."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         try: 
             contractor = ContractorPerson.objects.get(id=find_dataValue(data, 'related_contractor_person'))
         except:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': f"Не найдено юридическое лицо заказчика с ID {find_dataValue(data, 'related_contractor_person')}"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"related_contractor_person": "Не найдено юридическое лицо заказчика"}, status=status.HTTP_400_BAD_REQUEST)
         
         try: 
             executor = ExecutorPerson.objects.get(id=find_dataValue(data, 'related_executor_person'))
         except:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': f"Не найдено юридическое лицо исполнителя с ID {find_dataValue(data, 'related_executor_person')}"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"related_contractor_person": "Не найдено юридическое лицо исполнителя"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # template = Template(
@@ -320,22 +320,13 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             # )
             serializer = self.serializer_class(data=data)
         except Exception as e:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                'details': f"Ошибка создания объекта модели `Template`. {e}"
-            }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"unknown": f"Неизвестная ошибка: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         if serializer.is_valid():
             serializer.save()
-            return Response(ItemDetailsSerializer({
-                "status": status.HTTP_201_CREATED,
-                "details": serializer.data,
-            }).data, status=status.HTTP_201_CREATED)
+            return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
         else:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': f"Ошибка при создании шаблона документа: {serializer.errors}."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # region DocumentFields_docs
@@ -533,8 +524,9 @@ class TemplateListCreateView(generics.ListCreateAPIView):
     )
 )
 # endregion
-class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
+class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = DocumentFieldSerializer
+    details_serializer = DocumentFieldSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
@@ -546,36 +538,18 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
         
         error = field_validate(data, "DocumentField")
         if error is not None:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Неправильный формат значения в поле `{error['field_id']}`."
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
         missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
 
         if missing_fields:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Отсутствуют необходимые поля: {', '.join(missing_fields)}"
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
 
         try:
             template = Template.objects.get(id=self.kwargs.get('tid'))
         except Template.DoesNotExist:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Шаблон с TID={self.kwargs.get('tid')} не найден."
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"template_id": f"Шаблон с TID {self.kwargs.get('tid')} не найден."})
         
         try:
             doc_field = DocumentField.objects.create(
@@ -592,65 +566,42 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
                 related_template=Template.objects.filter(id=template).first(), # Можно заменить на name но лучше не надо
             )
 
-            return Response(ItemDetailsSerializer({
-                "status": status.HTTP_201_CREATED,
-                "details": DocumentFieldSerializer(doc_field).data,
-            }).data, status=status.HTTP_201_CREATED)
+            return Response(self.serializer_class(doc_field).data, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Ошибка создания объекта модели `DocumentField`. {e}"
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"unknown": f"Ошибка создания поля документа: {e}"})
 
 
 # TableFieldsListCreateView
 # Создать поле столбца таблицы
-class TableFieldsListCreateView(generics.ListCreateAPIView):
-    serializer_class = FieldSerializer
+class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
+    serializer_class = TableFieldSerializer
+    details_serializer = TableFieldSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
-    def get_queryset(self):
-        return Field.objects.filter(related_item="TableField", is_custom=False)
+    def get(self):
+        fields = Field.objects.filter(related_item="TableField", is_custom=False)
+        self.details_serializer = FieldSerializer
+        return Response(FieldSerializer(fields, many=True).data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
+        self.details_serializer = TableFieldSerializer
         data = load_data(request.data)
 
         error = field_validate(data, "TableField")
         if error is not None:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Неправильный формат значения в поле `{error['field_id']}`."
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
         missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
 
         if missing_fields:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Отсутствуют необходимые поля: {', '.join(missing_fields)}"
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
         
         template_id = data.get('related_template')
         try:
             template = Template.objects.get(id=template_id)
         except Template.DoesNotExist:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Шаблон с TID={template_id} не найден."
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"template_id": f"Шаблон с TID {template_id} не найден."})
         
         try:
             table_field = TableField.objects.create(
@@ -668,23 +619,15 @@ class TableFieldsListCreateView(generics.ListCreateAPIView):
                 related_template=Template.objects.filter(id=template).first(), # Можно заменить на name но лучше не надо
             )
 
-            return Response(ItemDetailsSerializer({
-                "status": status.HTTP_201_CREATED,
-                "details": DocumentFieldSerializer(table_field).data,
-            }).data, status=status.HTTP_201_CREATED)
+            return Response(self.serializer_class(table_field).data, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Ошибка создания объекта модели `DocumentField`. {e}"
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"unknown": f"Ошибка создания поля столбца таблицы: {e}"})
 
 
 # Проверить список толбцов таблицы для шаблона TK
-class TemplateTableFieldsListView(generics.ListAPIView):
+class TemplateTableFieldsListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = TableFieldSerializer
+    details_serializer = TableFieldSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
@@ -707,9 +650,10 @@ class TemplateTableFieldsListView(generics.ListAPIView):
     )
 )
 # endregion
-class TemplateFieldsView(generics.ListAPIView):
+class TemplateFieldsView(SchemaAPIView, generics.ListAPIView):
     queryset = Field.objects.filter(related_item="Template")
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     permission_classes = [permissions.AllowAny]
 
 
@@ -767,8 +711,9 @@ class TemplateFieldsView(generics.ListAPIView):
     )
 )
 # endregion
-class DocumentFieldsCreateView(generics.ListCreateAPIView):
+class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = DocumentFieldSerializer
+    details_serializer = DocumentFieldSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
@@ -780,11 +725,7 @@ class DocumentFieldsCreateView(generics.ListCreateAPIView):
 
         error = field_validate(data, "DocumentField")
         if error is not None:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Неправильный формат значения в поле `{error['field_id']}`."
-                }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         listfields = [columns.get('field_id') for columns in data if isinstance(columns.get('value'), list)]
         
@@ -792,13 +733,7 @@ class DocumentFieldsCreateView(generics.ListCreateAPIView):
         tid = self.kwargs.get('tid')
         template = Template.objects.filter(id=tid).first()
         if not template:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Шаблон с TID={tid} не найден."
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"template_id": "Шаблон документа не найден"})
         
         # Создаём документ
         try:
@@ -807,12 +742,7 @@ class DocumentFieldsCreateView(generics.ListCreateAPIView):
                 shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
             )
         except Exception as e:
-            return Response(
-                DetailAndStatsSerializer({
-                    'status': status.HTTP_400_BAD_REQUEST,
-                    'details': f"Ошибка создания объекта модели `Document`: {e}"
-                }).data,
-                status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"unknown": f"Ошибка создания документа: ({e})"})
         
         # Заполняем DocumentValues
         document_data = {}
@@ -827,10 +757,7 @@ class DocumentFieldsCreateView(generics.ListCreateAPIView):
                 )
             except Exception as e:
                     doc.delete()   # Удаляем документ, если произошла ошибка
-                    return Response(DetailAndStatsSerializer({
-                        'status': status.HTTP_400_BAD_REQUEST,
-                        'details': f"Ошибка распределение полей в объекте `Document`: {e}"
-                    }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    raise ValidationError({"unknown": f"Ошибка распределении значении полей документа: {e}"})
             
         # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER
         ordered_lf = []
@@ -859,18 +786,10 @@ class DocumentFieldsCreateView(generics.ListCreateAPIView):
             info = fill_document(template.template_file.name, document_data, table)
         except Exception as e:
             doc.delete()   # Удаляем документ, если произошла ошибка
-            return Response(
-                DetailAndStatsSerializer({
-                    "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    'details': f"Ошибка создания документа: {e}. Информация: {info}"
-                    }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ValidationError({"unknown": f"Ошибка создания документа: ({e}). Информация: {info}"})
 
         print(info)
-        return Response(ItemDetailsSerializer({
-            'status': status.HTTP_201_CREATED,
-            'details': DocumentSerializer(doc).data,
-        }).data, status=status.HTTP_201_CREATED)
-
+        return Response(self.serializer_class(doc).data, status=status.HTTP_201_CREATED)
 
 
 # region TemplateOfCompany_docs
@@ -920,8 +839,9 @@ class DocumentFieldsCreateView(generics.ListCreateAPIView):
     )
 )
 # endregion
-class TemplateCompanyListView(generics.ListAPIView):
+class TemplateCompanyListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
@@ -980,8 +900,9 @@ class TemplateCompanyListView(generics.ListAPIView):
     )
 )
 # endregion
-class TemplateCurrentCompanyListView(generics.ListAPIView):
+class TemplateCurrentCompanyListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
     permission_classes = [IsAuthed]
 
     def get_queryset(self):

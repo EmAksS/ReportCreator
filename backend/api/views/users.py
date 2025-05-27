@@ -1,5 +1,7 @@
 from rest_framework import generics
+from api.views.schema import SchemaAPIView
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 # Permissions
 from rest_framework.permissions import AllowAny
 from api.permissions import IsCompanySuperuser, IsDebug, IsAuthed
@@ -66,10 +68,10 @@ class CsrfView(generics.GenericAPIView):
     def get(self, request):
         from django.middleware.csrf import get_token
         token = get_token(request)
-        return Response(DetailAndStatsSerializer({
-            'status': status.HTTP_200_OK,
-            'details': token
-        }).data, status=status.HTTP_200_OK)
+        return Response({
+            "details": token,
+            "errors": None
+        }, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=['Auth'])
@@ -121,21 +123,18 @@ class CsrfView(generics.GenericAPIView):
         }
     )
 )
-class AuthCheckView(generics.GenericAPIView):
+class AuthCheckView(SchemaAPIView, generics.GenericAPIView):
     permission_classes = [AllowAny]
+    serializer_class = UserSerializer
+    details_serializer = UserSerializer
     
     def get(self, request):
         print(request.user)
         if request.user.is_authenticated:
             serializer = UserSerializer(request.user)
-            return Response(ItemDetailsSerializer({
-                'status': status.HTTP_200_OK,
-                'details': serializer.data
-            }).data, status=status.HTTP_200_OK)
+            return Response(self.serializer_class(serializer.data), status=status.HTTP_200_OK)
         else:
-            return Response(StatusSerializer(
-                {'status': status.HTTP_401_UNAUTHORIZED},
-            ).data, status=status.HTTP_401_UNAUTHORIZED)
+            raise ValidationError({"not_authorized": "Пользователь на данный момент не авторизирован"}, code=status.HTTP_401_UNAUTHORIZED)
 
 
 @extend_schema(tags=['Auth'])
@@ -222,10 +221,15 @@ class AuthCheckView(generics.GenericAPIView):
         }
     ),
 )
-class UserAuthView(generics.ListCreateAPIView):
+class UserAuthView(SchemaAPIView, generics.ListCreateAPIView):
     permission_classes = [AllowAny]
     queryset = Field.objects.filter(related_item="UserLogin")
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
+
+    def get(self, request, *args, **kwargs):
+        self.details_serializer = FieldSerializer
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         data = load_data(request.data)
@@ -238,20 +242,15 @@ class UserAuthView(generics.ListCreateAPIView):
         user = authenticate(request, username=username, password=password)
         
         if user is None:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': "Неверный логин и/или пароль."
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"username": "Неправильный логин или пароль"})
         
         login(request, user)
 
         #print(request.user)
         
         serializer = UserSerializer(user)
-        return Response(ItemDetailsSerializer({
-            'status': status.HTTP_200_OK,
-            'details': serializer.data
-        }).data, status=status.HTTP_200_OK)
+        self.details_serializer = UserSerializer
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=['Auth'])
@@ -295,14 +294,17 @@ class UserAuthView(generics.ListCreateAPIView):
 class UserLogoutView(APIView):
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return Response(StatusSerializer(
-                {'status': status.HTTP_401_UNAUTHORIZED},
-            ).data, status=status.HTTP_401_UNAUTHORIZED)
-
+            return Response({
+                "details": None, 
+                "errors": {
+                    "not_authorized": "Пользователь на данный момент не авторизирован в системе"
+                }
+            }, status=status.HTTP_401_UNAUTHORIZED)
         logout(request)
-        return Response(StatusSerializer(
-                {'status': status.HTTP_200_OK},
-            ).data, status=status.HTTP_200_OK)
+        return Response({
+                "details": None, 
+                "errors": None
+            }, status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=['Auth'])
@@ -389,29 +391,27 @@ class UserLogoutView(APIView):
         }
     ),
 )
-class UserRegisterView(generics.CreateAPIView):
+class UserRegisterView(SchemaAPIView, generics.CreateAPIView):
     queryset = Field.objects.filter(related_item="User")
     serializer_class = FieldSerializer
     permission_classes = [IsCompanySuperuser]
+    
+    def get(self, request, *args, **kwargs):
+        self.serializer_class = FieldSerializer
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         data = load_data(request)
 
         error = field_validate(data)
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': "Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
 
         username = find_dataValue(data, "username")
         password = find_dataValue(data, "password")
 
         if not all([username, password]):
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': "Не удалось создать пользователя - отсутствуют поля `username` или `password`"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"username": "Отсутствуют необходимые поля `username` и/или `password`"})
         else:
             try:
                 user = User.objects.create_user(
@@ -422,10 +422,7 @@ class UserRegisterView(generics.CreateAPIView):
                     is_staff=False  # для доступа к админке если нужно
                 )
             except Exception as e:
-                return Response(DetailAndStatsSerializer({
-                    'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    'details': f"Внутренняя ошибка сервера: {e}"
-                }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                raise ValidationError({"unknown": "Ошибка при создании пользователя: " + str(e)})
 
         for item in data:
             if item.get("field_id") in ["username", "password"]:
@@ -439,15 +436,10 @@ class UserRegisterView(generics.CreateAPIView):
                 )
             except Exception as e:
                     user.delete()   # Удаляем пользователя, если произошла ошибка
-                    return Response(DetailAndStatsSerializer({
-                        'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        'details': f"Внутренняя ошибка сервера: {e}"
-                    }).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    raise ValidationError({item["field_id"]: f"Ошибка при создании поля: {e}"})
         
-        return Response(ItemDetailsSerializer({
-            'status': status.HTTP_201_CREATED,
-            'details': UserSerializer(user).data
-        }), status=status.HTTP_201_CREATED)
+        self.details_serializer = UserSerializer
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
 # --- Поля для пользователей ---
@@ -597,8 +589,9 @@ class UserRegisterView(generics.CreateAPIView):
         }
     )
 )
-class UserFieldListView(generics.ListCreateAPIView):
+class UserFieldListView(SchemaAPIView, generics.ListCreateAPIView):
     permission_classes = [IsAuthed]
+    details_serializer = FieldSerializer
     
     def get(self, request):
         from .field import FieldFieldsListView
@@ -606,19 +599,13 @@ class UserFieldListView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         if not request.user.is_company_superuser:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_403_FORBIDDEN,
-                'details': "Создавать поля пользователей может только суперпользователь."
-            }), status=status.HTTP_403_FORBIDDEN)
+            raise ValidationError({"denied": "Создавать поля пользователей может только суперпользователь."}, code=status.HTTP_403_FORBIDDEN)
         
         data = load_data(request.data)
 
         error = field_validate(data)
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
-            }), status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
         
         name = find_dataValue(data, "name")
         key_name = find_dataValue(data, "key_name")
@@ -627,10 +614,7 @@ class UserFieldListView(generics.ListCreateAPIView):
         validation_regex = find_dataValue(data, "validation_regex")
 
         if not all([name, key_name, type]):
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': "Не удалось создать поле пользователя - отсутствуют поля `name`, `key_name` или `type`"
-            }), status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({"name": "Не удалось создать поле пользователя - отсутствуют поля `name`, `key_name` или `type`"}, code=status.HTTP_400_BAD_REQUEST)
         
         try:
             field = Field.objects.create(
@@ -644,15 +628,9 @@ class UserFieldListView(generics.ListCreateAPIView):
                 is_custom=True,
             )
         except Exception as e:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_500_INTERNAL_SERVER_ERROR,
-                'details': f"Внутренняя ошибка сервера: {e}"
-            }), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ValidationError({"error": "Не удалось создать поле пользователя" + str(e)})
         
-        return Response(ItemDetailsSerializer({
-            'status': status.HTTP_201_CREATED,
-            'details': FieldSerializer(field).data
-        }), status=status.HTTP_201_CREATED)
+        return Response(self.details_serializer(field).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=['User Fields'])
@@ -706,8 +684,9 @@ class UserFieldListView(generics.ListCreateAPIView):
         }
     )
 )
-class UserCustomFieldsView(generics.ListAPIView):
+class UserCustomFieldsView(SchemaAPIView, generics.ListAPIView):
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     permission_classes = [IsAuthed]
 
     def get(self, request):
@@ -877,8 +856,9 @@ class UserCustomFieldsView(generics.ListAPIView):
         }
     )
 )
-class UserFieldValueView(generics.ListCreateAPIView):
+class UserFieldValueView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = UserFieldValueSerializer
+    details_serializer = UserFieldValueSerializer
     permission_classes = [IsAuthed]
 
     def get(self, request):
@@ -890,10 +870,7 @@ class UserFieldValueView(generics.ListCreateAPIView):
 
         error = field_validate(data)
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-            'status': status.HTTP_400_BAD_REQUEST,
-            'details': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
-        }), status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
         
         serializer = self.serializer_class(
             field_id=find_dataValue(data, "field_id"),
@@ -902,15 +879,9 @@ class UserFieldValueView(generics.ListCreateAPIView):
         
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response(ItemDetailsSerializer({
-                'status': status.HTTP_201_CREATED,
-                'details': serializer.data
-            }), status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(DetailAndStatsSerializer({
-            'status': status.HTTP_400_BAD_REQUEST,
-            'details': "Ошибка валидации данных при сохранении значения поля пользователя."
-        }), status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(tags=['User Fields Value'])
@@ -1125,18 +1096,16 @@ class UserFieldValueView(generics.ListCreateAPIView):
         }
     )
 )
-class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
+class UserFieldValueDetailView(SchemaAPIView, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserFieldValueSerializer
+    details_serializer = UserFieldValueSerializer
     permission_classes = [IsAuthed]
 
     def __get_user_value(self, pk, user):
         try:
             return UsersValues.objects.get(pk=pk, user_id=user)
         except UsersValues.DoesNotExist:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_404_NOT_FOUND,
-                'details': "Поле не найдено"
-            }), status=status.HTTP_404_NOT_FOUND)
+            raise ValidationError({"user_id": f"Пользователь с id {pk} и user_id {user} не существует."}, code=status.HTTP_404_NOT_FOUND)
 
     def get(self, request, *args, **kwargs):
         value = self.__get_user_value(kwargs.get("pk"), request.user)
@@ -1149,10 +1118,7 @@ class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
         data = load_data(request.data)
         error = field_validate(data)
         if error is not None:
-            return Response(DetailAndStatsSerializer({
-                'status': status.HTTP_400_BAD_REQUEST,
-                'details': f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
-            }).data, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({error["field_id"]: error["error"]})
         
         to_change = {}
         for item in data:
@@ -1166,21 +1132,13 @@ class UserFieldValueDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         if serializer.is_valid():
             serializer.save()
-            return Response(ItemDetailsSerializer({
-                'status': status.HTTP_200_OK,
-                'details': serializer.data
-            }).data, status=status.HTTP_200_OK)
-        return Response(DetailAndStatsSerializer({
-            'status': status.HTTP_400_BAD_REQUEST,
-            'details': "Ошибка валидации данных при сохранении значения поля пользователя."
-        }), status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        raise ValidationError(serializer.errors)
     
     def delete(self, request, *args, **kwargs):
         value = self.__get_user_value(kwargs.get("pk"), request.user)
         value.delete()
-        return Response(StatusSerializer(
-            {'status': status.HTTP_204_NO_CONTENT}
-        ).data, status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # TODO: Сделать методы, которые позволяю посмотреть данные о всех пользователях.
