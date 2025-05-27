@@ -62,6 +62,34 @@ USER = [
     },
 ]
 
+USERLOGIN = [
+    {
+        'name': 'Логин',
+        'key_name': 'username',
+        'is_required': True,
+        'placeholder': 'Ваш логин пользователя',
+        'type': 'TEXT',
+        'validation_regex': '^[a-zA-Z0-9_-]{4,16}$',
+        'related_item': "UserLogin",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Имя пользователя должно быть уникальным, не должно содержать пробелов и быть от 4 до 16 символов.",
+    },
+    {
+        'name': 'Пароль',
+        'key_name': 'password',
+        'is_required': True,
+        'placeholder': 'Ваш пароль',
+        'type': 'TEXT',
+        # минимум 8 символов, минимум одна цифра
+        'validation_regex': '^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$',
+        'related_item': "UserLogin",
+        'related_info': None,
+        'secure_text': True,
+        'error_text': "Пароль должен быть длиннее 8 символов и содержать хотя бы одну цифру и заглавную букву.",
+    },
+]
+
 EXECUTOR = [
     {
         'name': 'Краткое название компании',
@@ -697,6 +725,7 @@ TABLE_FIELD = [
 
 ALL_ITEMS = [
     USER,
+    USERLOGIN,
     EXECUTOR,
     CONTRACTOR, 
     TEMPLATE, 
@@ -709,6 +738,7 @@ ALL_ITEMS = [
 
 STR_ITEMS = [
     "USER",
+    "USERLOGIN",
     "EXECUTOR",
     "CONTRACTOR", 
     "TEMPLATE", 

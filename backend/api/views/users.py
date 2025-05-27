@@ -224,7 +224,7 @@ class AuthCheckView(generics.GenericAPIView):
 )
 class UserAuthView(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
-    queryset = Field.objects.filter(related_item="User")
+    queryset = Field.objects.filter(related_item="UserLogin")
     serializer_class = FieldSerializer
 
     def post(self, request, *args, **kwargs):
@@ -233,7 +233,7 @@ class UserAuthView(generics.ListCreateAPIView):
         username = find_dataValue(data, "username")
         password = find_dataValue(data, "password")
 
-        print(f"Пользователь {username} входит в систему под паролем {password}")
+        #print(f"Пользователь {username} входит в систему под паролем {password}")
 
         user = authenticate(request, username=username, password=password)
         
@@ -245,7 +245,7 @@ class UserAuthView(generics.ListCreateAPIView):
         
         login(request, user)
 
-        print(request.user)
+        #print(request.user)
         
         serializer = UserSerializer(user)
         return Response(ItemDetailsSerializer({
