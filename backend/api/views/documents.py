@@ -11,7 +11,7 @@ from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # models 
 from backend.models.fields import Field
 from backend.models.documents import Template, Document, DocumentField, TableField, DocumentsValues, TableValues
-from backend.models.company import ContractorPerson, ExecutorPerson 
+from backend.models.company import ContractorPerson, ExecutorPerson, Executor
 # autodocs
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
@@ -846,7 +846,8 @@ class TemplateCompanyListView(SchemaAPIView, generics.ListAPIView):
 
     def get_queryset(self):
         company_id = self.kwargs.get('company_id')
-        return Template.objects.filter(related_executor_person__company=company_id)
+        company = Executor.objects.filter(id=company_id).first()
+        return Template.objects.filter(related_executor_person__company=company)
 
 
 # region TemplateCurrCompany_docs
