@@ -391,14 +391,14 @@ class UserLogoutView(APIView):
         }
     ),
 )
-class UserRegisterView(SchemaAPIView, generics.CreateAPIView):
+class UserRegisterView(SchemaAPIView, generics.ListCreateAPIView):
     queryset = Field.objects.filter(related_item="User")
     serializer_class = FieldSerializer
     permission_classes = [IsCompanySuperuser]
     
     def get(self, request, *args, **kwargs):
         self.serializer_class = FieldSerializer
-        return generics.CreateAPIView.get(self, request, *args, **kwargs)
+        return generics.ListCreateAPIView.get(self, request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         data = load_data(request)
