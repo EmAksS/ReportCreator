@@ -401,7 +401,7 @@ class UserRegisterView(SchemaAPIView, generics.ListCreateAPIView):
         return generics.ListCreateAPIView.get(self, request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        data = load_data(request)
+        data = load_data(request.data)
 
         error = field_validate(data)
         if error is not None:
