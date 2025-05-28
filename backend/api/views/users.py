@@ -403,7 +403,7 @@ class UserRegisterView(SchemaAPIView, generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         data = load_data(request.data)
 
-        error = field_validate(data)
+        error = field_validate(data, "User")
         if error is not None:
             raise ValidationError({error["field_id"]: error["error"]})
 
@@ -603,7 +603,7 @@ class UserFieldListView(SchemaAPIView, generics.ListCreateAPIView):
         
         data = load_data(request.data)
 
-        error = field_validate(data)
+        error = field_validate(data, "User")
         if error is not None:
             raise ValidationError({error["field_id"]: error["error"]})
         
@@ -868,7 +868,7 @@ class UserFieldValueView(SchemaAPIView, generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
 
-        error = field_validate(data)
+        error = field_validate(data, "User")
         if error is not None:
             raise ValidationError({error["field_id"]: error["error"]})
         
@@ -1116,7 +1116,7 @@ class UserFieldValueDetailView(SchemaAPIView, generics.RetrieveUpdateDestroyAPIV
         value = self.__get_user_value(kwargs.get("pk"), request.user)
 
         data = load_data(request.data)
-        error = field_validate(data)
+        error = field_validate(data, "User")
         if error is not None:
             raise ValidationError({error["field_id"]: error["error"]})
         
