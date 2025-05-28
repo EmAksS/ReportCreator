@@ -34,8 +34,8 @@ CORS_ORIGIN_WHITELIST = [
     f"http://26.146.126.232:{FRONTEND_PORT}",
     f"http://26.146.126.232:8000",
     f"http://26.213.134.143:8000",
-    f"https://26.63.43.26:{FRONTEND_PORT}",
-    f"https://26.63.43.26:8000",
+    f"http://26.63.43.26:{FRONTEND_PORT}",
+    f"http://26.63.43.26:8000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -47,6 +47,6 @@ CSRF_TRUSTED_ORIGINS = [
     f"http://26.146.126.232:{FRONTEND_PORT}",
     f"http://26.146.126.232:8000",
     f"http://26.213.134.143:8000",
-    f"https://26.63.43.26:{FRONTEND_PORT}",
-    f"https://26.63.43.26:8000",
+    f"http://26.63.43.26:{FRONTEND_PORT}",
+    f"http://26.63.43.26:8000",
 ]
