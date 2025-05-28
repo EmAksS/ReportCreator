@@ -34,7 +34,7 @@ from api.serializers.schema import (
 )
 # scripts
 from backend.scripts.field_validate import field_validate
-from backend.scripts.fill_document import fill_document
+from backend.scripts.fill_document import fill_document, find_fields
 import json
 from backend.scripts.find_datavalue import find_dataValue
 from backend.scripts.load_data import load_data
@@ -324,7 +324,8 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         except Exception as e:
             return Response({"unknown": f"Неизвестная ошибка: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # TODO: Считывание полей которые есть в документе
+        future_fields = find_fields(find_dataValue(data, "template_file"))
+        print(future_fields)
 
         if serializer.is_valid():
             serializer.save()

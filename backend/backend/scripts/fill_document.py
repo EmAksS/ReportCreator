@@ -37,22 +37,22 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
     :see: core.settings
     """
 
-    def find_placeholders(template) -> set:
+    def find_placeholders(template: DocxTemplate) -> set:
         """Находит все плейсхолдеры в документе"""
         placeholders = set()
         pattern = re.compile(r'\{\{.*?\}\}')
 
-        for paragraph in doc.docx.paragraphs:
+        for paragraph in template.get_docx().paragraphs:
             matches = pattern.findall(paragraph.text)
             placeholders.update(matches)
         
-        for table in doc.docx.tables:
+        for table in template.get_docx().tables:
             for row in table.rows:
                 for cell in row.cells:
                     matches = pattern.findall(cell.text)
                     placeholders.update(matches)
 
-        return sorted(placeholders)
+            return sorted(placeholders)
 
     def find_empty_row(table):
         """Находит первую полностью пустую строку в таблице"""
@@ -157,3 +157,32 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
     doc.save(result['path'])
     
     return result
+
+
+def find_fields(filename: str) -> list:
+    """Находит все плейсхолдеры в документе"""
+
+    def reformat_placeholder_names(placeholders: set) -> list:
+        """Форматирует имена плейсхолдеров для использования в шаблоне"""
+        return [placeholder.replace("{{", "").replace("}}", "").strip() for placeholder in placeholders]
+    
+    def find_placeholders(template: DocxTemplate) -> set:
+        """Находит все плейсхолдеры в документе"""
+        placeholders = set()
+        pattern = re.compile(r'\{\{.*?\}\}')
+
+        for paragraph in template.get_docx().paragraphs:
+            matches = pattern.findall(paragraph.text)
+            placeholders.update(matches)
+        
+        for table in template.get_docx().tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    matches = pattern.findall(cell.text)
+                    placeholders.update(matches)
+
+            return sorted(placeholders)
+    
+    doc = DocxTemplate(TEMPLATES_FOLDER / filename)
+    placeholders = find_placeholders(doc)
+    return reformat_placeholder_names(placeholders)
