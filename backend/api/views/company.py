@@ -483,7 +483,7 @@ class ContractorCreateView(SchemaAPIView, generics.ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         self.details_serializer = FieldSerializer
-        return super().get(request, *args, **kwargs)
+        return generics.ListCreateAPIView.get(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
