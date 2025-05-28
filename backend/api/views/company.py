@@ -160,6 +160,10 @@ class CompanyRegisterView(SchemaAPIView, generics.ListCreateAPIView):
     queryset = Field.objects.filter(related_item="Executor")
     permission_classes = [AllowAny]
 
+    def get(self, request, *args, **kwargs):
+        self. details_serializer = FieldSerializer
+        return generics.ListCreateAPIView.get(self, request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
 
@@ -240,8 +244,10 @@ class CompanyRegisterView(SchemaAPIView, generics.ListCreateAPIView):
         
         # Автоматический логин после регистрации
         login(request, user)
+
+        self.details_serializer = UserSerializer
         return Response(
-            self.serializer_class(user).data, status=status.HTTP_201_CREATED
+            UserSerializer(user).data, status=status.HTTP_201_CREATED
         )
 
 
