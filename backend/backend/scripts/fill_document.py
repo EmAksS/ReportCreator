@@ -159,7 +159,7 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
     return result
 
 
-def find_fields(filename: str) -> list:
+def find_fields(filename) -> list:
     """Находит все плейсхолдеры в документе"""
 
     def reformat_placeholder_names(placeholders: set) -> list:
@@ -183,6 +183,6 @@ def find_fields(filename: str) -> list:
 
             return sorted(placeholders)
     
-    doc = DocxTemplate(TEMPLATES_FOLDER / filename)
+    doc = DocxTemplate(TEMPLATES_FOLDER / filename.name)
     placeholders = find_placeholders(doc)
     return reformat_placeholder_names(placeholders)
