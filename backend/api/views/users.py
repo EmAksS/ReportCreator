@@ -431,12 +431,12 @@ class UserRegisterView(SchemaAPIView, generics.ListCreateAPIView):
                 UsersValues.objects.create(
                     id=f"{user}__{Field.objects.filter(key_name=item.get('field_id'), related_item='User').first()}",
                     user_id=user,
-                    field_id=Field.objects.filter(key_name=item.get('field_id', related_item='User')).first(),
+                    field_id=Field.objects.filter(key_name=item.get('field_id'), related_item='User').first(),
                     value=item.get("value", ""),
                 )
             except Exception as e:
-                    user.delete()   # Удаляем пользователя, если произошла ошибка
-                    raise ValidationError({item["field_id"]: f"Ошибка при создании поля: {e}"})
+                user.delete()   # Удаляем пользователя, если произошла ошибка
+                raise ValidationError({item["field_id"]: f"Ошибка при создании поля: {e}"})
         
         self.details_serializer = UserSerializer
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
