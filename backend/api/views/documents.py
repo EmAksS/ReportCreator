@@ -254,7 +254,9 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     parser_classes = (MultiPartParser, FormParser)
     
     def get(self, request, *args, **kwargs):
-        return TemplateFieldsView.as_view()(request._request)
+        self.details_serializer = FieldSerializer
+        fields = Field.objects.filter(related_item="Template")
+        return Response(FieldSerializer(fields, many=True).data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         data = []
@@ -322,11 +324,23 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         except Exception as e:
             return Response({"unknown": f"Неизвестная ошибка: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+        # TODO: Считывание полей которые есть в документе
+
         if serializer.is_valid():
             serializer.save()
             return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TemplateDetailDestroyView(SchemaAPIView, generics.RetrieveDestroyAPIView):
+    serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        tid = self.kwargs.get("tid", None)
+        return Template.objects.get(id=tid)
 
 
 # region DocumentFields_docs
