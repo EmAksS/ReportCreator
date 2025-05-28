@@ -164,6 +164,8 @@ def find_fields(filename) -> list:
 
     def reformat_placeholder_names(placeholders: set) -> list:
         """Форматирует имена плейсхолдеров для использования в шаблоне"""
+        if placeholders is None:
+            return []
         return [placeholder.replace("{{", "").replace("}}", "").strip() for placeholder in placeholders]
     
     def find_placeholders(template: DocxTemplate) -> set:
@@ -181,7 +183,7 @@ def find_fields(filename) -> list:
                     matches = pattern.findall(cell.text)
                     placeholders.update(matches)
 
-            return sorted(placeholders)
+        return sorted(placeholders)
     
     doc = DocxTemplate(TEMPLATES_FOLDER / filename.name)
     placeholders = find_placeholders(doc)
