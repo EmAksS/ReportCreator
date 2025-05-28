@@ -509,7 +509,7 @@ class ContractorCreateView(SchemaAPIView, generics.ListCreateAPIView):
             raise ValidationError({"unknown": f"Ошибка создания заказчика: {e}"})
         
         self.details_serializer = ContractorSerializer
-        return Response(self.serializer_class(contractor).data ,status=status.HTTP_201_CREATED)
+        return Response(ContractorSerializer(contractor).data ,status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Contractors"])
