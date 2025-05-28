@@ -323,12 +323,11 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             serializer = self.serializer_class(data=data)
         except Exception as e:
             return Response({"unknown": f"Неизвестная ошибка: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        future_fields = find_fields(find_dataValue(data, "template_file"))
-        print(future_fields)
 
         if serializer.is_valid():
             serializer.save()
+            future_fields = find_fields(find_dataValue(data, "template_file"))
+            print(future_fields)
             return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
