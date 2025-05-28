@@ -132,7 +132,7 @@ class AuthCheckView(SchemaAPIView, generics.GenericAPIView):
         print(request.user)
         if request.user.is_authenticated:
             serializer = UserSerializer(request.user)
-            return Response(self.serializer_class(serializer.data), status=status.HTTP_200_OK)
+            return Response(self.serializer_class(serializer.data).data, status=status.HTTP_200_OK)
         else:
             raise ValidationError({"not_authorized": "Пользователь на данный момент не авторизирован"}, code=status.HTTP_401_UNAUTHORIZED)
 

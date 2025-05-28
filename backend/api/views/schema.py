@@ -13,7 +13,7 @@ class SchemaAPIView(APIView):
             data = response.data
             wrapped_data = {
                 "details": data if self.details_serializer else None,
-                "errors": data.pop("errors", None),
+                "errors": data.pop("errors"),
             }
             if self.details_serializer and wrapped_data["details"]:
                 serializer = self.details_serializer(
