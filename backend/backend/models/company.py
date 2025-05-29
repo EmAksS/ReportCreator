@@ -39,6 +39,13 @@ class Contractor(CompanyAbstract):
     """
     related_executor = models.ForeignKey(Executor, on_delete=models.CASCADE, related_name='related_executor', default=0)
     contractor_city = models.CharField(max_length=64, null=False)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company_name', 'company_fullName'], name='company_names_combination'
+            )
+        ]
 
 class Person(models.Model):
     """
