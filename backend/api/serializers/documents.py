@@ -1,16 +1,24 @@
 from rest_framework import serializers
 from backend.models import documents
 from backend.scripts.field_validate import field_validate
+from backend.scripts.fill_document import find_fields
 import os
 
 class TemplateSerializer(serializers.ModelSerializer):
     #type = serializers.ChoiceField(choices=documents.Template.DOCUMENT_TYPES)
+    found_fields = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     
     class Meta:
         model = documents.Template
         fields = '__all__'
 
-    def validate_file(self, value):
+    def get_found_fields(self):
+        """Получаем список найденных полей в шаблоне"""
+        if self.instance.template_file:
+            return find_fields(self.instance.template_file)
+        return []
+
+    def validate_template_file(self, value):
         """Проверка что файл является валидным DOCX"""
         # Проверка расширения
         ext = os.path.splitext(value.name)[1].lower()
