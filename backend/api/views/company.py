@@ -503,7 +503,9 @@ class ContractorCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 company_name = find_dataValue(data, "company_name"),
                 company_fullName = find_dataValue(data, "company_fullName"),
                 related_executor=request.user.company,
-                contractor_city=find_dataValue(data, "contractor_city")
+                contractor_city=find_dataValue(data, "contractor_city"),
+                contract_number=find_dataValue(data, "contract_number"),
+                contract_date=find_dataValue(data, "contract_date"),
             )
         except Exception as e:
             raise ValidationError({"unknown": f"Ошибка создания заказчика: {e}"})

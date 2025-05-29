@@ -210,6 +210,30 @@ CONTRACTOR = [
         'secure_text': False,
         'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
     },
+    {
+        'name': 'Номер подписанного договора',
+        'key_name': 'contract_number',
+        'is_required': True,
+        'placeholder': 'Номер договора',
+        'type': 'NUMBER',
+        'validation_regex': '^[0-9]*$',
+        'related_item': "Contractor",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Номер договора должен быть числом."
+    },
+    {
+        'name': 'Дата подписания договора',
+        'key_name': 'contract_date',
+        'is_required': True,
+        'placeholder': 'Дата подписания',
+        'type': 'DATE',
+        'validation_regex': None,
+        'related_item': "Contractor",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    }
 ]
 
 TEMPLATE = [

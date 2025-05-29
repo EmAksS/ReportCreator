@@ -39,6 +39,8 @@ class Contractor(CompanyAbstract):
     """
     related_executor = models.ForeignKey(Executor, on_delete=models.CASCADE, related_name='related_executor', default=0)
     contractor_city = models.CharField(max_length=64, null=False)
+    contract_number = models.IntegerField(null=False) # Номер договора
+    contract_date = models.DateTimeField(auto_now_add=False)
     
     class Meta:
         constraints = [
