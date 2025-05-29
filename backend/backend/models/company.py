@@ -61,6 +61,9 @@ class Person(models.Model):
 
     def set_initials(self):
         return f'{self.last_name} {self.first_name[0]}.{self.surname[0]}.'
+    
+    class Meta:
+        unique_together = ['first_name', 'last_name', 'surname']
 
 class ExecutorPerson(Person):
     """
