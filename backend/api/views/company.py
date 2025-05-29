@@ -243,7 +243,7 @@ class CompanyRegisterView(SchemaAPIView, generics.ListCreateAPIView):
                 }, status=400)
         
         # Автоматический логин после регистрации
-        login(request, user)
+        #login(request, user)
 
         self.details_serializer = UserSerializer
         return Response(

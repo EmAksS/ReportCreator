@@ -61,9 +61,6 @@ class Person(models.Model):
 
     def set_initials(self):
         return f'{self.last_name} {self.first_name[0]}.{self.surname[0]}.'
-    
-    class Meta:
-        unique_together = ['first_name', 'last_name', 'surname']
 
 class ExecutorPerson(Person):
     """
@@ -71,6 +68,13 @@ class ExecutorPerson(Person):
     Наследует все поля из Person.
     - Компания-исполнитель, которой принадлежит лицо
     """
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['first_name', 'last_name', 'surname'], name='FIO_executor_combination'
+            )
+        ]
+
     company = models.ForeignKey(Executor, on_delete=models.CASCADE)
 
 class ContractorPerson(Person):
@@ -78,4 +82,11 @@ class ContractorPerson(Person):
     Модель юридического лица-заказчика.
     Наследует все поля из Person.
     """
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['first_name', 'last_name', 'surname'], name='FIO_contractor_combination'
+            )
+        ]
+
     company = models.ForeignKey(Contractor, on_delete=models.CASCADE)
