@@ -197,4 +197,20 @@ def find_fields(filename) -> list:
     
     doc = DocxTemplate(MEDIA_ROOT / filename.name) #! Теперь файлы загружать именно так!
     placeholders = find_placeholders(doc)
-    return reformat_placeholder_names(placeholders)
+    reformated = reformat_placeholder_names(placeholders)
+
+    PREORDER_FIELDS = [
+        "contract_number",
+        "contract_date",
+        "order_date",
+        "order_number",
+        "contrator_person",
+        "contractor_company",
+        "contractor_post",
+        "contractor_company_full",
+        "executor_person",
+        "executor_post",
+        "executor_company_full",
+        "executor_company",
+    ]
+    return [placeholder for placeholder in reformated if placeholder not in PREORDER_FIELDS]
