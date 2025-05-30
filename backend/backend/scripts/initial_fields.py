@@ -531,7 +531,7 @@ DOCUMENT_FIELD = [
         'related_item': "DocumentField",
         'related_info': {
             'url': "templates/company/current/",
-            'show_field': "name",
+            'show_field': "template_name",
             'save_field': "id",
         },
         'secure_text': False,
@@ -638,7 +638,7 @@ TABLE_FIELD = [
         'related_item': "TableField",
         'related_info': {
             'url': "templates/company/current/",
-            'show_field': "name",
+            'show_field': "template_name",
             'save_field': "id",
         },
         'secure_text': False,
