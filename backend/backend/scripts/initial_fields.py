@@ -662,7 +662,7 @@ TABLE_FIELD = [
         'is_required': True,
         'placeholder': 'Введите русское название поля',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+){0,64}$',
+        'validation_regex': '^[\sа-яА-Я]{0,64}$',
         'related_item': "TableField",
         'related_info': None,
         'secure_text': False,
