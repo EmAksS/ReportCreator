@@ -745,7 +745,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
     def get_queryset(self):
         self.details_serializer = DocumentFieldSerializer
         tid = self.kwargs.get('tid')
-        DocumentField.objects.filter(related_template=Template.objects.filter(id=tid).first())
+        return DocumentField.objects.filter(related_template=Template.objects.filter(id=tid).first())
     
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
