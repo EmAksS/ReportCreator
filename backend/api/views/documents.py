@@ -328,8 +328,8 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
 
         if serializer.is_valid():
             serializer.save()
-            future_fields = find_fields(find_dataValue(data, "template_file"))
-            serializer.found_fields = future_fields
+            # future_fields = find_fields(find_dataValue(data, "template_file"))
+            # serializer.found_fields = future_fields
             return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -547,7 +547,7 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
 
     def get_queryset(self):
         template_id = self.kwargs.get('tid')
-        return DocumentField.objects.filter(related_template_id=template_id)
+        return DocumentField.objects.filter(related_template=template_id)
     
     def create(self, request, *args, **kwargs):
         data = load_data(request.data)
@@ -585,6 +585,15 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
             return Response(self.serializer_class(doc_field).data, status=status.HTTP_201_CREATED)
         except Exception as e:
             raise ValidationError({"unknown": f"Ошибка создания поля документа: {e}"})
+
+
+# Вернуть поля для создания DocumentField
+class TemplateDocumentFieldsFieldsView(SchemaAPIView, generics.ListAPIView):
+    serializer_class = FieldSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Field.objects.filter(related_item="DocumentField", is_custom=False)
 
 
 # TableFieldsListCreateView

@@ -607,7 +607,7 @@ DOCUMENT_FIELD = [
         'is_required': False,
         'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
         'type': 'TEXT',
-        'validation_regex': '???',
+        'validation_regex': None,
         'related_item': "DocumentField",
         'related_info': None, 
         'secure_text': False,

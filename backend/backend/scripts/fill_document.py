@@ -6,8 +6,9 @@ import locale
 from datetime import date
 from random import randint
 import re
+from django.core.exceptions import ValidationError
 
-from core.settings.base import DOCUMENTS_FOLDER, TEMPLATES_FOLDER
+from core.settings.base import DOCUMENTS_FOLDER, TEMPLATES_FOLDER, MEDIA_ROOT
 
 
 def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dict:
@@ -170,6 +171,10 @@ def find_fields(filename) -> list:
     
     def find_placeholders(template: DocxTemplate) -> set:
         """Находит все плейсхолдеры в документе"""
+        # if not template or not hasattr(template, 'docx') or template.docx is None:
+        #     print(template.get_docx())
+        #     raise ValidationError("Не удалось загрузить документ или документ поврежден")
+
         placeholders = set()
         pattern = re.compile(r'\{\{.*?\}\}')
 
@@ -185,6 +190,6 @@ def find_fields(filename) -> list:
 
         return sorted(placeholders)
     
-    doc = DocxTemplate(TEMPLATES_FOLDER / filename.name)
+    doc = DocxTemplate(MEDIA_ROOT / filename.name) #! Теперь файлы загружать именно так!
     placeholders = find_placeholders(doc)
     return reformat_placeholder_names(placeholders)

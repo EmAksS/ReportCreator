@@ -20,7 +20,14 @@ class Template(models.Model):
     related_executor_person = models.ForeignKey(ExecutorPerson, on_delete=models.CASCADE, verbose_name="Представитель (юридическое лицо) исполнителя", null=True, blank=True)
     
     def __str__(self):
-        return self.name
+        return self.template_name
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['related_contractor_person', 'related_executor_person', 'template_name'], name='persons_name_combination'
+            )
+        ]
 
 
 class DocumentField(AbstractField):

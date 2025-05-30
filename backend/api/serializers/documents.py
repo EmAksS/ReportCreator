@@ -6,16 +6,17 @@ import os
 
 class TemplateSerializer(serializers.ModelSerializer):
     #type = serializers.ChoiceField(choices=documents.Template.DOCUMENT_TYPES)
-    found_fields = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
+    found_fields = serializers.SerializerMethodField()
+    #found_fields = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     
     class Meta:
         model = documents.Template
         fields = '__all__'
 
-    def get_found_fields(self):
+    def get_found_fields(self, obj):
         """Получаем список найденных полей в шаблоне"""
-        if self.instance.template_file:
-            return find_fields(self.instance.template_file)
+        if obj.template_file:
+            return find_fields(obj.template_file)
         return []
 
     def validate_template_file(self, value):

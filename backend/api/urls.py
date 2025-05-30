@@ -36,6 +36,7 @@ urlpatterns = [
     path('templates/', documents.TemplateListCreateView.as_view(), name='template_list_create'),
     path('templates/<int:tid>/', documents.TemplateDetailDestroyView.as_view(), name='template_detail'),
     path('templates/<int:tid>/fields/', documents.TemplateDocumentFieldsListCreateView.as_view(), name='template_fields'),
+    path('templates/<int:tid>/fields/fields/', documents.TemplateDocumentFieldsFieldsView.as_view(), name='template_fields_fields_view'),
     path('templates/tables/create/', documents.TableFieldsListCreateView.as_view(), name='template_table_create'),
     path('templates/tables/<int:tk>/', documents.TemplateTableFieldsListView.as_view(), name='template_table_view'),
 
