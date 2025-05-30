@@ -558,7 +558,7 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
             raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
-        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+        missing_fields = [field.name for field in required_fields if find_dataValue(data, field.key_name) is None]
 
         if missing_fields:
             raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
