@@ -569,7 +569,7 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
         
         try:
             doc_field = DocumentField.objects.create(
-                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().name).replace(' ', '_')}",
+                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template.id).first().name).replace(' ', '_')}",
                 name=find_dataValue(data, 'name'),
                 key_name=find_dataValue(data, 'key_name'),
                 is_required=find_dataValue(data, 'is_required'),
