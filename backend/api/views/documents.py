@@ -342,8 +342,25 @@ class TemplateDetailDestroyView(SchemaAPIView, generics.RetrieveDestroyAPIView):
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
-        tid = self.kwargs.get("tid", None)
+        tid = self.kwargs.get("pk", None)
         return Template.objects.get(id=tid)
+
+
+class TemplateInfoView(SchemaAPIView, generics.GenericAPIView):
+    serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        tid = self.kwargs.get("tid", None)
+        return Template.objects.filter(id=int(tid)).first()
+    
+    def get(self, request, *args, **kwargs):
+        template = self.get_queryset()
+        if template is None:
+            return Response({"template": "Шаблон не найден"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(self.details_serializer(template).data, status=status.HTTP_200_OK)
 
 
 # region DocumentFields_docs

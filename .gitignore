@@ -305,3 +305,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 backend/core/db_mine.sqlite3
+backend/core/db_erol.sqlite3
