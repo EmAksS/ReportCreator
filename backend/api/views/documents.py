@@ -45,6 +45,7 @@ import os
 from workalendar.europe import Russia
 from datetime import date
 from core.settings.base import DOCUMENTS_FOLDER, MEDIA_ROOT
+import locale
 
 # region DocTypes_docs
 @extend_schema(tags=["Documents"])
@@ -803,7 +804,28 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             except Exception as e:
                 doc.delete()   # Удаляем документ, если произошла ошибка
                 raise ValidationError({"unknown": f"Ошибка распределении значении полей документа: {e}"})
-            
+        
+        ## Дополняем также информацией о компаниях
+        locale.setlocale(locale.LC_ALL, 'ru_RU')
+        # Информация о документе
+        document_data["contract_number"] = template.related_contractor_person.company.contract_number
+        document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
+        #* order_date - в fill_document
+        document_data["order_number"] = Document.objects.filter(related_template=template).count() + 1
+        # Лицо заказчика
+        if template.related_contractor_person is not None:
+            document_data["contractor_person"] = template.related_contractor_person.set_initials()
+            document_data["contractor_post"] = template.related_contractor_person.post if template.related_contractor_person.post else "Ответственное лицо"
+            document_data["contractor_company_full"] = template.related_contractor_person.company.company_fullName
+            document_data["contractor_company"] = template.related_contractor_person.company.company_name
+        # Лицо исполнителя
+        if template.related_executor_person is not None:
+            document_data["executor_person"] = template.related_executor_person.set_initials()
+            document_data["executor_post"] = template.related_executor_person.post if template.related_executor_person.post else "Ответственное лицо"
+            document_data["executor_company_full"] = template.related_executor_person.company.company_fullName
+            document_data["executor_company"] = template.related_executor_person.company.company_name
+
+
         # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER
         ordered_lf = []
         ordered = TableField.objects.filter(related_template=tid).order_by('order')
