@@ -44,6 +44,7 @@ import os
 #from magic import Magic
 from workalendar.europe import Russia
 from datetime import date
+from core.settings.base import DOCUMENTS_FOLDER, MEDIA_ROOT
 
 # region DocTypes_docs
 @extend_schema(tags=["Documents"])
@@ -742,6 +743,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
     permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
+        self.details_serializer = DocumentFieldSerializer
         tid = self.kwargs.get('tid')
         DocumentField.objects.filter(related_template=Template.objects.filter(id=tid).first())
     
@@ -762,9 +764,10 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         
         # Создаём документ
         try:
-            doc = Document.objects.create(
+            doc = Document.objects.get_or_create(
                 related_template=template,
                 shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
+                save_path=DOCUMENTS_FOLDER/template.template.file.name.split('/')[1],
             )
         except Exception as e:
             raise ValidationError({"unknown": f"Ошибка создания документа: ({e})"})
@@ -775,14 +778,14 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         for field in data:
             document_data[field.get('field_id')] = field.get("value")
             try:
-                DocumentsValues.objects.create(
+                DocumentsValues.objects.get_or_create(
                     document_id=doc,
                     field_id=Field.objects.filter(id=field.get('field_id'), related_item="DocumentField").first(),
                     value=field.get("value", ""),
                 )
             except Exception as e:
-                    doc.delete()   # Удаляем документ, если произошла ошибка
-                    raise ValidationError({"unknown": f"Ошибка распределении значении полей документа: {e}"})
+                doc.delete()   # Удаляем документ, если произошла ошибка
+                raise ValidationError({"unknown": f"Ошибка распределении значении полей документа: {e}"})
             
         # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER
         ordered_lf = []
@@ -809,12 +812,18 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         # Создаём сам документ.
         try:
             info = fill_document(template.template_file.name, document_data, table)
+            if info.get("error"):
+                raise ValidationError({"unknown": f"Ошибка создания документа: ({info['error']})"})
+            doc.shown_date = info.get("shown_date")
+            if info.get("path"):
+                doc.save_path = info["path"]
         except Exception as e:
             doc.delete()   # Удаляем документ, если произошла ошибка
             raise ValidationError({"unknown": f"Ошибка создания документа: ({e}). Информация: {info}"})
 
-        print(info)
-        return Response(self.serializer_class(doc).data, status=status.HTTP_201_CREATED)
+        #print(info)
+        self.details_serializer = DocumentSerializer
+        return Response(DocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
 
 
 # region TemplateOfCompany_docs

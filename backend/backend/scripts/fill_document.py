@@ -62,7 +62,6 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
                 return i
         return None  # Если пустой строки нет
 
-
     def copy_row_formatting(source_row, target_row):
         """Копирует все параметры форматирования из исходной строки в целевую"""
         for source_cell, target_cell in zip(source_row.cells, target_row.cells):
@@ -92,14 +91,20 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
         'code': 0,
         'error': None,
         'path': '',
-        'warnings': []
+        'warnings': [],
+        'shown_date': None,
     }
 
     # Для русскоязычных дат
     locale.setlocale(locale.LC_ALL, 'ru_RU')
 
+    # Сделать место сохранение документа
+    if "/" in filename:
+        filename = filename.split("/")[-1]
+
     # Получить первый рабочий день текущего месяца и текущего года
     data["order_date"] = Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%d %B %Y")
+    result['shown_date'] = data["order_date"]
 
     if os.path.exists(TEMPLATES_FOLDER / filename) is False:
         result['code'] = 21
