@@ -244,7 +244,7 @@ TEMPLATE = [
         'placeholder': 'Введите название шаблона документа',
         'type': 'TEXT',
         # Любая кириллица и латиница с использованием цифр и нижнего подчёркивания, но не должно начинаться и заканчиваться с _
-        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)\s]_*)*[^_]$',
+        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
         'related_item': "Template",
         'related_info': None,
         'secure_text': False,
