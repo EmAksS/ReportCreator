@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from core.settings.base import DOCUMENTS_FOLDER, TEMPLATES_FOLDER, MEDIA_ROOT
 
 
-def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dict:
+def fill_document(filename: str, data: dict, table_data: list[list[str]], settings: dict = {}) -> dict:
     """
     Выполняет заполнение документа шаблона `filename` необходимыми данными. 
     Итоговый файл сохранятся в `DOCUMENTS_FOLDER`.
@@ -212,5 +212,7 @@ def find_fields(filename) -> list:
         "executor_post",
         "executor_company_full",
         "executor_company",
+
+        "total_cost",
     ]
     return [placeholder for placeholder in reformated if placeholder not in PREORDER_FIELDS]

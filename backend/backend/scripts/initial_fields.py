@@ -522,22 +522,6 @@ FIELD = [
 
 DOCUMENT_FIELD = [
     {
-        'name': 'Связанный шаблон',
-        'key_name': 'related_template',
-        'is_required': True,
-        'placeholder': 'Выберите шаблон для создания поля.',
-        'type': 'COMBOBOX',
-        'validation_regex': None,
-        'related_item': "DocumentField",
-        'related_info': {
-            'url': "templates/company/current/",
-            'show_field': "template_name",
-            'save_field': "id",
-        },
-        'secure_text': False,
-        'error_text': None
-    },
-    {
         'name': 'Русское название поля',
         'key_name': 'name',
         'is_required': True,
@@ -650,6 +634,18 @@ TABLE_FIELD = [
         'is_required': True,
         'placeholder': 'Укажите порядок поля',
         'type': 'NUMBER',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Является ли суммируемым столбцом?',
+        'key_name': 'is_summable',
+        'is_required': True,
+        'placeholder': None,
+        'type': 'BOOL',
         'validation_regex': None,
         'related_item': "TableField",
         'related_info': None,

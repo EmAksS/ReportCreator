@@ -50,6 +50,7 @@ class TableField(AbstractField):
     """
     #shown_header = models.CharField(max_length=255, verbose_name="Заголовок столбца")
     order = models.IntegerField(verbose_name="Порядок столбца")
+    is_summable = models.BooleanField(default=False, verbose_name="Суммируемый столбец")
     related_template = models.ForeignKey(Template, on_delete=models.CASCADE, verbose_name="Связанный шаблон")
 
     class Meta:

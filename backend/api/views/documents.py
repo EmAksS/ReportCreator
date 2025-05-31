@@ -658,6 +658,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 validation_regex=find_dataValue(data, 'validation_regex'),
                 related_item="Template",
                 is_custom=True,
+                is_summable=find_dataValue(data, 'is_summable'),
                 related_info=None,
                 placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
                 related_template=Template.objects.filter(id=template).first(), # Можно заменить на name но лучше не надо
@@ -792,6 +793,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         
         # Заполняем DocumentValues
         document_data = {}
+        document_settings = {}
 
         for field in data:
             document_data[field.get('field_id')] = field.get("value")
@@ -833,6 +835,10 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             if row.key_name not in listfields:
                 continue
             ordered_lf.append(row.key_name)
+
+        if TableField.objects.filter(related_template=tid, is_summable=True).count() > 1:
+            raise ValidationError({"unknown": "В таблице может быть только один суммируемый столбец"})
+        summable_index = ordered_lf.index(TableField.objects.filter(related_template=tid, is_summable=True).first().key_name) if TableField.objects.filter(related_template=tid, is_summable=True).exists() else None
         
         maxlen = 0
         for listfield in ordered_lf:
@@ -840,17 +846,21 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         
         table = []
         for row in range(len(maxlen)):
-            row = []
+            rowlist = []
             for listfield in ordered_lf:
                 try:
-                    row.append(find_dataValue(data, listfield)[row])
+                    rowlist.append(find_dataValue(data, listfield)[row])
                 except:
-                    row.append("")
-            table.append(row)
+                    rowlist.append("")
+            table.append(rowlist)
+
+        if summable_index is not None:
+            document_data["total_cost"] = round(sum([0 if rowlist[summable_index] == "" else float(rowlist[summable_index]) for rowlist in table]), 2)
+            document_settings["summable_type"] = TableField.objects.filter(related_template=tid, is_summable=True).first().type
 
         # Создаём сам документ.
         try:
-            info = fill_document(template.template_file.name, document_data, table)
+            info = fill_document(template.template_file.name, document_data, table, document_settings)
             if info.get("error"):
                 raise ValidationError({"unknown": f"Ошибка создания документа: ({info['error']})"})
             doc.shown_date = info.get("shown_date")
