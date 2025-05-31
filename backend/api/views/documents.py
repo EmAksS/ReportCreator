@@ -596,7 +596,7 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
                 is_required=find_dataValue(data, 'is_required'),
                 type=find_dataValue(data, 'type'),
                 validation_regex=find_dataValue(data, 'validation_regex'),
-                related_item="Template",
+                related_item="DocumentField",
                 is_custom=True,
                 related_info=None,
                 placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
