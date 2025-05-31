@@ -11,115 +11,74 @@ import MainPage from "./components/pages/MainPage";
 import CompanyPage from "./components/pages/CompanyPage";
 import {User} from "./types/core";
 import Modal, {ModalProps} from "./components/Modal";
+import DocumentPage from "./components/pages/DocumentPage";
+import ModalContextProvider from "./components/contexts/ModalContextProvider";
+import AuthContextProvider, {AuthContext} from "./components/contexts/AuthContextProvider";
 
 export const ROUTES = {
     LOGIN: "/login",
     REGISTRATION: "/register",
     WELCOME: "/welcome",
     MAIN: "/main",
-    COMPANY: "/company"
+    COMPANY: "/company",
+    DOCUMENTS: "/documents",
 }
-
-export interface UserContextType {
-    user: User | null;
-    setUser: (value: User) => void;
-    checkAuth: () => Promise<boolean>;
-}
-
-export interface ModalContextType extends ModalProps
-{
-    setChildren: (value: ReactNode) => void;
-    setIsOpen: (value: boolean) => void;
-}
-
-export const AuthContext = createContext<UserContextType>({
-    user: null,
-    setUser: () => {},
-    checkAuth: async () => false
-});
-
-export const ModalContext = createContext<ModalContextType>({
-    isOpen: false,
-    setIsOpen: () => {},
-    children: null,
-    setChildren: () => {},
-})
 
 function AppContent()
 {
-    const { user, checkAuth } = useContext(AuthContext);
+    const { user, checkAuth, isAuthChecked } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
 
-    useEffect(() =>
-    {
-        if (!user && location.pathname !== ROUTES.LOGIN && location.pathname !== ROUTES.REGISTRATION)
-        {
+    useEffect(() => {
+        if (!isAuthChecked) return;
+
+        if (!user && ![ROUTES.LOGIN, ROUTES.REGISTRATION].includes(location.pathname)) {
             navigate(ROUTES.LOGIN);
+        } else if (user && [ROUTES.LOGIN, ROUTES.REGISTRATION].includes(location.pathname)) {
+            navigate(ROUTES.MAIN);
         }
-    }, [user, location.pathname, navigate]);
+    }, [location.pathname, user, isAuthChecked]);
+
+    if (!user && !isAuthChecked) return null;
 
     return (
-        <div>
-            <div className={"page"}>
-                <Hat
-                    imageSrc={"/assets/images/report_creator_logo.png"}
-                    title={"Report Creator"}
-                    buttonProps={user
-                        ? [{ text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },
-                            { text: "Компания", onClick: () => navigate(ROUTES.COMPANY), variant: ButtonType.hat },
-                            { text: "Выйти", onClick: async () => { await logout(); await checkAuth(); navigate(ROUTES.MAIN); }, variant: ButtonType.hat }]
-                        : []}/>
+        <div className={"page"}>
+            <Hat
+                imageSrc={"/assets/images/report_creator_logo.png"}
+                title={"Report Creator"}
+                buttonProps={user
+                    ? [{ text: "Документы", onClick: () => navigate(ROUTES.DOCUMENTS), variant: ButtonType.hat },
+                        { text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },
+                        { text: "Компания", onClick: () => navigate(ROUTES.COMPANY), variant: ButtonType.hat },
+                        { text: "Выйти", onClick: async () => { await logout(); await checkAuth(); navigate(ROUTES.MAIN); }, variant: ButtonType.hat }]
+                    : []}/>
 
-                <div className={"main-space"}>
-                    <Routes>
-                        <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration} />} />
-                        <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login} />} />
-                        <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
-                        <Route path={ROUTES.MAIN} element={<MainPage />} />
-                        <Route path={ROUTES.COMPANY} element={<CompanyPage />} />
-                    </Routes>
-                </div>
+            <div className={"main-space"}>
+                <Routes>
+                    <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration} />} />
+                    <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login} />} />
+                    <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
+                    <Route path={ROUTES.MAIN} element={<MainPage />} />
+                    <Route path={ROUTES.COMPANY} element={<CompanyPage />} />
+                    <Route path={ROUTES.DOCUMENTS} element={<DocumentPage />} />
+                    <Route path="*" element={<Navigate to={ROUTES.MAIN} />} />
+                </Routes>
             </div>
         </div>
-
     );
 }
 
 function App()
 {
-    const [user, setUser] = useState<User | null>(null);
-    const [isAuthChecked, setIsAuthChecked] = useState(false);
-
-    const [isOpenModal, setIsOpenModal] = useState(false);
-    const [modalChildren, setModalChildren] = useState<React.ReactNode>(null);
-
-    const checkAuth = async (): Promise<boolean> =>
-    {
-        const user = await getUser();
-        setUser(user);
-        return user !== null;
-    };
-
-    useEffect(() =>
-    {
-        checkAuth().finally(() => setIsAuthChecked(true));
-    }, []);
-
     return (
         <BrowserRouter>
-            <AuthContext.Provider value={{ user, setUser, checkAuth }}>
-                <ModalContext.Provider value={{
-                    isOpen: isOpenModal,
-                    setIsOpen: setIsOpenModal,
-                    children: modalChildren,
-                    setChildren: setModalChildren }}>
-                    <Modal isOpen={isOpenModal} children={modalChildren} />
-                    {isAuthChecked ? <AppContent/> : null}
-                </ModalContext.Provider>
-            </AuthContext.Provider>
-        </BrowserRouter>
-    );
+            <AuthContextProvider>
+                <ModalContextProvider>
+                    <AppContent/>
+                </ModalContextProvider>
+            </AuthContextProvider>
+        </BrowserRouter>);
 }
 
 

@@ -34,6 +34,7 @@ export interface ExecutorPerson extends Person
 
 export interface Company
 {
+    id: number,
     companyName: string,
     companyFullName: string,
     createdAt: Date,
@@ -43,4 +44,12 @@ export interface Company
 export interface ContractorCompany extends Company
 {
     contractorCity: string,
+}
+
+export interface DocumentTemplate
+{
+    id: number,
+    templateName: string,
+    templateType: string,
+    foundFields: string[],
 }

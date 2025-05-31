@@ -48,7 +48,7 @@ const TextInput: FC<TextInputProps> = (props: TextInputProps) =>
                className={"form-item text-input" + (props.inputData.secureText ? " secure-text" : "")}
                placeholder={props.inputData.placeholder}
                style={props.style}
-               onChange={handleChange}/>
+               onChange={handleChange} />
     )
 }
 

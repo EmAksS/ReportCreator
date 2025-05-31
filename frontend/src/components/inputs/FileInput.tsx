@@ -20,7 +20,7 @@ const FileInput: FC<FileInputProps> = (props: FileInputProps) =>
     };
 
     return (<input type={"file"}
-                   accept={props.inputData.fileFormat}
+                   accept={".docx"}
                    style={props.style}
                    onChange={handleChange}
                    className={"form-item text-input"} />);

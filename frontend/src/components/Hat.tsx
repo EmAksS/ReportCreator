@@ -1,5 +1,7 @@
 import {FC} from "react";
 import Button, {ButtonProps} from "./Button";
+import {useLocation, useNavigate} from "react-router-dom";
+import {ROUTES} from "../App";
 
 export interface HatProps
 {
@@ -11,10 +13,17 @@ export interface HatProps
 
 const Hat: FC<HatProps> = (props: HatProps) =>
 {
+    const navigate = useNavigate();
+
+    const onLogoClick = () =>
+    {
+        navigate(ROUTES.MAIN)
+    }
+
     return (
         <div className={"hat"}>
-            <img className={"hat-logo"} src={props.imageSrc} alt={""}></img>
-            <h1 className="hat_title">{props.title}</h1>
+            <img className={"hat-logo"} style={{cursor: "pointer"}} src={props.imageSrc} alt={""} onClick={onLogoClick}></img>
+            <h1 className="hat_title" style={{cursor: "pointer"}} onClick={onLogoClick}>{props.title}</h1>
             {props.children}
             {props.buttonProps?.map((props) =>
             {

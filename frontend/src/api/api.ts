@@ -9,7 +9,7 @@ export const ENDPOINTS = {
     COMPANY_REGISTRATION: "/register/company/",
 
     USER_REGISTRATION: "/register/user/",
-    USER_REGISTRATION_FIELDS: "/user/values/fields/",
+    //USER_REGISTRATION_FIELDS: "/user/values/fields/",
 
     CONTRACTOR_COMPANY: "/company/contractors/",
     CONTRACTOR_COMPANY_FIELDS: "/company/contractors/fields/",
@@ -22,15 +22,18 @@ export const ENDPOINTS = {
     EXECUTOR_PERSONS_FIELDS: "/persons/executor/fields/",
 
     TEMPLATES: "/templates/",
-    COMPANY_TEMPLATES: "/templates/company/",
+    COMPANY_TEMPLATES: (templateId: number | string = "") => `/templates/company/${templateId}`,
 
-    DOCUMENTS: "/document/save/",
+    DOCUMENTS: (templateId: number | string) => `/document/save/${templateId}/`,
     DOCUMENT_TYPES: "/document/types/",
 
     CHECK_AUTH: "/check_auth/",
     LOGIN: "/login/",
     LOGOUT: "/logout/",
-    CSRF: "/csrf/"
+    CSRF: "/csrf/",
+
+    TEMPLATE_FIELDS: (templateId: number) => `/templates/${templateId}/fields/`,
+    TEMPLATE_FIELD_FIELDS: (templateId: number) => `/templates/${templateId}/fields/fields/`,
 }
 
 const API_METHODS = {
@@ -96,7 +99,7 @@ export async function getCompanyRegistrationFields(): Promise<Field[]>
 
 export async function getUserRegistrationFields(): Promise<Field[]>
 {
-    return await getFields(ENDPOINTS.USER_REGISTRATION_FIELDS);
+    return await getFields(ENDPOINTS.USER_REGISTRATION);
 }
 
 export async function getContractorCompanyFields(): Promise<Field[]>
@@ -126,7 +129,12 @@ export async function getDocumentTemplateCreationFields(): Promise<Field[]>
 
 export async function getDocumentFields(id: number): Promise<Field[]>
 {
-    return await getFields(ENDPOINTS.DOCUMENTS + id);
+    return await getFields(ENDPOINTS.DOCUMENTS(id));
+}
+
+export async function getTemplateFieldsFields(templateId: number): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.TEMPLATE_FIELD_FIELDS(templateId));
 }
 
 async function getFields(url: string): Promise<Field[]>
@@ -136,7 +144,7 @@ async function getFields(url: string): Promise<Field[]>
 
 export async function getCompanyDocumentTemplates(companyId: number): Promise<DocumentTemplate[]>
 {
-    return await apiGet<DocumentTemplate[]>(ENDPOINTS.COMPANY_TEMPLATES + companyId);
+    return await apiGet<DocumentTemplate[]>(ENDPOINTS.COMPANY_TEMPLATES(companyId));
 }
 
 export async function getCompany(): Promise<Company>
@@ -167,6 +175,11 @@ export async function getContractorPersons(): Promise<ContractorPerson[]>
 export async function getComboboxItems(URL: string): Promise<any[]>
 {
     return toSnake(await apiGet<any>(URL));
+}
+
+export async function createTemplateField(templateId: number, fieldCreationData: DataValue[]): Promise<any>
+{
+    return await apiPost<any>({url: ENDPOINTS.TEMPLATE_FIELDS(templateId), body: fieldCreationData});
 }
 
 export async function createCompany(companyRegistrationData: DataValue[]): Promise<User>
@@ -200,6 +213,11 @@ export async function createDocumentTemplate(templateCreationData: DataValue[]):
         url: ENDPOINTS.TEMPLATES,
         body: templateCreationData,
         config: {headers: {"Content-Type": "multipart/form-data"}}});
+}
+
+export async function createDocument(templateId: number, documentCreationData: DataValue[]): Promise<any>
+{
+    return apiPost({url: ENDPOINTS.DOCUMENTS(templateId), body: documentCreationData});
 }
 
 export async function login(userLoginData: DataValue[]): Promise<User>
@@ -250,12 +268,14 @@ async function apiDelete<TValue = void>(url: string, config?: AxiosRequestConfig
     return await apiRequest<TValue>({ url: url, method: API_METHODS.DELETE, config: config });
 }
 
-async function apiRequest<TValue>(config: ApiRequestConfig): Promise<TValue>
+async function apiRequest<TValue>(config: { url: string, method: string, body?: any, config?: AxiosRequestConfig<any> }): Promise<TValue>
 {
     const response = await api.request<ApiResponse<TValue>>({...config.config, url: config.url, method: config.method, data: config.body});
     const data = response.data;
 
-    console.log(response);
+    if (config.url !== ENDPOINTS.CSRF) {
+        console.log(config.method, config.url, config.body, data);
+    }
 
     if (!isSuccessfulResponse(response.status))
     {
@@ -263,14 +283,6 @@ async function apiRequest<TValue>(config: ApiRequestConfig): Promise<TValue>
     }
 
     return data.details as TValue;
-}
-
-interface ApiRequestConfig
-{
-    url: string,
-    method: string,
-    body?: any,
-    config?: AxiosRequestConfig<any>
 }
 
 function isSuccessfulResponse(status: number): boolean

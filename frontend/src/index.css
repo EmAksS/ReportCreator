@@ -50,7 +50,6 @@ code {
   left: 40px;
   top: 50%;
   transform: translate(0, -50%);
-  pointer-events: none;
   user-select: none;
   border: #39BAF6 7.5px solid;
   border-radius: 50%;
@@ -96,6 +95,7 @@ code {
 .simple-container
 {
   padding: 20px;
+  margin: 20px;
   border-radius: 30px;
   background-color: white;
   box-shadow: 0 5px 15px -10px black;
@@ -229,7 +229,8 @@ code {
   position: relative;
   width: fit-content;
   min-height: 1px;
-  margin-bottom: 48px;
+  margin-bottom: 40px;
+  margin-right: 25px;
 }
 
 .list-item

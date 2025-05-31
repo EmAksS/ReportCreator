@@ -8,10 +8,11 @@ import {
     login
 } from "../api/api";
 import {DataValue, Field} from "../types/api";
-import {AuthContext, ROUTES} from "../App";
+import {ROUTES} from "../App";
 import {useNavigate} from "react-router-dom";
 import {User} from "../types/core";
 import SimpleContainer from "./SimpleContainer";
+import {AuthContext} from "./contexts/AuthContextProvider";
 
 export enum AuthFormMode
 {
@@ -34,7 +35,7 @@ interface FormConfig
 
 const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
 {
-    const { user, checkAuth } = useContext(AuthContext);
+    const { checkAuth } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [menuMode, setMenuMode] = useState<AuthFormMode>(props.mode);
@@ -118,21 +119,9 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
         dataValues: DataValue[],
         requestFunction: (data: DataValue[]) => Promise<User>): Promise<void> =>
     {
-        try
+        if (await requestFunction(dataValues))
         {
-            updateFormConfig(menuMode, {alertMessage: ""})
-            if (await requestFunction(dataValues))
-            {
-                if (await checkAuth()) navigate(ROUTES.MAIN);
-            }
-        }
-        catch (error)
-        {
-            if (error instanceof Error)
-            {
-                updateFormConfig(menuMode, {alertMessage: error.message});
-            }
-            console.log("Не удалось аутентифицироваться", error);
+            if (await checkAuth()) navigate(ROUTES.MAIN);
         }
     }
 
@@ -161,7 +150,6 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
                         return {inputData: field}
                     })}
                     onSubmit={config.submitHandler}/>
-                <p className={"alert-message"}>{config.alertMessage}</p>
             </SimpleContainer>)
     }
 

@@ -3,10 +3,12 @@ import {User} from "./core";
 export enum InputType
 {
     Text = "TEXT",
-    Checkbox = "CHECKBOX",
+    Bool = "BOOL",
     Table = "TABLE",
     Combobox = "COMBOBOX",
-    File = "FILE"
+    File = "FILE",
+    Number = "NUMBER",
+    Date = "DATE"
 }
 
 export interface DataValue

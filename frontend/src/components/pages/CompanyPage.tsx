@@ -2,24 +2,26 @@ import React, {FC, useContext, useEffect, useState} from "react";
 import {
     createContractorCompany,
     createContractorPerson,
-    createExecutorPerson, getCompany,
+    createExecutorPerson, createUser, getCompany, getCompanyUsers,
     getContractorCompanies,
     getContractorCompanyFields,
     getContractorPersonFields,
     getContractorPersons,
     getExecutorPersonFields,
-    getExecutorPersons
+    getExecutorPersons, getUserRegistrationFields
 } from "../../api/api";
 import Form from "../Form";
 import {DataValue, Field} from "../../types/api";
 import List, {ListItem} from "../List";
-import {Company, ContractorCompany, ContractorPerson, ExecutorPerson} from "../../types/core";
+import {Company, ContractorCompany, ContractorPerson, ExecutorPerson, User} from "../../types/core";
 import {InputProps} from "../Input";
-import {ModalContext} from "../../App";
 import SimpleContainer from "../SimpleContainer";
+import {AuthContext} from "../contexts/AuthContextProvider";
+import {ModalContext} from "../contexts/ModalContextProvider";
 
 const CompanyPage: FC = () =>
 {
+    const { user } = useContext(AuthContext);
     const {
         setIsOpen: setIsOpenModal,
         setChildren: setModalChildren,
@@ -31,6 +33,8 @@ const CompanyPage: FC = () =>
     const [contractorPersonFields, setContractorPersonFields] = useState<Field[]>([]);
 
     const [company, setCompany] = useState<Company>();
+    const [companyUsers, setCompanyUsers] = useState<User[]>([]);
+    const [companyUserFields, setCompanyUserFields] = useState<Field[]>([]);
     const [executorPersons, setExecutorPersons] = useState<ExecutorPerson[]>([]);
     const [executorPersonFields, setExecutorPersonFields] = useState<Field[]>([]);
 
@@ -45,6 +49,7 @@ const CompanyPage: FC = () =>
                 executorPersons,
                 contractorPersonFields,
                 company,
+                companyUsers,
                 executorPersonFields,
                 contractorCompanies,
                 contractorCompanyFields
@@ -53,10 +58,17 @@ const CompanyPage: FC = () =>
                 getExecutorPersons(),
                 getContractorPersonFields(),
                 getCompany(),
+                getCompanyUsers(),
                 getExecutorPersonFields(),
                 getContractorCompanies(),
                 getContractorCompanyFields()
             ]);
+
+            let companyUserFields: Field[] = [];
+            if (user?.isCompanySuperuser)
+            {
+                companyUserFields = await getUserRegistrationFields();
+            }
 
             console.log("Юридические лица заказчиков:", contractorPersons);
             setContractorPersons(contractorPersons);
@@ -69,6 +81,12 @@ const CompanyPage: FC = () =>
 
             console.log("Компания пользователя:", company);
             setCompany(company);
+
+            console.log("Пользователи компании:", company);
+            setCompanyUsers(companyUsers)
+
+            console.log("Поля для создания пользователя в компании:", companyUserFields);
+            setCompanyUserFields(companyUserFields)
 
             console.log("Поля юридических лиц исполнителей:", executorPersonFields);
             setExecutorPersonFields(executorPersonFields);
@@ -109,46 +127,80 @@ const CompanyPage: FC = () =>
         setContractorCompanies(await getContractorCompanies());
     }
 
+    const requestCreateCompanyUser = async (values: DataValue[]) =>
+    {
+        console.log("пытаемся создать пользователя");
+        const response = await createUser(values);
+        console.log(response);
+        setCompanyUsers(await getCompanyUsers());
+    }
+
     return (<div>
-        <h3>О компании</h3>
-        {company?.companyFullName}
-        <h3>Компании Заказчики</h3>
+        <SimpleContainer style={{width: "fit-content"}}>
+            <h3 style={{margin: "5px auto"}}>Я</h3>
+            {user?.username}
+        </SimpleContainer>
 
-        <List items={contractorCompanies.map((contractor, index) =>
-            ({id: index, content: <div>{contractor.companyFullName}</div>} as ListItem))}
-              onAdd={() =>
-              {
-                  setIsOpenModal(true);
-                  setModalChildren(<SimpleContainer><Form submitLabel={"Добавить компанию заказчика"}
-                                         inputs={contractorCompanyFields.map(field => ({inputData: field} as InputProps))}
-                                         onSubmit={requestCreateContractorCompany}/></SimpleContainer>)
-              }}/>
+        <SimpleContainer style={{width: "fit-content"}}>
+            <h3 style={{margin: "5px auto"}}>О компании</h3>
+            {company?.companyFullName}
+        </SimpleContainer>
+        <SimpleContainer style={{width: "fit-content"}}>
+            <h3 style={{margin: "5px auto"}}>Пользователи компании</h3>
+            <List items={companyUsers.map((currentUser, index) =>
+                ({id: index, content: <div>{(user?.username == currentUser.username ? "Вы: " : "") + currentUser.username + " " + (currentUser.isCompanySuperuser ? "👑" : "")}</div>} as ListItem))}
+                  onAdd={() =>
+                  {
+                      if (user?.isCompanySuperuser)
+                      {
+                          setIsOpenModal(true);
+                          setModalChildren(<SimpleContainer><Form submitLabel={"Добавить пользователя"}
+                                                                  inputs={companyUserFields.map(field => ({inputData: field} as InputProps))}
+                                                                  onSubmit={requestCreateCompanyUser}/></SimpleContainer>)
+                      }
+                  }}/>
+        </SimpleContainer>
+        <SimpleContainer style={{width: "fit-content"}}>
+            <h3 style={{margin: "5px auto"}}>Компании Заказчики</h3>
 
-        <h3>Юридические лица заказчиков</h3>
+            <List items={contractorCompanies.map((contractor, index) =>
+                ({id: index, content: <div>{contractor.companyFullName + " " + contractor.contractorCity}</div>} as ListItem))}
+                  onAdd={() =>
+                  {
+                      setIsOpenModal(true);
+                      setModalChildren(<SimpleContainer><Form submitLabel={"Добавить компанию заказчика"}
+                                             inputs={contractorCompanyFields.map(field => ({inputData: field} as InputProps))}
+                                             onSubmit={requestCreateContractorCompany}/></SimpleContainer>)
+                  }}/>
+        </SimpleContainer>
 
-        <List items={contractorPersons.map((person, index) =>
-            ({id: index, content: <div>{person.company + " " + person.firstName + " " + person.
-                    post}</div>} as ListItem))}
-        onAdd={() => {
-            setIsOpenModal(true);
-            setModalChildren(<SimpleContainer><Form submitLabel={"Добавить юр. лицо заказчика"}
-                                   inputs={contractorPersonFields.map(field => ({inputData: field} as InputProps))}
-                                   onSubmit={requestCreateContractorPerson}/></SimpleContainer>)
-        }}/>
+        <SimpleContainer style={{width: "fit-content"}}>
+            <h3 style={{margin: "5px auto"}}>Юридические лица заказчиков</h3>
+                <List items={contractorPersons.map((person, index) =>
+                    ({id: index, content: <div>{person.company + " " + person.firstName + " " + person.
+                            post + " " + person.surname + " " + person.lastName}</div>} as ListItem))}
+                onAdd={() => {
+                    setIsOpenModal(true);
+                    setModalChildren(<SimpleContainer><Form submitLabel={"Добавить юр. лицо заказчика"}
+                                           inputs={contractorPersonFields.map(field => ({inputData: field} as InputProps))}
+                                           onSubmit={requestCreateContractorPerson}/></SimpleContainer>)
+                }}/>
+        </SimpleContainer>
 
-        <h3>Юридические лица исполнителя</h3>
+        <SimpleContainer style={{width: "fit-content"}}>
+            <h3 style={{margin: "5px auto"}}>Юридические лица исполнителя</h3>
 
-        <List items={executorPersons.map((person, index) =>
-            ({id: index, content: <div>{person.post + " " + person.firstName}</div>} as ListItem))}
-              onAdd={() => {
-                  setIsOpenModal(true);
-                  setModalChildren(<SimpleContainer>
-                      <Form submitLabel={"Добавить юр. лицо исполнителя"}
-                            inputs={executorPersonFields.map(field => ({inputData: field} as InputProps))}
-                            onSubmit={requestCreateExecutorPerson}/>
-                  </SimpleContainer>)
-              }}/>
-
+            <List items={executorPersons.map((person, index) =>
+                ({id: index, content: <div>{person.post + " " + person.firstName}</div>} as ListItem))}
+                  onAdd={() => {
+                      setIsOpenModal(true);
+                      setModalChildren(<SimpleContainer>
+                          <Form submitLabel={"Добавить юр. лицо исполнителя"}
+                                inputs={executorPersonFields.map(field => ({inputData: field} as InputProps))}
+                                onSubmit={requestCreateExecutorPerson}/>
+                      </SimpleContainer>)
+                  }}/>
+        </SimpleContainer>
     </div>)
 }
 

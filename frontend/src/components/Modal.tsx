@@ -1,5 +1,5 @@
 import React, {FC, ReactNode, useContext, useEffect} from "react";
-import {ModalContext} from "../App";
+import {ModalContext} from "./contexts/ModalContextProvider";
 
 export interface ModalProps
 {

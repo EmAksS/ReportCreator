@@ -8,6 +8,7 @@ export interface FormProps
     inputs: InputProps[];
     onSubmit: (fields: DataValue[]) => void;
     submitLabel: string;
+    successfulSubmitText?: string;
     style?: React.CSSProperties;
 }
 
@@ -15,7 +16,9 @@ const Form: FC<FormProps> = (props: FormProps) =>
 {
     const [inputs, setInputs] = useState<InputPresentation[]>(props.inputs.map(input => {
         return {field: input.inputData, value: {fieldId: input.inputData.keyName}} as InputPresentation;}));
+
     const [alertMessages, setAlertMessages] = useState<Record<string, string>>({});
+    const [submitResultMessage, setSubmitResultMessage] = useState<string>("");
 
     const onInputChange = (key: string, newValue: FieldValue) =>
     {
@@ -48,8 +51,9 @@ const Form: FC<FormProps> = (props: FormProps) =>
         {
             const field = input.field
             const value = input.value
+            console.log(field, value)
 
-            if (!value.value)
+            if (value.value === undefined || value.value === null)
             {
                 if (!field.isRequired) input.value.value = "";
                 else throw Error(`Поле "${field.name}" должно быть заполнено`)
@@ -59,13 +63,31 @@ const Form: FC<FormProps> = (props: FormProps) =>
         })
     }
 
-    const tryToSubmit = () =>
+    const tryToSubmit = async () =>
     {
-        if (getEmptyRequiredFields(inputs).length === 0 &&
-            Object.keys(alertMessages).length === 0)
+        try
         {
-            props.onSubmit(InputPresentationToDataValue())
+            console.log(inputs)
+            const emptyFields = getEmptyRequiredFields(inputs)
+            console.log(emptyFields)
+            if (emptyFields.length === 0)
+            {
+                if (Object.keys(alertMessages).length === 0)
+                {
+                    await props.onSubmit(InputPresentationToDataValue())
+                }
+            }
+            else throw Error("Все необходимые поля должны быть заполнены")
         }
+        catch (e)
+        {
+            console.log("поймана ошибка ", e)
+            if (e instanceof Error) {
+                setSubmitResultMessage(e.message);
+            }
+            return;
+        }
+        setSubmitResultMessage(props.successfulSubmitText ?? "Операция выполнена успешно");
     }
 
     const getEmptyRequiredFields = (inputs: InputPresentation[]): Field[] =>
@@ -76,7 +98,7 @@ const Form: FC<FormProps> = (props: FormProps) =>
                 const fieldValue = element.value.value;
                 const field = element.field;
 
-                return (!fieldValue || fieldValue === "") && field.isRequired
+                return (fieldValue === undefined || fieldValue === null || fieldValue === "") && field.isRequired
             })
             .map((element) => element.field)
     }
@@ -95,7 +117,8 @@ const Form: FC<FormProps> = (props: FormProps) =>
             })}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
-            <Button text={props.submitLabel} variant={ButtonType.general} onClick={tryToSubmit}/>
+            <Button text={props.submitLabel} variant={ButtonType.general} onClick={tryToSubmit} style={{width: "100%"}}/>
+            <p style={{margin: "8px 0", color: "black"}} className={"alert-message"}>{submitResultMessage}</p>
         </div>)
 }
 
