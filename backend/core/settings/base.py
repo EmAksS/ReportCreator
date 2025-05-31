@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'backend',
     'api',
     'drf_spectacular',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -79,6 +80,7 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'sessionid',
 ]
 
 REST_FRAMEWORK = {
@@ -191,6 +193,9 @@ TEMPLATES_FOLDER = MEDIA_ROOT / "templates"
 if not TEMPLATES_FOLDER.exists():
     TEMPLATES_FOLDER.mkdir()
 
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-
-# SESSION_COOKIE_AGE = 3600 * 24 * 7
+SESSION_COOKIE_NAME = 'sessionid'  # Стандартное имя куки
+SESSION_COOKIE_AGE = 1209600  # Время жизни сессии (2 недели, по умолчанию)
+SESSION_COOKIE_SECURE = False  # True для HTTPS в production
+SESSION_COOKIE_SAMESITE = 'Lax'  # 'None' для кросс-доменных запросов (требует Secure=True)
+SESSION_COOKIE_HTTPONLY = True  # Защита от XSS
+SESSION_SAVE_EVERY_REQUEST = True  # Обновлять сессию при каждом запросе

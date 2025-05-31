@@ -18,6 +18,8 @@ from api.serializers.schema import (
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate, login, logout
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 # models
 from backend.models.user import User, UsersValues
 from backend.models.fields import Field
@@ -68,6 +70,9 @@ class CsrfView(generics.GenericAPIView):
     def get(self, request):
         from django.middleware.csrf import get_token
         token = get_token(request)
+        print(token)
+        print("CSRF - сессия:", request.session.session_key)
+        print(f"Куки: {request.COOKIES}")
         return Response({
             "details": token,
             "errors": None
@@ -128,8 +133,12 @@ class AuthCheckView(SchemaAPIView, generics.GenericAPIView):
     serializer_class = UserSerializer
     details_serializer = UserSerializer
     
+    @method_decorator(ensure_csrf_cookie)  # Гарантирует установку CSRF-куки
     def get(self, request):
-        print(request.user)
+        print(request)
+        print(request.META.get('CSRF_COOKIE'))
+        print("Check-Auth - сессия:", request.session.session_key)
+        print(f"Куки: {request.COOKIES}")
         if request.user.is_authenticated:
             serializer = UserSerializer(request.user)
             return Response(self.serializer_class(serializer.data).data, status=status.HTTP_200_OK)
@@ -237,7 +246,7 @@ class UserAuthView(SchemaAPIView, generics.ListCreateAPIView):
         username = find_dataValue(data, "username")
         password = find_dataValue(data, "password")
 
-        #print(f"Пользователь {username} входит в систему под паролем {password}")
+        print(f"Пользователь {username} входит в систему под паролем {password}")
 
         user = authenticate(request, username=username, password=password)
         
@@ -245,8 +254,10 @@ class UserAuthView(SchemaAPIView, generics.ListCreateAPIView):
             raise ValidationError({"username": "Неправильный логин или пароль"})
         
         login(request, user)
-
-        #print(request.user)
+        print(f"Login - сессия: {request.session.session_key}")
+        print(f"Куки: {request.COOKIES}")
+        print(request.user)
+        print(request.META.get('CSRF_COOKIE'))
         
         serializer = UserSerializer(user)
         self.details_serializer = UserSerializer

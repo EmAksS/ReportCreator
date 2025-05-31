@@ -306,3 +306,6 @@ $RECYCLE.BIN/
 *.lnk
 backend/core/db_mine.sqlite3
 backend/core/db_erol.sqlite3
+cert.crt
+.gitignore
+cert.key
