@@ -134,15 +134,18 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
 
     # Сохранить в папку документах
     randcode = randint(0, 1000000)
-    doc.save(f"tmp/~$tmp{randcode}.docx")
+    if not os.path.exists(TEMPLATES_FOLDER / "temp"):
+        os.mkdir(TEMPLATES_FOLDER / "temp")
+    # Сохраняем измененный шаблон во временную папку
+    doc.save(TEMPLATES_FOLDER / f"temp/~$tmp{randcode}.docx")
 
     # Работаем с таблицами
 
-    doc = Document(f"tmp/~$tmp{randcode}.docx")
+    doc = Document(TEMPLATES_FOLDER / f"/temp/~$tmp{randcode}.docx")
     table = doc.tables[0]
     empty_row_idx = find_empty_row(table)
     if empty_row_idx is None:
-        os.remove(f"tmp/~$tmp{randcode}.docx")
+        os.remove(TEMPLATES_FOLDER / f"/temp/~$tmp{randcode}.docx")
         result['code'] = 23
         result['error'] = "В документе должна быть строка для заполнения таблицы, но она не была найдена."
 
@@ -162,7 +165,7 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
         
         empty_row_idx += 1
 
-    os.remove(f"tmp/~$tmp{randcode}.docx")
+    os.remove(TEMPLATES_FOLDER / f"/temp/~$tmp{randcode}.docx")
     # TODO: сохранять в директории комании - получать название компании в data
     result['code'] = 10
     result['path'] = DOCUMENTS_FOLDER / f"{filename}_{date(date.today().year, date.today().month, 1).strftime('%m-%y')}.docx"
