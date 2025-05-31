@@ -98,7 +98,7 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
     }
 
     # Для русскоязычных дат
-    locale.setlocale(locale.LC_ALL, 'ru_RU')
+    locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
 
     # Сделать место сохранение документа
     if "/" in filename:
