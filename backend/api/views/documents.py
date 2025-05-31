@@ -347,7 +347,7 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 is_summable=False,
                 is_autoincremental=False,
 
-                id=f"{serializer.instance.template_name}__table__{str(column).replace(' ', '_')}",
+                id=f"table{index}__Table__{serializer.instance.template_name.replace(' ', '_')}",
                 name=str(column)[0:50],
                 key_name=f"table_{index}",
                 is_required=True,
@@ -713,7 +713,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         
         try:
             table_field = TableField.objects.create(
-                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().name).replace(' ', '_')}",
+                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().template_name).replace(' ', '_')}",
                 name=find_dataValue(data, 'name'),
                 key_name=find_dataValue(data, 'key_name'),
                 order= find_dataValue(data, 'order'),
@@ -747,8 +747,28 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
 
         if missing_fields:
             raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
-        
-        raise NotImplementedError({"sleepy": "ляг поспи"})
+
+        template_id = data.get('related_template')
+        try:
+            template = Template.objects.get(id=template_id)
+        except Template.DoesNotExist:
+            raise ValidationError({"template_id": f"Шаблон с TID {template_id} не найден."})
+
+        table_field = TableField.objects.get(
+            id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().template_name).replace(' ', '_')}"
+        )
+        if table_field:
+            table_field.name=find_dataValue(data, 'name'),
+            table_field.order= find_dataValue(data, 'order'),
+            table_field.is_required=find_dataValue(data, 'is_required'),
+            table_field.type=find_dataValue(data, 'type'),
+            table_field.validation_regex=find_dataValue(data, 'validation_regex'),
+            table_field.is_summable=find_dataValue(data, 'is_summable'),
+            table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
+        else:
+            raise ValidationError({"unknown": "Данное поле не найдено."})
+
+        return Response(self.serializer_class(table_field).data, status=status.HTTP_200_OK)
 
 
 # Проверить список толбцов таблицы для шаблона TK
