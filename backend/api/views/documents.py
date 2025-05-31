@@ -338,7 +338,7 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         # Обрабатываем таблицы в шаблоне
-        table_columns = find_table_columns(find_dataValue(data, "template_file"))
+        table_columns = find_table_columns(serializer.instance.template_file)
         index = 10
         for column in table_columns:
             table_field = TableField.objects.get_or_create(
@@ -360,6 +360,7 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 error_text=None,
                 is_custom=True,
             )
+            index += 10
 
         return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
 

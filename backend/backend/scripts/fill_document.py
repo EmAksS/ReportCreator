@@ -177,6 +177,7 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
 
 def find_table_columns(filename):
     """Находит все колонки таблицы, которые являются счетчиками"""
+
     doc = Document(MEDIA_ROOT / filename.name) #! Теперь файлы загружать именно так!
     table = doc.tables[0]
 
@@ -192,9 +193,12 @@ def find_table_columns(filename):
                 cell_text = row.cells[col_idx].text.strip()
                 columns[col_idx].append(cell_text)
     
-    headers = columns[0] if columns else []
+    headers = []
+    #print(columns)
+    for x in range(columns_count):
+        headers.append(columns[x][0])
 
-    return columns
+    return headers
 
 
 def find_fields(filename) -> list:
