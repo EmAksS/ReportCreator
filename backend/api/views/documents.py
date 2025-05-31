@@ -820,7 +820,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         document_data["contract_number"] = template.related_contractor_person.company.contract_number
         document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
         #* order_date - в fill_document
-        document_data["order_number"] = Document.objects.filter(related_template=template).count() + 1
+        document_data["order_number"] = Document.objects.filter(template=template).count() + 1
         # Лицо заказчика
         if template.related_contractor_person is not None:
             document_data["contractor_person"] = template.related_contractor_person.set_initials()
