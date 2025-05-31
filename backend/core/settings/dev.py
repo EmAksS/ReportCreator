@@ -7,6 +7,11 @@ SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
 SECURE_SSL_REDIRECT = False
 
+# Настройки для CSRF куки
+CSRF_COOKIE_SAMESITE = 'None'  # Разрешает отправку куки в межсайтовых запросах
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_HTTPONLY = False   # Позволяет JavaScript читать CSRF токен
+
 FRONTEND_PORT = environ.get('FRONTEND_PORT', 3000)
 
 # Хосты для связи фронта и бека (CORS)
