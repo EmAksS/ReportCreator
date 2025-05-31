@@ -386,6 +386,38 @@ class CompanyUsersView(SchemaAPIView, generics.ListAPIView):
         return User.objects.filter(company=self.request.user.company)
 
 
+class CompanyUserPCView(SchemaAPIView, generics.GenericAPIView):
+    permission_classes = [IsAuthed]
+    error_messages = {}
+
+    def get(self, request, username):
+        #username = self.kwargs.get('username')
+        user = User.objects.filter(username=username).first()
+
+        if not user:
+            raise ValidationError({"username": "Пользователь не найден."})
+        
+        fields = [
+            "last_name",
+            "first_name",
+            "surname",
+        ]
+        data = {
+            "username": user.username,
+            "company": user.company.id,
+            "is_company_superuser": user.is_company_superuser,
+        }
+
+        for field in fields:
+            user_field = UsersValues.objects.filter(id=f"{user.username}__{field}").first()
+            if user_field:
+                data[field] = user_field.value
+            else:
+                data[field] = None
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
 @extend_schema(tags=["Contractors"])
 @extend_schema_view(
     get=extend_schema(
