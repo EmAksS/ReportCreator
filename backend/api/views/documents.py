@@ -790,6 +790,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         # Создаём документ
         try:
             doc = Document.objects.get_or_create(
+                id=Document.objects.filter().count() + 1,
                 template=template,
                 shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
                 save_path=DOCUMENTS_FOLDER/template.template_file.name.split('/')[-1],
