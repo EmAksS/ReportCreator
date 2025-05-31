@@ -561,7 +561,7 @@ class TemplateInfoView(SchemaAPIView, generics.GenericAPIView):
     )
 )
 # endregion
-class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
+class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView, generics.UpdateAPIView):
     serializer_class = DocumentFieldSerializer
     details_serializer = DocumentFieldSerializer
     permission_classes = [IsAuthedOrReadOnly]
@@ -608,6 +608,41 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
             if "UNIQUE constraint" in str(e):
                 raise ValidationError({"key_name": "Данное поле в документе уже существует."})
             raise ValidationError({"unknown": f"Ошибка создания поля документа: {e}"})
+    
+    def put(self, request, *args, **kwargs):
+        data = load_data(request.data)
+        
+        error = field_validate(data, "DocumentField")
+        if error is not None:
+            raise ValidationError({error["field_id"]: error["error"]})
+
+        required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
+        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+
+        if missing_fields:
+            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
+
+        template = Template.objects.filter(id=self.kwargs.get('tid')).first()
+        if template is None:
+            raise ValidationError({"template_id": f"Шаблон с TID {self.kwargs.get('tid')} не найден."})
+
+        instance = DocumentField.objects.get(
+            id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template.id).first().template_name).replace(' ', '_')}",
+            key_name=find_dataValue(data, 'key_name'),
+            related_template=template,
+            )
+        if instance:
+            instance.name = find_dataValue(data, 'name')
+            instance.is_required = find_dataValue(data, 'is_required')
+            instance.type = find_dataValue(data, 'type')
+            instance.validation_regex = find_dataValue(data, 'validation_regex')
+            instance.placeholder = f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"
+            instance.save()
+        else:
+            raise ValidationError({"unknown": "Данное поле не найдено."})
+
+        return Response(self.serializer_class(instance).data, status=status.HTTP_200_OK)
+
 
 
 # Вернуть поля для создания DocumentField
