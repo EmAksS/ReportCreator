@@ -34,7 +34,7 @@ from api.serializers.schema import (
 )
 # scripts
 from backend.scripts.field_validate import field_validate
-from backend.scripts.fill_document import fill_document, find_fields
+from backend.scripts.fill_document import fill_document, find_fields, find_table_columns
 import json
 from backend.scripts.find_datavalue import find_dataValue
 from backend.scripts.load_data import load_data
@@ -334,9 +334,34 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             serializer.save()
             # future_fields = find_fields(find_dataValue(data, "template_file"))
             # serializer.found_fields = future_fields
-            return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Обрабатываем таблицы в шаблоне
+        table_columns = find_table_columns(find_dataValue(data, "template_file"))
+        index = 10
+        for column in table_columns:
+            table_field = TableField.objects.get_or_create(
+                related_template=serializer.instance,
+                order=index,
+                is_summable=False,
+                is_autoincremental=False,
+
+                id=f"{serializer.instance.template_name}__table__{str(column).replace(' ', '_')}",
+                name=str(column)[0:50],
+                key_name=f"table_{index}",
+                is_required=True,
+                related_item="TableField",
+                type="TEXT",
+                related_info=None,
+                placeholder="Значение этого поля",
+                validation_regex=None,
+                secure_text=False,
+                error_text=None,
+                is_custom=True,
+            )
+
+        return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
 
 
 class TemplateDetailDestroyView(SchemaAPIView, generics.RetrieveDestroyAPIView):
@@ -661,7 +686,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     details_serializer = TableFieldSerializer
     permission_classes = [IsAuthedOrReadOnly]
 
-    def get(self):
+    def get(self, request, *args, **kwargs):
         fields = Field.objects.filter(related_item="TableField", is_custom=False)
         self.details_serializer = FieldSerializer
         return Response(FieldSerializer(fields, many=True).data, status=status.HTTP_200_OK)
@@ -708,6 +733,22 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             if "UNIQUE constraint" in str(e):
                 raise ValidationError({"key_name": "В шаблоне уже существует данный столбец таблицы с таким же названием или порядком."})
             raise ValidationError({"unknown": f"Ошибка создания поля столбца таблицы: {e}"})
+
+    def put(self, request, *args, **kwargs):
+        self.details_serializer = TableFieldSerializer
+        data = load_data(request.data)
+
+        error = field_validate(data, "TableField")
+        if error is not None:
+            raise ValidationError({error["field_id"]: error["error"]})
+        
+        required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
+        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+
+        if missing_fields:
+            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
+        
+        raise NotImplementedError({"sleepy": "ляг поспи"})
 
 
 # Проверить список толбцов таблицы для шаблона TK

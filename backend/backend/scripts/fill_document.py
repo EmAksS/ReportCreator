@@ -1,5 +1,5 @@
-from docx import Document
-from docxtpl import DocxTemplate
+from docx import *
+from docxtpl import *
 import os
 from workalendar.europe import Russia
 import locale
@@ -173,6 +173,28 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
     doc.save(result['path'])
     
     return result
+
+
+def find_table_columns(filename):
+    """Находит все колонки таблицы, которые являются счетчиками"""
+    doc = Document(MEDIA_ROOT / filename.name) #! Теперь файлы загружать именно так!
+    table = doc.tables[0]
+
+    columns_count = max(len(row.cells) for row in table.rows)
+    
+    # Инициализируем список для каждого столбца
+    columns = [[] for _ in range(columns_count)]
+    
+    # Собираем данные всех столбцов
+    for row_idx, row in enumerate(table.rows):
+        for col_idx in range(columns_count):
+            if col_idx < len(row.cells):  # На случай, если в строке меньше ячеек
+                cell_text = row.cells[col_idx].text.strip()
+                columns[col_idx].append(cell_text)
+    
+    headers = columns[0] if columns else []
+
+    return columns
 
 
 def find_fields(filename) -> list:
