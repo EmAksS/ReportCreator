@@ -794,7 +794,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 template=template,
                 shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
                 save_path=DOCUMENTS_FOLDER/template.template_file.name.split('/')[-1],
-            )
+            )[0]
         except Exception as e:
             raise ValidationError({"unknown": f"Ошибка создания документа: ({e})"})
         
@@ -807,7 +807,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             try:
                 DocumentsValues.objects.get_or_create(
                     document_id=doc,
-                    field_id=Field.objects.filter(id=field.get('field_id'), related_item="DocumentField").first(),
+                    field_id=DocumentField.objects.filter(key_name=field.get('field_id'), related_item="DocumentField").first(),
                     value=field.get("value", ""),
                 )
             except Exception as e:
