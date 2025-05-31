@@ -10,6 +10,8 @@ from django.core.exceptions import ValidationError
 
 from core.settings.base import DOCUMENTS_FOLDER, TEMPLATES_FOLDER, MEDIA_ROOT
 
+from backend.scripts.money_to_words import money_to_words
+
 
 def fill_document(filename: str, data: dict, table_data: list[list[str]], settings: dict = {}) -> dict:
     """
@@ -105,6 +107,10 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
     # Получить первый рабочий день текущего месяца и текущего года
     data["order_date"] = Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%d %B %Y")
     result['shown_date'] = data["order_date"]
+
+    if data.get("total_cost") is not None:
+        rubles, ruble_word, kopecks = money_to_words(data["total_cost"])
+        data["total_cost"] = f"{int(data['total_cost'])} ({rubles}) {ruble_word} {kopecks}" if settings.get("summable_type") == "CURRENCY" else data["total_cost"]
 
     if os.path.exists(TEMPLATES_FOLDER / filename) is False:
         result['code'] = 21

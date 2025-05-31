@@ -64,14 +64,15 @@ def money_to_words(amount):
     kopecks = round((amount - rubles) * 100)
     
     ruble_words = number_to_words(rubles)
+    ruble_format = None
     kopek_num = f"{kopecks:02d}"  # Копейки числом (двузначный формат)
     
     # Склонение рублей
     if rubles % 100 in [11, 12, 13, 14] or rubles % 10 in [0, 5, 6, 7, 8, 9]:
-        ruble_words += ' рублей'
+        ruble_format = 'рублей'
     elif rubles % 10 == 1:
-        ruble_words += ' рубль'
+        ruble_format = 'рубль'
     else:
-        ruble_words += ' рубля'
+        ruble_format = 'рубля'
     
-    return f"{ruble_words} {kopek_num} копеек"  # Копейки числом
+    return f"{ruble_words}", ruble_format, f"{kopek_num} копеек"  # Копейки числом
