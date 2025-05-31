@@ -875,7 +875,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 doc.save_path = info["path"]
         except Exception as e:
             doc.delete()   # Удаляем документ, если произошла ошибка
-            raise ValidationError({"unknown": f"Ошибка создания документа: ({e}). Информация: {info}"})
+            raise ValidationError({"unknown": f"Ошибка создания документа: ({e})."})
 
         #print(info)
         self.details_serializer = DocumentSerializer
