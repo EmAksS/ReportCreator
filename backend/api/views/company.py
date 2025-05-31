@@ -508,6 +508,8 @@ class ContractorCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 contract_date=find_dataValue(data, "contract_date"),
             )
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"company_name": "Данная компания-заказчик уже существует в этой компании."})
             raise ValidationError({"unknown": f"Ошибка создания заказчика: {e}"})
         
         self.details_serializer = ContractorSerializer
@@ -660,6 +662,8 @@ class ExecutorPersonListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 company=request.user.company,
             )
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"FCs": "Юридическое лицо данной компании с данным ФИО уже существует."})
             raise ValidationError({"unknown": f"Ошибка создания юридичекого лица исполнителя: {e}"})
         
         return Response(self.serializer_class(person).data, status=status.HTTP_201_CREATED)
@@ -768,6 +772,8 @@ class ContractorPersonListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 company=contractor_id,
             )
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"FCs": "Юридическое лицо данной компании с данным ФИО уже существует."})
             raise ValidationError({"unknown": f"Ошибка создания юридичекого лица заказчика: {e}"})
         
         return Response(self.serializer_class(person).data, status=status.HTTP_201_CREATED)

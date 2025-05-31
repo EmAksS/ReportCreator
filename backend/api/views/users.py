@@ -422,6 +422,8 @@ class UserRegisterView(SchemaAPIView, generics.ListCreateAPIView):
                     is_staff=False  # для доступа к админке если нужно
                 )
             except Exception as e:
+                if "UNIQUE constraint" in str(e) and "username" in str(e):
+                    raise ValidationError({"username": "Пользователь с таким именем уже существует"})
                 raise ValidationError({"unknown": "Ошибка при создании пользователя: " + str(e)})
 
         for item in data:
@@ -628,6 +630,8 @@ class UserFieldListView(SchemaAPIView, generics.ListCreateAPIView):
                 is_custom=True,
             )
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"key_name": "Поле пользователя с таким именем уже существует"})
             raise ValidationError({"error": "Не удалось создать поле пользователя" + str(e)})
         
         return Response(self.details_serializer(field).data, status=status.HTTP_201_CREATED)

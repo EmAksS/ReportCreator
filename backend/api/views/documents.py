@@ -324,6 +324,8 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             # )
             serializer = self.serializer_class(data=data)
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"template_name": "Данный шаблон уже существует."})
             return Response({"unknown": f"Неизвестная ошибка: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         self.details_serializer = TemplateSerializer
@@ -603,6 +605,8 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
 
             return Response(self.serializer_class(doc_field).data, status=status.HTTP_201_CREATED)
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"key_name": "Данное поле в документе уже существует."})
             raise ValidationError({"unknown": f"Ошибка создания поля документа: {e}"})
 
 
@@ -666,6 +670,8 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
 
             return Response(self.serializer_class(table_field).data, status=status.HTTP_201_CREATED)
         except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"key_name": "В шаблоне уже существует данный столбец таблицы с таким же названием или порядком."})
             raise ValidationError({"unknown": f"Ошибка создания поля столбца таблицы: {e}"})
 
 

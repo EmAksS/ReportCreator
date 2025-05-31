@@ -45,7 +45,7 @@ class Contractor(CompanyAbstract):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['company_name', 'company_fullName'], name='company_names_combination'
+                fields=['company_name', 'company_fullName', 'related_executor'], name='company_names_combination'
             )
         ]
 
@@ -80,7 +80,7 @@ class ExecutorPerson(Person):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['first_name', 'last_name', 'surname'], name='FIO_executor_combination'
+                fields=['first_name', 'last_name', 'surname', 'company'], name='FIO_executor_combination'
             )
         ]
 
@@ -94,7 +94,7 @@ class ContractorPerson(Person):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['first_name', 'last_name', 'surname'], name='FIO_contractor_combination'
+                fields=['first_name', 'last_name', 'surname', 'company'], name='FIO_contractor_combination'
             )
         ]
 

@@ -39,7 +39,7 @@ class DocumentField(AbstractField):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['key_name', 'related_item'], name='document_field_key_name_related_item_combination'
+                fields=['key_name', 'related_item', 'related_template'], name='document_field_key_name_related_item_combination'
             )
         ]
 
@@ -56,7 +56,7 @@ class TableField(AbstractField):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['key_name', 'related_item'], name='table_field_key_name_related_item_combination'
+                fields=['key_name', 'related_item', 'related_template'], name='table_field_key_name_related_item_combination'
             ),
             models.UniqueConstraint(
                 fields=['order', 'related_template'], name='table_field_order_related_item_combination'
