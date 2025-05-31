@@ -852,7 +852,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             maxlen = max(maxlen, len(find_dataValue(data, listfield)))
         
         table = []
-        for row in range(len(maxlen)):
+        for row in range(maxlen):
             rowlist = []
             for listfield in ordered_lf:
                 try:
