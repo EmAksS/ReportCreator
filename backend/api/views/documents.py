@@ -692,7 +692,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         self.details_serializer = FieldSerializer
         return Response(FieldSerializer(fields, many=True).data, status=status.HTTP_200_OK)
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, tk: int, *args, **kwargs):
         self.details_serializer = TableFieldSerializer
         data = load_data(request.data)
 
@@ -706,11 +706,10 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         if missing_fields:
             raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
         
-        template_id = data.get('related_template')
         try:
-            template = Template.objects.get(id=template_id)
+            template = Template.objects.get(id=tk)
         except Template.DoesNotExist:
-            raise ValidationError({"template_id": f"Шаблон с TID {template_id} не найден."})
+            raise ValidationError({"template_id": f"Шаблон с TID {tk} не найден."})
         
         try:
             table_field = TableField.objects.create(

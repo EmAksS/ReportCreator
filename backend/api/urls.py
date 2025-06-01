@@ -39,7 +39,7 @@ urlpatterns = [
     path('templates/<int:tid>/info/', documents.TemplateInfoView.as_view(), name='template_info'),
     path('templates/<int:tid>/fields/', documents.TemplateDocumentFieldsListCreateView.as_view(), name='template_fields'),
     path('templates/<int:tid>/fields/fields/', documents.TemplateDocumentFieldsFieldsView.as_view(), name='template_fields_fields_view'),
-    path('templates/tables/create/', documents.TableFieldsListCreateView.as_view(), name='template_table_create'),
+    path('templates/tables/create/<int:tk>/', documents.TableFieldsListCreateView.as_view(), name='template_table_create'),
     path('templates/tables/<int:tk>/', documents.TemplateTableFieldsListView.as_view(), name='template_table_view'),
 
     # Вставить про документы
