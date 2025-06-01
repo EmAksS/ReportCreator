@@ -933,22 +933,22 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         ## Дополняем также информацией о компаниях
         locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
         # Информация о документе
-        document_data["contract_number"] = template.related_contractor_person.company.contract_number
-        document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
+        document_data["contract_number"] = template.related_contractor_person.contract_number
+        document_data["contract_date"] = template.related_contractor_person.contract_date.strftime("%d.%m.%Y")
         #* order_date - в fill_document
         document_data["order_number"] = Document.objects.filter(template=template).count() + 1
         # Лицо заказчика
         if template.related_contractor_person is not None:
             document_data["contractor_person"] = template.related_contractor_person.set_initials()
-            document_data["contractor_post"] = template.related_contractor_person.post if template.related_contractor_person.post else "Ответственное лицо"
-            document_data["contractor_company_full"] = template.related_contractor_person.company.company_fullName
-            document_data["contractor_company"] = template.related_contractor_person.company.company_name
+            document_data["contractor_post"] = template.related_contractor_person.post if template.related_contractor_person.post else f"Ответственное лицо {template.related_contractor_person.post}"
+            document_data["contractor_company_full"] = template.related_contractor_person.person_type
+            document_data["contractor_company"] = template.related_contractor_person.person_type
         # Лицо исполнителя
         if template.related_executor_person is not None:
             document_data["executor_person"] = template.related_executor_person.set_initials()
-            document_data["executor_post"] = template.related_executor_person.post if template.related_executor_person.post else "Ответственное лицо"
-            document_data["executor_company_full"] = template.related_executor_person.company.company_fullName
-            document_data["executor_company"] = template.related_executor_person.company.company_name
+            document_data["executor_post"] = template.related_executor_person.post if template.related_executor_person.post else f"Юридическое лицо {template.related_executor_person.person_type}"
+            document_data["executor_company_full"] = template.related_executor_person.person_type
+            document_data["executor_company"] = template.related_executor_person.person_type
 
 
         # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER

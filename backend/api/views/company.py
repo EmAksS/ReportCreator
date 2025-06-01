@@ -535,10 +535,7 @@ class ContractorCreateView(SchemaAPIView, generics.ListCreateAPIView):
             contractor = Contractor.objects.create(
                 company_name = find_dataValue(data, "company_name"),
                 company_fullName = find_dataValue(data, "company_fullName"),
-                related_executor=request.user.company,
-                contractor_city=find_dataValue(data, "contractor_city"),
-                contract_number=find_dataValue(data, "contract_number"),
-                contract_date=find_dataValue(data, "contract_date"),
+                related_executor=request.user.company
             )
         except Exception as e:
             if "UNIQUE constraint" in str(e):
@@ -688,6 +685,7 @@ class ExecutorPersonListCreateView(SchemaAPIView, generics.ListCreateAPIView):
 
         try:
             person = ExecutorPerson.objects.create(
+                person_type=find_dataValue(data, "person_type"),
                 first_name=find_dataValue(data, "first_name"),
                 last_name=find_dataValue(data, "last_name"),
                 surname=find_dataValue(data, "surname"),
@@ -798,11 +796,15 @@ class ContractorPersonListCreateView(SchemaAPIView, generics.ListCreateAPIView):
 
         try:
             person = ContractorPerson.objects.create(
+                person_type=find_dataValue(data, "person_type"),
                 first_name=find_dataValue(data, "first_name"),
                 last_name=find_dataValue(data, "last_name"),
                 surname=find_dataValue(data, "surname"),
                 post=find_dataValue(data, "post"),
                 company=contractor_id,
+                contractor_city=find_dataValue(data, "contractor_city"),
+                contract_number=find_dataValue(data, "contract_number"),
+                contract_date=find_dataValue(data, "contract_date"),
             )
         except Exception as e:
             if "UNIQUE constraint" in str(e):
