@@ -59,7 +59,7 @@ class Person(models.Model):
     class Meta:
         abstract = True
 
-    person_type = models.CharField(max_length=64, null=False) # OAO "Название компании"
+    person_type = models.TextField(max_length=128, null=False, default="OAO 'Название компании'") # OAO "Название компании"
     first_name = models.CharField(max_length=64, null=False)
     last_name = models.CharField(max_length=64, null=False)
     surname = models.CharField(max_length=64, null=False)

@@ -327,7 +327,7 @@ EXECUTOR_PERSON = [
     {
         'name': 'Должность представителя',
         'key_name': 'post',
-        'is_required': False,
+        'is_required': True,
         'placeholder': 'Должность юридического лица исполнителя в компании',
         'type': 'TEXT',
         'validation_regex': '^[а-яА-Я]{0,64}$',
@@ -390,7 +390,7 @@ CONTRACTOR_PERSON = [
     {
         'name': 'Должность представителя',
         'key_name': 'post',
-        'is_required': False,
+        'is_required': True,
         'placeholder': 'Должность юридического лица исполнителя в компании',
         'type': 'TEXT',
         'validation_regex': '^[а-яА-Я]{0,64}$',
