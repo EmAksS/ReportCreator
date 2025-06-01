@@ -106,7 +106,7 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]], settin
 
     # Получить первый рабочий день текущего месяца и текущего года
     data["order_date"] = Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%d %B %Y")
-    result['shown_date'] = data["order_date"]
+    result['shown_date'] = Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%Y-%m-%d")
 
     if data.get("total_cost") is not None:
         rubles, ruble_word, kopecks = money_to_words(data["total_cost"])
