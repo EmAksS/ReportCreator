@@ -915,6 +915,8 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         document_settings = {}
 
         for field in data:
+            if isinstance(field.get('value'), list):
+                continue
             document_data[field.get('field_id')] = field.get("value")
             try:
                 DocumentsValues.objects.get_or_create(

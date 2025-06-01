@@ -24,12 +24,7 @@ def field_validate(data: list[dict], type:str):
         value = item.get("value")
 
         if isinstance(value, list):
-            for item in value:
-                # Списки могут быть только для TableField
-                error = field_validate(item, "TableField")
-                if error is not None:
-                    break
-            return error
+            type = "TableField"
 
         print("value = ", value)
         
@@ -45,13 +40,27 @@ def field_validate(data: list[dict], type:str):
             return error
         
         validation_regex = field.validation_regex
-        if validation_regex is not None:
-            re = regex.compile(validation_regex)
-            if re.match(value) is None:
-                error = {
-                    "field_id": field_id,
-                    "error": "Неверный формат по validation_regex"
-                }
-                break
+        
+        if isinstance(value, list):
+            for item_v in value:
+                # Списки могут быть только для TableField
+                if validation_regex is not None:
+                    re = regex.compile(validation_regex)
+                    if re.match(value) is None:
+                        error = {
+                            "field_id": field_id,
+                            "error": "Неверный формат по validation_regex"
+                        }
+                        break
+            return error
+        else:
+            if validation_regex is not None:
+                re = regex.compile(validation_regex)
+                if re.match(value) is None:
+                    error = {
+                        "field_id": field_id,
+                        "error": "Неверный формат по validation_regex"
+                    }
+                    break
 
     return error
