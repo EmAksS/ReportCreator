@@ -22,8 +22,7 @@ export const ENDPOINTS = {
     EXECUTOR_PERSONS_FIELDS: "/persons/executor/fields/",
 
     TEMPLATES: "/templates/",
-    COMPANY_TEMPLATES: (templateId: number | string = "") => `/templates/company/${templateId}`,
-
+    COMPANY_TEMPLATES: (templateId: number | string = "") => `/templates/company/${templateId}/`,
     DOCUMENTS: (templateId: number | string) => `/document/save/${templateId}/`,
     DOCUMENT_TYPES: "/document/types/",
 
@@ -34,6 +33,8 @@ export const ENDPOINTS = {
 
     TEMPLATE_FIELDS: (templateId: number) => `/templates/${templateId}/fields/`,
     TEMPLATE_FIELD_FIELDS: (templateId: number) => `/templates/${templateId}/fields/fields/`,
+    TEMPLATE_TABLE_FIELD_FIELDS: (templateId: number | string) => `/templates/tables/create/${templateId}/`,
+    TEMPLATE_FIELD_VALUES: (templateId: number) => `/templates/tables/${templateId}/`,
 }
 
 const API_METHODS = {
@@ -127,14 +128,25 @@ export async function getDocumentTemplateCreationFields(): Promise<Field[]>
     return await getFields(ENDPOINTS.TEMPLATES);
 }
 
-export async function getDocumentFields(id: number): Promise<Field[]>
+export async function getDocumentFields(templateId: number): Promise<Field[]>
 {
-    return await getFields(ENDPOINTS.DOCUMENTS(id));
+    return await getFields(ENDPOINTS.DOCUMENTS(templateId));
 }
 
 export async function getTemplateFieldsFields(templateId: number): Promise<Field[]>
 {
     return await getFields(ENDPOINTS.TEMPLATE_FIELD_FIELDS(templateId));
+}
+
+export async function getTemplateTableFieldSettingFields(templateId: number): Promise<Field[]>
+{
+    return await getFields(ENDPOINTS.TEMPLATE_TABLE_FIELD_FIELDS(templateId))
+}
+
+export async function getTemplateTableFieldValues(templateId: number): Promise<Field[]>
+{
+    console.log("getTemplateTableFieldValues", await getFields(ENDPOINTS.TEMPLATE_FIELD_VALUES(templateId)))
+    return await getFields(ENDPOINTS.TEMPLATE_FIELD_VALUES(templateId));
 }
 
 async function getFields(url: string): Promise<Field[]>
@@ -177,10 +189,25 @@ export async function getComboboxItems(URL: string): Promise<any[]>
     return toSnake(await apiGet<any>(URL));
 }
 
+export async function getTemplateTableFields(templateId: number): Promise<Field[]>
+{
+    return apiGet(ENDPOINTS.TEMPLATE_FIELD_VALUES(templateId));
+}
+
 export async function createTemplateField(templateId: number, fieldCreationData: DataValue[]): Promise<any>
 {
     return await apiPost<any>({url: ENDPOINTS.TEMPLATE_FIELDS(templateId), body: fieldCreationData});
 }
+
+export async function createTemplateTableField(templateId: number, fieldCreationData: DataValue[]): Promise<any>
+{
+    return await apiPut<any>({url: ENDPOINTS.TEMPLATE_TABLE_FIELD_FIELDS(templateId), body: fieldCreationData});
+}
+
+// export async function recreateTemplateTableField(templateId: number, fieldCreationData: DataValue[]): Promise<any>
+// {
+//     return await apiPut<any>({url: ENDPOINTS.TEMPLATE_TABLE_FIELD_FIELDS(templateId), body: fieldCreationData});
+// }
 
 export async function createCompany(companyRegistrationData: DataValue[]): Promise<User>
 {

@@ -54,10 +54,10 @@ export interface DocumentField extends Field
     relatedTemplate: string;
 }
 
-export interface TableField extends DocumentField
+export interface TableField extends Field
 {
-    relatedTable: string;
-    fields: Field[];
+    isAutoincremental: boolean;
+    isSummable: boolean;
 }
 
 export interface InputPresentation

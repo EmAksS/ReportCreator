@@ -47,6 +47,7 @@ function AppContent()
             <Hat
                 imageSrc={"/assets/images/report_creator_logo.png"}
                 title={"Report Creator"}
+                onLogoClick={() => {if (user) navigate(ROUTES.MAIN)}}
                 buttonProps={user
                     ? [{ text: "Документы", onClick: () => navigate(ROUTES.DOCUMENTS), variant: ButtonType.hat },
                         { text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },

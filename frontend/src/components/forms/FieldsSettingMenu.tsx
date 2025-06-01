@@ -1,87 +1,201 @@
-import React, {FC, useEffect, useState} from "react";
-import {DataValue, Field} from "../../types/api";
-import {createTemplateField, getTemplateFieldsFields} from "../../api/api";
-import {DocumentTemplate} from "../../types/core";
+import React, { FC, useEffect, useState } from "react";
+import { DataValue, Field } from "../../types/api";
+import {
+    createTemplateField,
+    createTemplateTableField,
+    getTemplateFieldsFields,
+    getTemplateTableFieldSettingFields,
+    getTemplateTableFieldValues,
+} from "../../api/api";
+import { DocumentTemplate } from "../../types/core";
 import Form from "../Form";
-import {InputProps} from "../Input";
+import { InputProps } from "../Input";
 
 export interface FieldsSettingMenuProps {
     template: DocumentTemplate;
 }
 
-const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({template}) => {
-    const [currentFieldId, setCurrentFieldId] = useState<number>(0);
-    const [fieldNames, setFieldNames] = useState<string[]>([]);
-    const [fields, setFields] = useState<Field[][]>([]);
+const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
+    // -------------------- Состояния --------------------
+    // Фаза: "ordinary" (обычные поля) или "table" (табличные поля)
+    const [currentPhase, setCurrentPhase] = useState<"ordinary" | "table">("ordinary");
+
+    // Обычные поля (keyName и displayName совпадают)
+    const [ordinaryFieldNames, setOrdinaryFieldNames] = useState<string[]>([]);
+    const [ordinaryFieldFields, setOrdinaryFieldFields] = useState<Field[][]>([]);
+    const [currentOrdinaryIndex, setCurrentOrdinaryIndex] = useState<number>(0);
+
+    // Табличные поля: отдельно keyNames и displayNames
+    const [tableFieldKeyNames, setTableFieldKeyNames] = useState<string[]>([]);
+    const [tableFieldDisplayNames, setTableFieldDisplayNames] = useState<string[]>([]);
+    const [tableFieldFields, setTableFieldFields] = useState<Field[][]>([]);
+    const [currentTableIndex, setCurrentTableIndex] = useState<number>(0);
+
+    // Загрузка
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
+    // -------------------- Эффект: загрузка полей при изменении шаблона --------------------
     useEffect(() => {
-        setFieldNames(template.foundFields);
-        requestFields();
+        // Сбрасываем всё при смене template
+        setCurrentPhase("ordinary");
+        setCurrentOrdinaryIndex(0);
+        setCurrentTableIndex(0);
+        setOrdinaryFieldNames([]);
+        setOrdinaryFieldFields([]);
+        setTableFieldKeyNames([]);
+        setTableFieldDisplayNames([]);
+        setTableFieldFields([]);
+
+        const fetchAllFields = async () => {
+            setIsLoading(true);
+            try {
+                // ---- 1. Обычные поля ----
+                const ordNames = [...template.foundFields];
+                setOrdinaryFieldNames(ordNames);
+
+                const ordinaryRequests = ordNames.map(() => getTemplateFieldsFields(template.id));
+                const ordFieldsArray = await Promise.all(ordinaryRequests);
+                setOrdinaryFieldFields(ordFieldsArray);
+
+                // ---- 2. Табличные поля ----
+                const tableNameFields = await getTemplateTableFieldValues(template.id);
+                // Извлекаем keyName и display name
+                const tblKeyNames = tableNameFields.map((f) => f.keyName);
+                const tblDisplayNames = tableNameFields.map((f) => f.name);
+                setTableFieldKeyNames(tblKeyNames);
+                setTableFieldDisplayNames(tblDisplayNames);
+
+                const tableRequests = tblKeyNames.map(() => getTemplateTableFieldSettingFields(template.id));
+                const tblFieldsArray = await Promise.all(tableRequests);
+                setTableFieldFields(tblFieldsArray);
+            } catch (error) {
+                console.error("Error fetching fields:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllFields();
     }, [template]);
 
-    const requestFields = async () => {
-        setIsLoading(true);
-        try {
-            const fieldsRequests = template.foundFields.map(_ =>
-                getTemplateFieldsFields(template.id)
-            );
-            const requestedFields = await Promise.all(fieldsRequests);
-            setFields(requestedFields);
-        } catch (error) {
-            console.error("Error fetching fields:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    // -------------------- Хэндлер сохранения --------------------
     const onFieldSettingSubmit = async (values: DataValue[]) => {
-        // 1) Перезапишем value для ключа 'keyName', если он есть
-        // 2) Если нет — добавим его
+        const isOrdinaryPhase = currentPhase === "ordinary";
+
+        const keyNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldKeyNames;
+        const displayNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldDisplayNames;
+        const idx = isOrdinaryPhase ? currentOrdinaryIndex : currentTableIndex;
+
+        // Для сохранения используем keyName
+        const currentKeyName = keyNamesArr[idx];
+
+        const hasKeyName = values.some((v) => v.fieldId === "key_name");
         const enhancedValues = values
-            .map(v =>
-                v.fieldId === "key_name"
-                    ? { ...v, value: fieldNames[currentFieldId] }
-                    : v
-            )
-            .concat(
-                values.some(v => v.fieldId === "key_name")
-                    ? []
-                    : { fieldId: "key_name", value: fieldNames[currentFieldId] }
-            );
+            .map((v) => (v.fieldId === "key_name" ? { ...v, value: currentKeyName } : v))
+            .concat(hasKeyName ? [] : { fieldId: "key_name", value: currentKeyName });
 
         try {
-            await createTemplateField(template.id, enhancedValues);
-            removeFieldById(currentFieldId);
+            if (isOrdinaryPhase) {
+                await createTemplateField(template.id, enhancedValues);
+                removeOrdinaryFieldByIndex(idx);
+            } else {
+                await createTemplateTableField(template.id, enhancedValues);
+                removeTableFieldByIndex(idx);
+            }
         } catch (error) {
-            console.error("Error creating template field:", error);
+            console.error("Error saving field settings:", error);
         }
     };
 
-    const removeFieldById = (id: number) => {
-        setFieldNames(prev =>
-            prev.filter((_, idx) => idx !== id)
-        );
-        setFields(prev => prev.filter((_, idx) => idx !== id));
-        setCurrentFieldId(id === 0 ? 0 : id - 1);
+    // -------------------- Удаление обычного поля --------------------
+    const removeOrdinaryFieldByIndex = (index: number) => {
+        setOrdinaryFieldNames((prev) => prev.filter((_, idx) => idx !== index));
+        setOrdinaryFieldFields((prev) => prev.filter((_, idx) => idx !== index));
+        setCurrentOrdinaryIndex((prevIdx) => {
+            if (index === 0) return 0;
+            return prevIdx > 0 ? prevIdx - 1 : 0;
+        });
     };
 
-    const handlePrevField = () =>
-        setCurrentFieldId(i => Math.max(0, i - 1));
-    const handleNextField = () =>
-        setCurrentFieldId(i => Math.min(fieldNames.length - 1, i + 1));
+    // -------------------- Удаление табличного поля --------------------
+    const removeTableFieldByIndex = (index: number) => {
+        setTableFieldKeyNames((prev) => prev.filter((_, idx) => idx !== index));
+        setTableFieldDisplayNames((prev) => prev.filter((_, idx) => idx !== index));
+        setTableFieldFields((prev) => prev.filter((_, idx) => idx !== index));
+        setCurrentTableIndex((prevIdx) => {
+            if (index === 0) return 0;
+            return prevIdx > 0 ? prevIdx - 1 : 0;
+        });
+    };
 
-    if (isLoading) return <div>Loading...</div>;
+    // -------------------- Хэндлеры перехода "← Предыдущее" и "Следующее →" --------------------
+    const handlePrev = () => {
+        if (currentPhase === "ordinary") {
+            setCurrentOrdinaryIndex((i) => Math.max(0, i - 1));
+        } else {
+            setCurrentTableIndex((i) => Math.max(0, i - 1));
+        }
+    };
 
-    // Берём только те поля, у которых fieldId !== 'keyName'
-    const visibleFields =
-        fields[currentFieldId]?.filter(f => f.keyName !== "key_name") || [];
+    const handleNext = () => {
+        if (currentPhase === "ordinary") {
+            if (currentOrdinaryIndex < ordinaryFieldNames.length - 1) {
+                setCurrentOrdinaryIndex((i) => i + 1);
+            } else {
+                if (tableFieldKeyNames.length > 0) {
+                    setCurrentPhase("table");
+                    setCurrentTableIndex(0);
+                }
+            }
+        } else {
+            if (currentTableIndex < tableFieldKeyNames.length - 1) {
+                setCurrentTableIndex((i) => i + 1);
+            }
+        }
+    };
+
+    // -------------------- Логика рендера --------------------
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
+
+    if (
+        currentPhase === "ordinary" &&
+        ordinaryFieldNames.length === 0 &&
+        tableFieldKeyNames.length > 0
+    ) {
+        setCurrentPhase("table");
+        setCurrentTableIndex(0);
+        return null;
+    }
+
+    if (currentPhase === "table" && tableFieldKeyNames.length === 0) {
+        return <div>Все поля сохранены</div>;
+    }
+
+    if (ordinaryFieldNames.length === 0 && tableFieldKeyNames.length === 0) {
+        return <div>Все поля сохранены</div>;
+    }
+
+    const isOrdinaryPhase = currentPhase === "ordinary";
+    const displayNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldDisplayNames;
+    const keyNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldKeyNames;
+    const activeFieldsArray = isOrdinaryPhase ? ordinaryFieldFields : tableFieldFields;
+    const activeIndex = isOrdinaryPhase ? currentOrdinaryIndex : currentTableIndex;
+
+    const currentLabel = isOrdinaryPhase
+        ? `Поле ${displayNamesArr[activeIndex]} (${activeIndex + 1} из ${displayNamesArr.length})`
+        : `Табличное поле ${displayNamesArr[activeIndex]} (${activeIndex + 1} из ${displayNamesArr.length})`;
+
+    // Фильтруем, чтобы не показывать поля key_name и related_template
+    const visibleFields = activeFieldsArray[activeIndex]?.filter(
+        (f) => f.keyName !== "key_name" && f.keyName !== "related_template"
+    ) || [];
 
     return (
         <div>
             <h3>Настройка полей для шаблона {template.templateName}</h3>
-
-            {fieldNames.length > 0 && (
+            {displayNamesArr.length > 0 && (
                 <div
                     style={{
                         display: "flex",
@@ -89,44 +203,34 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({template}) => {
                         margin: "20px 0",
                     }}
                 >
-                    <button
-                        onClick={handlePrevField}
-                        disabled={currentFieldId === 0}
-                    >
-                        ← Предыдущее поле
+                    <button className={"toggleable-button"} onClick={handlePrev} disabled={activeIndex === 0}>
+                        ← Предыдущее
                     </button>
 
-                    <div>
-                        Поле {fieldNames[currentFieldId]} ({currentFieldId + 1} из {fieldNames.length})
-                    </div>
+                    <div>{currentLabel}</div>
 
-                    <button
-                        onClick={handleNextField}
+                    <button className={"toggleable-button"}
+                        onClick={handleNext}
                         disabled={
-                            currentFieldId === fieldNames.length - 1 ||
-                            fieldNames.length === 0
+                            isOrdinaryPhase
+                                ? currentOrdinaryIndex === ordinaryFieldNames.length - 1 && tableFieldKeyNames.length === 0
+                                : currentTableIndex === tableFieldKeyNames.length - 1
                         }
                     >
-                        Следующее поле →
+                        Следующее →
                     </button>
                 </div>
             )}
 
             {visibleFields.length > 0 ? (
                 <Form
-                    key={fieldNames[currentFieldId]}
-                    inputs={visibleFields.map(
-                        field => ({ inputData: field } as InputProps)
-                    )}
+                    key={displayNamesArr[activeIndex]}
+                    inputs={visibleFields.map((field) => ({ inputData: field } as InputProps))}
                     onSubmit={onFieldSettingSubmit}
                     submitLabel="Сохранить данные поля"
                 />
             ) : (
-                <div>
-                    {fieldNames.length === 0
-                        ? "Все поля сохранены"
-                        : "Нет доступных полей для настройки"}
-                </div>
+                <div>Нет доступных полей для настройки</div>
             )}
         </div>
     );

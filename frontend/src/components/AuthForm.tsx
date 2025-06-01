@@ -137,11 +137,13 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
                     <Button style={{width: "45%"}}
                             text={"Вход"}
                             onClick={() => setMenuMode(AuthFormMode.login)}
-                            variant={ButtonType.toggleable}/>
+                            variant={ButtonType.toggleable}
+                            selected={menuMode === AuthFormMode.login}/>
                     <Button style={{width: "45%"}}
                             text={"Регистрация компании"}
                             onClick={() => setMenuMode(AuthFormMode.registration)}
-                            variant={ButtonType.toggleable}/>
+                            variant={ButtonType.toggleable}
+                            selected={menuMode === AuthFormMode.registration}/>
                 </div>
 
                 <Form key={menuMode}

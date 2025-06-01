@@ -10,6 +10,7 @@ export interface FormProps
     submitLabel: string;
     successfulSubmitText?: string;
     style?: React.CSSProperties;
+    children?: React.ReactNode;
 }
 
 const Form: FC<FormProps> = (props: FormProps) =>
@@ -51,7 +52,6 @@ const Form: FC<FormProps> = (props: FormProps) =>
         {
             const field = input.field
             const value = input.value
-            console.log(field, value)
 
             if (value.value === undefined || value.value === null)
             {
@@ -115,6 +115,7 @@ const Form: FC<FormProps> = (props: FormProps) =>
                         <Input style={{width: "100%"}} alert={setAlertMessage} inputData={field} onChange={onInputChange} />
                     </div>)
             })}
+            {props.children}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
             <Button text={props.submitLabel} variant={ButtonType.general} onClick={tryToSubmit} style={{width: "100%"}}/>

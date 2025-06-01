@@ -136,71 +136,75 @@ const CompanyPage: FC = () =>
     }
 
     return (<div>
-        <SimpleContainer style={{width: "fit-content"}}>
-            <h3 style={{margin: "5px auto"}}>Я</h3>
-            {user?.username}
-        </SimpleContainer>
+        <div style={{display: "flex"}}>
+            <SimpleContainer style={{flex: "1"}}>
+                <h3 style={{margin: "5px auto"}}>Пользователь</h3>
+                {user?.username}
+                <h3 style={{margin: "5px auto"}}>Компания</h3>
+                {company?.companyFullName}
+            </SimpleContainer>
 
-        <SimpleContainer style={{width: "fit-content"}}>
-            <h3 style={{margin: "5px auto"}}>О компании</h3>
-            {company?.companyFullName}
-        </SimpleContainer>
-        <SimpleContainer style={{width: "fit-content"}}>
-            <h3 style={{margin: "5px auto"}}>Пользователи компании</h3>
-            <List items={companyUsers.map((currentUser, index) =>
-                ({id: index, content: <div>{(user?.username == currentUser.username ? "Вы: " : "") + currentUser.username + " " + (currentUser.isCompanySuperuser ? "👑" : "")}</div>} as ListItem))}
-                  onAdd={() =>
-                  {
-                      if (user?.isCompanySuperuser)
+            <SimpleContainer style={{flex: "1"}}>
+                <h3 style={{margin: "5px auto"}}>Пользователи компании</h3>
+                <List items={companyUsers.map((currentUser, index) =>
+                    ({id: index, content: <div>{(user?.username == currentUser.username ? "Вы: " : "") + currentUser.username + " " + (currentUser.isCompanySuperuser ? "👑" : "")}</div>} as ListItem))}
+                      onAdd={() =>
+                      {
+                          if (user?.isCompanySuperuser)
+                          {
+                              setIsOpenModal(true);
+                              setModalChildren(<SimpleContainer><Form submitLabel={"Добавить пользователя"}
+                                                                      inputs={companyUserFields.map(field => ({inputData: field} as InputProps))}
+                                                                      onSubmit={requestCreateCompanyUser}/></SimpleContainer>)
+                          }
+                      }}/>
+            </SimpleContainer>
+        </div>
+
+        <div style={{display: "flex"}}>
+            <SimpleContainer style={{flex: "1"}}>
+                <h3 style={{margin: "5px auto"}}>Компании Заказчики</h3>
+
+                <List items={contractorCompanies.map((contractor, index) =>
+                    ({id: index, content: <div>{contractor.companyFullName + " " + contractor.contractorCity}</div>} as ListItem))}
+                      onAdd={() =>
                       {
                           setIsOpenModal(true);
-                          setModalChildren(<SimpleContainer><Form submitLabel={"Добавить пользователя"}
-                                                                  inputs={companyUserFields.map(field => ({inputData: field} as InputProps))}
-                                                                  onSubmit={requestCreateCompanyUser}/></SimpleContainer>)
-                      }
-                  }}/>
-        </SimpleContainer>
-        <SimpleContainer style={{width: "fit-content"}}>
-            <h3 style={{margin: "5px auto"}}>Компании Заказчики</h3>
+                          setModalChildren(<SimpleContainer><Form submitLabel={"Добавить компанию заказчика"}
+                                                                  inputs={contractorCompanyFields.map(field => ({inputData: field} as InputProps))}
+                                                                  onSubmit={requestCreateContractorCompany}/></SimpleContainer>)
+                      }}/>
+            </SimpleContainer>
 
-            <List items={contractorCompanies.map((contractor, index) =>
-                ({id: index, content: <div>{contractor.companyFullName + " " + contractor.contractorCity}</div>} as ListItem))}
-                  onAdd={() =>
-                  {
-                      setIsOpenModal(true);
-                      setModalChildren(<SimpleContainer><Form submitLabel={"Добавить компанию заказчика"}
-                                             inputs={contractorCompanyFields.map(field => ({inputData: field} as InputProps))}
-                                             onSubmit={requestCreateContractorCompany}/></SimpleContainer>)
-                  }}/>
-        </SimpleContainer>
-
-        <SimpleContainer style={{width: "fit-content"}}>
-            <h3 style={{margin: "5px auto"}}>Юридические лица заказчиков</h3>
+            <SimpleContainer style={{flex: "1"}}>
+                <h3 style={{margin: "5px auto"}}>Юридические лица заказчиков</h3>
                 <List items={contractorPersons.map((person, index) =>
-                    ({id: index, content: <div>{person.company + " " + person.firstName + " " + person.
-                            post + " " + person.surname + " " + person.lastName}</div>} as ListItem))}
-                onAdd={() => {
-                    setIsOpenModal(true);
-                    setModalChildren(<SimpleContainer><Form submitLabel={"Добавить юр. лицо заказчика"}
-                                           inputs={contractorPersonFields.map(field => ({inputData: field} as InputProps))}
-                                           onSubmit={requestCreateContractorPerson}/></SimpleContainer>)
-                }}/>
-        </SimpleContainer>
+                    ({id: index, content: <div>{person.company + " " + person.post + " " + person.
+                            lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
+                      onAdd={() => {
+                          setIsOpenModal(true);
+                          setModalChildren(<SimpleContainer><Form submitLabel={"Добавить юр. лицо заказчика"}
+                                                                  inputs={contractorPersonFields.map(field => ({inputData: field} as InputProps))}
+                                                                  onSubmit={requestCreateContractorPerson}/></SimpleContainer>)
+                      }}/>
+            </SimpleContainer>
 
-        <SimpleContainer style={{width: "fit-content"}}>
-            <h3 style={{margin: "5px auto"}}>Юридические лица исполнителя</h3>
+            <SimpleContainer style={{flex: "1"}}>
+                <h3 style={{margin: "5px auto"}}>Юридические лица исполнителя</h3>
 
-            <List items={executorPersons.map((person, index) =>
-                ({id: index, content: <div>{person.post + " " + person.firstName}</div>} as ListItem))}
-                  onAdd={() => {
-                      setIsOpenModal(true);
-                      setModalChildren(<SimpleContainer>
-                          <Form submitLabel={"Добавить юр. лицо исполнителя"}
-                                inputs={executorPersonFields.map(field => ({inputData: field} as InputProps))}
-                                onSubmit={requestCreateExecutorPerson}/>
-                      </SimpleContainer>)
-                  }}/>
-        </SimpleContainer>
+                <List items={executorPersons.map((person, index) =>
+                    ({id: index, content: <div>{person.post + " " + person.
+                            lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
+                      onAdd={() => {
+                          setIsOpenModal(true);
+                          setModalChildren(<SimpleContainer>
+                              <Form submitLabel={"Добавить юр. лицо исполнителя"}
+                                    inputs={executorPersonFields.map(field => ({inputData: field} as InputProps))}
+                                    onSubmit={requestCreateExecutorPerson}/>
+                          </SimpleContainer>)
+                      }}/>
+            </SimpleContainer>
+        </div>
     </div>)
 }
 

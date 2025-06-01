@@ -103,7 +103,7 @@ code {
 
 .authorization-form
 {
-  width: 400px;
+  width: 530px;
   position: absolute;
   top: 50%;
   left: 50%;
@@ -196,12 +196,14 @@ code {
 
 .toggleable-button
 {
-  padding: 5px;
+  font-size: 20px;
+  font-weight: normal;
+  margin: 5px 0;
+  padding: 7.5px;
   outline: none;
   border-radius: 10px;
   border: 3px solid #ddd;
   background: white;
-
 }
 
 .table-input
@@ -229,8 +231,12 @@ code {
   position: relative;
   width: fit-content;
   min-height: 1px;
-  margin-bottom: 40px;
-  margin-right: 25px;
+  margin-bottom: 64px;
+}
+
+.table-input > .list
+{
+  margin-bottom: 0;
 }
 
 .list-item
@@ -238,7 +244,7 @@ code {
   position: relative;
 }
 
-.table-input div:last-of-type
+.list-item:last-of-type > div
 {
   border-bottom: none;
 }
@@ -247,7 +253,7 @@ code {
 {
   position: absolute;
   left: 100%;
-  top: -10%;
+  top: 15%;
   outline: none;
   border: none;
   background-color: transparent;
@@ -260,13 +266,13 @@ code {
 .list-item-add-button
 {
   position: absolute;
-  left: calc(100% - 6px);
+  left: -6px;
   top: calc(100% - 6px);
   outline: none;
   border: none;
   background-color: transparent;
   font-size: 48px;
-  color: #56e130;
+  color: #39BAF6FF;
   cursor: pointer;
 }
 

@@ -26,7 +26,6 @@ const Input: FC<InputProps> = (props: InputProps) =>
         switch (inputData.type)
         {
             case InputType.Text: return <TextInput {...props as TextInputProps} />
-            case InputType.Table: return <TableInput {...props as TableInputProps} />
             case InputType.Bool: return <CheckboxInput {...props} />
             case InputType.Combobox: return <ComboboxInput {...props as ComboboxInputProps} />
             case InputType.File: return <FileInput {...props as FileInputProps} />
