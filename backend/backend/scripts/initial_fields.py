@@ -346,7 +346,7 @@ CONTRACTOR_PERSON = [
         'placeholder': 'Введите название юридического лица исполнителя договора',
         'type': "TEXT",
         'validation_regex': '^([а-яА-Я]{0,64})$',
-        'related_item': "ExecutorPerson",
+        'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
@@ -422,7 +422,7 @@ CONTRACTOR_PERSON = [
         'placeholder': 'Город расположения компании',
         'type': 'TEXT',
         'validation_regex': '^[a-zA-Z0-9_.,а-яА-Я]{0,64}$',
-        'related_item': "Contractor",
+        'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
         'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
@@ -434,7 +434,7 @@ CONTRACTOR_PERSON = [
         'placeholder': 'Номер договора',
         'type': 'NUMBER',
         'validation_regex': '^[0-9]*$',
-        'related_item': "Contractor",
+        'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
         'error_text': "Номер договора должен быть числом."
@@ -446,7 +446,7 @@ CONTRACTOR_PERSON = [
         'placeholder': 'Дата подписания',
         'type': 'DATE',
         'validation_regex': None,
-        'related_item': "Contractor",
+        'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
         'error_text': None
