@@ -1,6 +1,13 @@
 from backend.models.fields import Field
+from backend.models.documents import DocumentField, TableField
 import regex 
 import json
+
+FIELDS_DB = [
+    Field,
+    DocumentField, 
+    TableField,
+]
 
 def field_validate(data: list[dict], type:str):
     """
@@ -16,17 +23,44 @@ def field_validate(data: list[dict], type:str):
         field_id = item.get("field_id")
         value = item.get("value")
 
+        if isinstance(value, list):
+            type = "TableField"
+
         print("value = ", value)
         
-        field = Field.objects.get(key_name=field_id, related_item=type)
-        validation_regex = field.validation_regex
-        if validation_regex is not None:
-            re = regex.compile(validation_regex)
-            if re.match(value) is None:
-                error = {
-                    "field_id": field_id,
-                    "error": "Неверный формат по validation_regex"
-                }
+        for x in FIELDS_DB:
+            field = x.objects.filter(key_name=field_id, related_item=type).first()
+            if field is not None:
                 break
+        if field is None:
+            error = {
+                "field_id": field_id,
+                "error": "Поле не было найдено в списке полей"
+            }
+            return error
+        
+        validation_regex = field.validation_regex
+        
+        if isinstance(value, list):
+            for item_v in value:
+                # Списки могут быть только для TableField
+                if validation_regex is not None:
+                    re = regex.compile(validation_regex)
+                    if re.match(value) is None:
+                        error = {
+                            "field_id": field_id,
+                            "error": "Неверный формат по validation_regex"
+                        }
+                        break
+            return error
+        else:
+            if validation_regex is not None:
+                re = regex.compile(validation_regex)
+                if re.match(value) is None:
+                    error = {
+                        "field_id": field_id,
+                        "error": "Неверный формат по validation_regex"
+                    }
+                    break
 
     return error

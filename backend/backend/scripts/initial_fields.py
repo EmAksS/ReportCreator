@@ -62,6 +62,34 @@ USER = [
     },
 ]
 
+USERLOGIN = [
+    {
+        'name': 'Логин',
+        'key_name': 'username',
+        'is_required': True,
+        'placeholder': 'Ваш логин пользователя',
+        'type': 'TEXT',
+        'validation_regex': '^[a-zA-Z0-9_-]{4,16}$',
+        'related_item': "UserLogin",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Имя пользователя должно быть уникальным, не должно содержать пробелов и быть от 4 до 16 символов.",
+    },
+    {
+        'name': 'Пароль',
+        'key_name': 'password',
+        'is_required': True,
+        'placeholder': 'Ваш пароль',
+        'type': 'TEXT',
+        # минимум 8 символов, минимум одна цифра
+        'validation_regex': '^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$',
+        'related_item': "UserLogin",
+        'related_info': None,
+        'secure_text': True,
+        'error_text': "Пароль должен быть длиннее 8 символов и содержать хотя бы одну цифру и заглавную букву.",
+    },
+]
+
 EXECUTOR = [
     {
         'name': 'Краткое название компании',
@@ -162,7 +190,7 @@ CONTRACTOR = [
         'name': 'Полное название компании',
         'key_name': 'company_fullName',
         'is_required': True,
-        'placeholder': 'Название компании с расшифровкой аббревиатур',
+        'placeholder': 'Полное название компании',
         'type': 'TEXT',
         'validation_regex': '^[a-zA-Z0-9_\"\'\-«»а-яА-Я\s\.\,]{0,256}$',
         'related_item': "Contractor",
@@ -174,7 +202,7 @@ CONTRACTOR = [
         'name': 'Город расположения заказчика',
         'key_name': 'contractor_city',
         'is_required': True,
-        'placeholder': 'Название компании с сокращёнными аббревиатурами',
+        'placeholder': 'Город расположения компании',
         'type': 'TEXT',
         'validation_regex': '^[a-zA-Z0-9_.,а-яА-Я]{0,64}$',
         'related_item': "Contractor",
@@ -182,6 +210,30 @@ CONTRACTOR = [
         'secure_text': False,
         'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
     },
+    {
+        'name': 'Номер подписанного договора',
+        'key_name': 'contract_number',
+        'is_required': True,
+        'placeholder': 'Номер договора',
+        'type': 'NUMBER',
+        'validation_regex': '^[0-9]*$',
+        'related_item': "Contractor",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Номер договора должен быть числом."
+    },
+    {
+        'name': 'Дата подписания договора',
+        'key_name': 'contract_date',
+        'is_required': True,
+        'placeholder': 'Дата подписания',
+        'type': 'DATE',
+        'validation_regex': None,
+        'related_item': "Contractor",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    }
 ]
 
 TEMPLATE = [
@@ -204,14 +256,14 @@ TEMPLATE = [
         'is_required': True,
         'placeholder': 'Отправьте файл шаблона в формате `.docx`',
         'type': 'FILE',
-        'validation_regex': '',
+        'validation_regex': None,
         'related_item': "Template",
         'secure_text': False,
         'error_text': ""
     },
     {
         'name': 'Тип документа',
-        'key_name': 'related_executor_person',
+        'key_name': 'template_type',
         'is_required': True,
         'placeholder': 'Выберите тип создаваемого документа',
         'type': 'COMBOBOX',
@@ -234,7 +286,7 @@ TEMPLATE = [
         'validation_regex': None,
         'related_item': "Template",
         'related_info': {
-            'url': "persons/executor/list/",
+            'url': "persons/executor/",
             'show_field': "initials",
             'save_field': "id",
         },
@@ -250,7 +302,7 @@ TEMPLATE = [
         'validation_regex': None,
         'related_item': "Template",
         'related_info': {
-            'url': "persons/contractor/list/",
+            'url': "persons/contractor/",
             'show_field': "initials",
             'save_field': "id",
         },
@@ -266,7 +318,7 @@ EXECUTOR_PERSON = [
         'is_required': True,
         'placeholder': 'Фамилия юридического лица исполнителя',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+){0,64}$',
         'related_item': "ExecutorPerson",
         'related_info': None,
         'secure_text': False,
@@ -278,7 +330,7 @@ EXECUTOR_PERSON = [
         'is_required': True,
         'placeholder': 'Имя юридического лица исполнителя',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+){0,64}$',
         'related_item': "ExecutorPerson",
         'related_info': None,
         'secure_text': False,
@@ -302,7 +354,7 @@ EXECUTOR_PERSON = [
         'is_required': False,
         'placeholder': 'Должность юридического лица исполнителя в компании',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]*{0,64}$',
+        'validation_regex': '^[а-яА-Я]{0,64}$',
         'related_item': "ExecutorPerson",
         'related_info': None,
         'secure_text': False,
@@ -317,7 +369,7 @@ CONTRACTOR_PERSON = [
         'is_required': True,
         'placeholder': 'Фамилия юридического лица исполнителя',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+){0,64}$',
         'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
@@ -329,7 +381,7 @@ CONTRACTOR_PERSON = [
         'is_required': True,
         'placeholder': 'Имя юридического лица исполнителя',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+){0,64}$',
         'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
@@ -353,7 +405,7 @@ CONTRACTOR_PERSON = [
         'is_required': False,
         'placeholder': 'Должность юридического лица исполнителя в компании',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]*{0,64}$',
+        'validation_regex': '^[а-яА-Я]{0,64}$',
         'related_item': "ContractorPerson",
         'related_info': None,
         'secure_text': False,
@@ -384,7 +436,7 @@ FIELD = [
         'is_required': True,
         'placeholder': 'Введите русское название поля',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+        'validation_regex': '^[\sа-яА-Я]{0,64}$',
         'related_item': "Field",
         'related_info': None,
         'secure_text': False,
@@ -420,7 +472,7 @@ FIELD = [
         'is_required': False,
         'placeholder': 'Укажите текст, который указывается в предложении.',
         'type': 'TEXT',
-        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
+        'validation_regex': '^[(a-zA-Z0-9)|(а-яА-Я)\s_`]*$',
         'related_item': "Field",
         'related_info': None,
         'secure_text': False,
@@ -435,9 +487,8 @@ FIELD = [
         'validation_regex': None,
         'related_item': "Field",
         'related_info': {
-            # ! Не выводить COMBOBOX, так как их создание невозможно!
-            'url': "url_для_вывода_всех_FIELD_TYPES",
-            'show_field': "value",
+            'url': "field/types/",
+            'show_field': "name",
             'save_field': "id",
         },
         'secure_text': False,
@@ -445,7 +496,7 @@ FIELD = [
     },
     {
         'name': 'Регулярное выражение для проверки',
-        'key_name': 'placeholder',
+        'key_name': 'validation_regex',
         'is_required': False,
         'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
         'type': 'TEXT',
@@ -457,11 +508,11 @@ FIELD = [
     },
     {
         'name': 'Текст при ошибке валидации',
-        'key_name': 'placeholder',
+        'key_name': 'error_text',
         'is_required': False,
         'placeholder': 'Текст ошибки при несоответствии `validation_regex`.',
         'type': 'TEXT',
-        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
+        'validation_regex': '^[(a-zA-Z0-9)|(а-яА-Я)\s_`]*$',
         'related_item': "Field",
         'related_info': None, 
         'secure_text': False,
@@ -471,28 +522,12 @@ FIELD = [
 
 DOCUMENT_FIELD = [
     {
-        'name': 'Связанный шаблон',
-        'key_name': 'related_template',
-        'is_required': True,
-        'placeholder': 'Выберите шаблон для создания поля.',
-        'type': 'COMBOBOX',
-        'validation_regex': None,
-        'related_item': "DocumentField",
-        'related_info': {
-            'url': "url_для_вывода_всех_шаблонов_компании",
-            'show_field': "name",
-            'save_field': "id",
-        },
-        'secure_text': False,
-        'error_text': None
-    },
-    {
         'name': 'Русское название поля',
         'key_name': 'name',
         'is_required': True,
         'placeholder': 'Введите русское название поля',
         'type': 'TEXT',
-        'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+        'validation_regex': '^[\sа-яА-Я]{0,64}$',
         'related_item': "DocumentField",
         'related_info': None,
         'secure_text': False,
@@ -528,7 +563,7 @@ DOCUMENT_FIELD = [
         'is_required': False,
         'placeholder': 'Укажите текст, который указывается в предложении.',
         'type': 'TEXT',
-        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
+        'validation_regex': '^[(a-zA-Z0-9)|(а-яА-Я)\s_`]*$',
         'related_item': "DocumentField",
         'related_info': None,
         'secure_text': False,
@@ -543,9 +578,8 @@ DOCUMENT_FIELD = [
         'validation_regex': None,
         'related_item': "DocumentField",
         'related_info': {
-            # ! Не выводить COMBOBOX, так как их создание невозможно!
-            'url': "url_для_вывода_всех_FIELD_TYPES",
-            'show_field': "value",
+            'url': "field/types/",
+            'show_field': "name",
             'save_field': "id",
         },
         'secure_text': False,
@@ -553,11 +587,11 @@ DOCUMENT_FIELD = [
     },
     {
         'name': 'Регулярное выражение для проверки',
-        'key_name': 'placeholder',
+        'key_name': 'validation_regex',
         'is_required': False,
         'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
         'type': 'TEXT',
-        'validation_regex': '???',
+        'validation_regex': None,
         'related_item': "DocumentField",
         'related_info': None, 
         'secure_text': False,
@@ -565,12 +599,139 @@ DOCUMENT_FIELD = [
     },
     {
         'name': 'Текст при ошибке валидации',
-        'key_name': 'placeholder',
+        'key_name': 'error_text',
         'is_required': False,
         'placeholder': 'Текст ошибки при несоответствии `validation_regex`.',
         'type': 'TEXT',
-        'validation_regex': '^([(a-zA-Z0-9)|(а-яА-Я)]_*)*[^_]$',
+        'validation_regex': '^[(a-zA-Z0-9)|(а-яА-Я)\s_`]*$',
         'related_item': "DocumentField",
+        'related_info': None, 
+        'secure_text': False,
+        'error_text': "Неправильный формат текста."
+    },
+]
+
+TABLE_FIELD = [
+    # {
+    #     'name': 'Порядок поля',
+    #     'key_name': 'order',
+    #     'is_required': True,
+    #     'placeholder': 'Укажите порядок поля',
+    #     'type': 'NUMBER',
+    #     'validation_regex': None,
+    #     'related_item': "TableField",
+    #     'related_info': None,
+    #     'secure_text': False,
+    #     'error_text': None
+    # },
+    {
+        'name': 'Является ли суммируемым столбцом?',
+        'key_name': 'is_summable',
+        'is_required': True,
+        'placeholder': None,
+        'type': 'BOOL',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Является ли автоинкрементируемым?',
+        'key_name': 'is_autoincremental',
+        'is_required': False,
+        'placeholder': None,
+        'type': 'BOOL',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Русское название поля',
+        'key_name': 'name',
+        'is_required': True,
+        'placeholder': 'Введите русское название поля',
+        'type': 'TEXT',
+        'validation_regex': '^[\sа-яА-Я]{0,64}$',
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
+    },
+    {
+        'name': 'Ключевое название поля',
+        'key_name': 'key_name',
+        'is_required': True,
+        'placeholder': 'Введите ключевое название поля',
+        'type': 'TEXT',
+        'validation_regex': '^\w{0,64}$',
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Значение должно быть уникальным, содержать только латиницу, а также не более 64 символов"
+    },
+    # {
+    #     'name': 'Необходимое поле?',
+    #     'key_name': 'is_required',
+    #     'is_required': True,
+    #     'placeholder': 'Это необходимое поле?',
+    #     'type': 'BOOL',
+    #     'validation_regex': None,
+    #     'related_item': "TableField",
+    #     'related_info': None,
+    #     'secure_text': False,
+    #     'error_text': None
+    # },
+    {
+        'name': 'Предложение записи для пользователя',
+        'key_name': 'placeholder',
+        'is_required': False,
+        'placeholder': 'Укажите текст, который указывается в предложении.',
+        'type': 'TEXT',
+        'validation_regex': '^[(a-zA-Z0-9)|(а-яА-Я)\s_`]*$',
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Текст должен состоять из кириллицы или латиницы."
+    },
+    {
+        'name': 'Тип поля',
+        'key_name': 'type',
+        'is_required': True,
+        'placeholder': 'Выберите тип поля из списка',
+        'type': 'COMBOBOX',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': {
+            'url': "field/types/",
+            'show_field': "name",
+            'save_field': "id",
+        },
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Регулярное выражение для проверки',
+        'key_name': 'validation_regex',
+        'is_required': False,
+        'placeholder': 'Значение должно проверяться, укажите регулярное тут регулярное выражение.',
+        'type': 'TEXT',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None, 
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Текст при ошибке валидации',
+        'key_name': 'error_text',
+        'is_required': False,
+        'placeholder': 'Текст ошибки при несоответствии `validation_regex`.',
+        'type': 'TEXT',
+        'validation_regex': '^[(a-zA-Z0-9)|(а-яА-Я)\s_`]*$',
+        'related_item': "TableField",
         'related_info': None, 
         'secure_text': False,
         'error_text': "Неправильный формат текста."
@@ -580,6 +741,7 @@ DOCUMENT_FIELD = [
 
 ALL_ITEMS = [
     USER,
+    USERLOGIN,
     EXECUTOR,
     CONTRACTOR, 
     TEMPLATE, 
@@ -587,10 +749,12 @@ ALL_ITEMS = [
     CONTRACTOR_PERSON,
     FIELD,
     DOCUMENT_FIELD,
+    TABLE_FIELD,
 ]
 
 STR_ITEMS = [
     "USER",
+    "USERLOGIN",
     "EXECUTOR",
     "CONTRACTOR", 
     "TEMPLATE", 
@@ -598,4 +762,5 @@ STR_ITEMS = [
     "CONTRACTOR_PERSON",
     "FIELD",
     "DOCUMENT_FIELD",
+    "TABLE_FIELD",
 ]

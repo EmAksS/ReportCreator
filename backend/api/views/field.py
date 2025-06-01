@@ -1,5 +1,6 @@
 # rest
 from rest_framework import generics, status
+from api.views.schema import SchemaAPIView
 # Permissions
 from rest_framework.permissions import AllowAny
 # Response
@@ -27,7 +28,8 @@ from drf_spectacular.utils import (
         }
     )
 )
-class FieldFieldsListView(generics.ListAPIView):
+class FieldFieldsListView(SchemaAPIView, generics.ListAPIView):
     queryset = Field.objects.filter(related_item="Field", is_custom=False)
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     permission_classes = [AllowAny]

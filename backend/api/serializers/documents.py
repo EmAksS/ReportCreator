@@ -1,13 +1,59 @@
 from rest_framework import serializers
 from backend.models import documents
 from backend.scripts.field_validate import field_validate
+from backend.scripts.fill_document import find_fields
+import os
 
 class TemplateSerializer(serializers.ModelSerializer):
-    type = serializers.ChoiceField(choices=documents.Template.DOCUMENT_TYPES)
+    #type = serializers.ChoiceField(choices=documents.Template.DOCUMENT_TYPES)
+    found_fields = serializers.SerializerMethodField()
+    #found_fields = serializers.ListField(child=serializers.CharField(), allow_empty=True, required=False)
     
     class Meta:
         model = documents.Template
         fields = '__all__'
+
+    def get_found_fields(self, obj):
+        """Получаем список найденных полей в шаблоне"""
+        if obj.template_file:
+            return find_fields(obj.template_file)
+        return []
+
+    def validate_template_file(self, value):
+        """Проверка что файл является валидным DOCX"""
+        # Проверка расширения
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext != '.docx':
+            raise serializers.ValidationError('Разрешены только файлы с расширением .docx')
+        
+        # Проверка сигнатуры DOCX (первые 4 байта)
+        file_pos = value.tell()
+        first_bytes = value.read(4)
+        value.seek(file_pos)  # Возвращаем позицию
+        
+        if first_bytes != b'PK\x03\x04':
+            raise serializers.ValidationError('Файл не является валидным DOCX документом')
+        
+        return value
+    
+    def to_internal_value(self, data):
+        """
+        Преобразуем входящий массив полей в словарь для сериализатора
+        """
+        # Если данные уже в правильном формате (например, при тестировании)
+        if isinstance(data, dict) and 'file' in data:
+            return super().to_internal_value(data)
+        
+        # Обрабатываем массив полей из фронтенда
+        processed_data = {'template_file': None}
+        
+        for field in data:
+            if field['field_id'] == 'template_file':
+                processed_data['template_file'] = field['value']
+            else:
+                processed_data[field['field_id']] = field['value']
+        
+        return super().to_internal_value(processed_data)
 
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,3 +82,13 @@ class DocumentFieldValueSerializer(serializers.ModelSerializer):
                 "Field должен относиться к Document"
             )
         return data
+
+class TableFieldSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = documents.TableField
+        fields = '__all__'
+
+class TableFieldValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = documents.TableValues
+        fields = '__all__'

@@ -13,7 +13,7 @@ class AbstractField(models.Model):
     ]
     
     id = models.CharField(primary_key=True, max_length=128)
-    name = models.CharField(max_length=50, verbose_name='Русское название поля (для отображения)')
+    name = models.TextField(max_length=50, verbose_name='Русское название поля (для отображения)')
     key_name = models.CharField(max_length=50, verbose_name='Английское название поля (по которому будет доступ в API)')
     is_required = models.BooleanField(default=False, verbose_name='Обязательное поле?')
     related_item = models.CharField(max_length=30, editable=False, verbose_name='К какому виду записи относится это поле (заполняется программно)')

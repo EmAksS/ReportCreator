@@ -12,14 +12,14 @@ class CompanyExecutorPersonSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ExecutorPerson
-        fields = ('__all__', 'initials')
+        fields = '__all__'
 
 class CompanyContractorPersonSerializer(serializers.ModelSerializer):
     initials = serializers.CharField(source='set_initials', read_only=True)
     
     class Meta:
         model = ContractorPerson
-        fields = ('__all__', 'initials')
+        fields = '__all__'
 
 class ContractorSerializer(serializers.ModelSerializer):
     class Meta:

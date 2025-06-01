@@ -3,13 +3,15 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.views import APIView
+from api.views.schema import SchemaAPIView
+from rest_framework.exceptions import ValidationError
 # Permissions
 from rest_framework import permissions
-from api.permissions import IsCompanySuperuser, IsDebug
+from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # models 
 from backend.models.fields import Field
-from backend.models.documents import Template, Document, DocumentField
-from backend.models.company import ContractorPerson, ExecutorPerson 
+from backend.models.documents import Template, Document, DocumentField, TableField, DocumentsValues, TableValues
+from backend.models.company import ContractorPerson, ExecutorPerson, Executor
 # autodocs
 from drf_spectacular.utils import (
     extend_schema, extend_schema_view,
@@ -21,21 +23,29 @@ from api.serializers.documents import (
     DocumentSerializer,
     DocumentFieldSerializer,
     DocumentFieldValueSerializer,
+    TableFieldSerializer,
 )
 from api.serializers.field import FieldSerializer
 from api.serializers.schema import (
     DataInputSerializer,
     StatusSerializer, 
     DetailAndStatsSerializer,
+    ItemDetailsSerializer,
 )
 # scripts
 from backend.scripts.field_validate import field_validate
+from backend.scripts.fill_document import fill_document, find_fields, find_table_columns
 import json
 from backend.scripts.find_datavalue import find_dataValue
+from backend.scripts.load_data import load_data
 # file settings
 from django.conf import settings
 import os
 #from magic import Magic
+from workalendar.europe import Russia
+from datetime import date
+from core.settings.base import DOCUMENTS_FOLDER, MEDIA_ROOT
+import locale
 
 # region DocTypes_docs
 @extend_schema(tags=["Documents"])
@@ -52,20 +62,46 @@ class DocumentTypesView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
-        return Response([
-        {
-            "code": "ACT",
-            "name": "Акт"
-        },
-        {
-            "code": "ORDER",
-            "name": "Заказ"
-        },
-        {
-            "code": "REPORT",
-            "name": "Отчёт"
-        }
-    ])
+        return Response({
+            "details": [
+                {
+                    "code": "ACT",
+                    "name": "Акт"
+                },
+                {
+                    "code": "ORDER",
+                    "name": "Заказ"
+                },
+                {
+                    "code": "REPORT",
+                    "name": "Отчёт"
+                }
+            ],
+            "errors": None
+            }, status=status.HTTP_200_OK)
+
+
+class FieldTypesView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        from backend.models import fields
+        types = fields.AbstractField.FIELD_TYPES
+        
+        ans = []
+
+        for t in types:
+            if t[0] == "FILE" or t[0] == "COMBOBOX":
+                continue
+            ans.append({
+                "id": t[0],
+                "name": t[1],
+            })
+        return Response({
+            "details": ans,
+            "errors": None
+        }, status=status.HTTP_200_OK)
+
 
 
 # region Templates_docs
@@ -74,116 +110,293 @@ class DocumentTypesView(APIView):
     get=extend_schema(
         summary="Получить список полей для создания шаблона документа",
         responses={
-            status.HTTP_200_OK: TemplateSerializer(many=True),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Список полей для создания шаблона документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список полей для создания шаблона документа. Для понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Тип документа',
+                                'key_name': 'template_type',
+                                'is_required': True,
+                                'placeholder': 'Выберите тип создаваемого документа',
+                                'type': 'COMBOBOX',
+                                'validation_regex': None,
+                                'related_item': "Template",
+                                'related_info': {
+                                    'url': "document/types/",
+                                    'show_field': "name",
+                                    'save_field': "code",
+                                },
+                                'secure_text': False,
+                                'error_text': ""
+                            },
+                        ]
+                    )
+                ]
+            )
         }
     ),
     post=extend_schema(
         summary="Создать шаблон документа",
         request=DataInputSerializer,
+        examples=[
+            OpenApiExample(
+                "Пример запроса",
+                summary="Пример запроса",
+                value={
+                    "data": [
+                        { "field_id": "template_name", "value": "Аниме_Акт_1" },
+                        { "field_id": "template_file", "value": "TODO: понять как передаётся файл" },
+                        { "field_id": "template_type", "value": "один из `document/types/`" },
+                        { "field_id": "related_executor_person", "value": 12 },
+                        { "field_id": "related_contractor_person", "value": 4 },
+                    ]
+                }
+            )
+        ],
         responses={
-            status.HTTP_201_CREATED: TemplateSerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer, 
-            status.HTTP_401_UNAUTHORIZED: StatusSerializer,
-            status.HTTP_403_FORBIDDEN: DetailAndStatsSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создан шаблон документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        summary="Создан шаблон документа",
+                        description="Создан шаблон документа",
+                        value={
+                            "status": 201,
+                            "details": {
+                                "id": 1,
+                                "name": "Аниме_Акт_1",
+                                "type": "ACT",
+                                "template_file": "?????????????",
+                                "related_contractor_person": {
+                                    "todo": "contractor_person_documentation"
+                                },
+                                "related_executor_person": {
+                                    "todo": "executor_person_documentation"
+                                }
+                            },
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Доступ запрещён",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователю запрещён метод. Текст ошибки может отличаться.",
+                        value={
+                            "status": 403,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
-                description="Внутренняя ошибка сервера."
+                description="Ошибка на стороне сервера"
             )
         }
     )
 )
 # endregion
-class TemplateListCreateView(generics.ListCreateAPIView):
+class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    parser_classes = [MultiPartParser, FormParser]
+    details_serializer = TemplateSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+    parser_classes = (MultiPartParser, FormParser)
     
     def get(self, request, *args, **kwargs):
-        return TemplateFieldsView.as_view()(request._request)
+        self.details_serializer = FieldSerializer
+        fields = Field.objects.filter(related_item="Template")
+        return Response(FieldSerializer(fields, many=True).data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = []
+
+        # # Код ниже работает только для DRF-создания, но не через axios.
+        # if 'template_file' in request.FILES:
+        #     data.append({
+        #         'field_id': 'template_file',
+        #         'value': request.FILES['template_file']
+        #     })
+
+        # for key, value in request.data.items():
+        #     if str(key).startswith('csrf'):
+        #         continue
+        #     data.append({
+        #         'field_id': key,
+        #         'value': value
+        #     })
+
+        # Ниже код только для axios.
+        index = 0
+        while True:
+            field_id_key = f"{index}[fieldId]"
+            value_key = f"{index}[value]"
+
+            if field_id_key not in request.data:
+                break
+            field_id = request.data[field_id_key]
+
+            if value_key in request.FILES:
+                value = request.FILES[value_key]
+            else:
+                value = request.data.get(value_key)
+
+            data.append({
+                'field_id': field_id,
+                'value': value
+            })
+
+            index += 1
 
         error = field_validate(data, "Template")
         if error is not None:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Неправильный формат значения в поле `{error['field_id']}`."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Загрузка документа
-        uploaded_file = request.FILES['template_file']
-        upload_dir = settings.TEMPLATES_FOLDER
-
-        # Проверяем расширение .docx
-        if not uploaded_file.name.lower().endswith('.docx'):
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Файл должен быть в формат *.docx."
-            ).data, status=status.HTTP_400_BAD_REQUEST)
-
-        # TODO # Проверяем MIME-тип (дополнительная защита)
-        # mime = Magic(mime=True)
-        # file_mime_type = mime.from_buffer(uploaded_file.read(1024))
-        # uploaded_file.seek(0)  # Возвращаем курсор в начало файла
-
-        # if file_mime_type != 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        #     return Response(DetailAndStatsSerializer(
-        #         status=status.HTTP_400_BAD_REQUEST,
-        #         details=f"Файл должен быть в формат *.docx."
-        #     ), status=status.HTTP_400_BAD_REQUEST)
-
-        if not os.path.exists(upload_dir):
-            os.makedirs(upload_dir)
-        
-        file_path = os.path.join(upload_dir, uploaded_file.name)
-        
-        with open(file_path, 'wb+') as destination:
-            for chunk in uploaded_file.chunks():
-                destination.write(chunk)
-
-        # Проверка юридических лиц
+            raise ValidationError({error["field_id"]: error["error"]})
 
         try: 
             contractor = ContractorPerson.objects.get(id=find_dataValue(data, 'related_contractor_person'))
         except:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Не найдено юридическое лицо заказчика с ID {find_dataValue(data, 'related_contractor_person')}"
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"related_contractor_person": "Не найдено юридическое лицо заказчика"}, status=status.HTTP_400_BAD_REQUEST)
         
         try: 
             executor = ExecutorPerson.objects.get(id=find_dataValue(data, 'related_executor_person'))
         except:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_400_BAD_REQUEST,
-                details=f"Не найдено юридическое лицо исполнителя с ID {find_dataValue(data, 'related_executor_person')}"
-            ).data, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"related_contractor_person": "Не найдено юридическое лицо исполнителя"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            template = Template(
-                name=find_dataValue(data, 'name'),
-                type=find_dataValue(data, 'type'),
-                file=file_path,
-                related_contractor_person=contractor,
-                related_executor_person=executor,
-            )
+            # template = Template(
+            #     name=find_dataValue(data, 'name'),
+            #     type=find_dataValue(data, 'type'),
+            #     file=file_path,
+            #     related_contractor_person=contractor,
+            #     related_executor_person=executor,
+            # )
+            serializer = self.serializer_class(data=data)
         except Exception as e:
-            return Response(DetailAndStatsSerializer(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                details=e
-            ).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"template_name": "Данный шаблон уже существует."})
+            return Response({"unknown": f"Неизвестная ошибка: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        self.details_serializer = TemplateSerializer
+
+        if serializer.is_valid():
+            serializer.save()
+            # future_fields = find_fields(find_dataValue(data, "template_file"))
+            # serializer.found_fields = future_fields
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        template.save()
-        return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
+        # Обрабатываем таблицы в шаблоне
+        table_columns = find_table_columns(serializer.instance.template_file)
+        index = 10
+        for column in table_columns:
+            table_field = TableField.objects.create(
+                related_template=serializer.instance,
+                order=index,
+                is_summable=False,
+                is_autoincremental=False,
+
+                id=f"table_{index}__Table__{serializer.instance.template_name.replace(' ', '_')}",
+                name=str(column)[0:50],
+                key_name=f"table_{index}",
+                is_required=True,
+                related_item="TableField",
+                type="TEXT",
+                related_info=None,
+                placeholder="Значение этого поля",
+                validation_regex=None,
+                secure_text=False,
+                error_text=None,
+                is_custom=True,
+            )
+            index += 10
+
+        return Response(self.details_serializer(serializer.instance).data, status=status.HTTP_201_CREATED)
+
+
+class TemplateDetailDestroyView(SchemaAPIView, generics.RetrieveDestroyAPIView):
+    serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        tid = self.kwargs.get("pk", None)
+        return Template.objects.get(id=tid)
+
+
+class TemplateInfoView(SchemaAPIView, generics.GenericAPIView):
+    serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        tid = self.kwargs.get("tid", None)
+        return Template.objects.filter(id=int(tid)).first()
+    
+    def get(self, request, *args, **kwargs):
+        template = self.get_queryset()
+        if template is None:
+            return Response({"template": "Шаблон не найден"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(self.details_serializer(template).data, status=status.HTTP_200_OK)
 
 
 # region DocumentFields_docs
 @extend_schema(tags=["DocumentField"])
 @extend_schema_view(
     get=extend_schema(
-        summary="Получить список полей для создания документа с ID шаблона `TID`",
+        summary="Получить список полей для создания поля документа с ID шаблона `TID`",
         parameters=[
             OpenApiParameter(
                 "tid",
@@ -192,9 +405,61 @@ class TemplateListCreateView(generics.ListCreateAPIView):
             description="ID шаблона документа"),
         ],
         responses={
-            status.HTTP_200_OK: DocumentFieldSerializer(many=True),
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer,
-            status.HTTP_403_FORBIDDEN: StatusSerializer,
+            200: OpenApiResponse(
+                response=DocumentFieldSerializer(many=True),
+                description="Список полей для создания поля для документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Список полей для создания поля для документа. Для простоты понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Русское название поля',
+                                'key_name': 'name',
+                                'is_required': True,
+                                'placeholder': 'Введите русское название поля',
+                                'type': 'TEXT',
+                                'validation_regex': '^[а-яА-Я]+(-[а-яА-Я]+)*{0,64}$',
+                                'related_item': "DocumentField",
+                                'related_info': None,
+                                'secure_text': False,
+                                'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
+                            },
+                        ]
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                response=StatusSerializer,
+                description="Доступ запрещён",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователю запрещён метод.",
+                        value={
+                            "status": 403,
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
+                response=None,
+                description="Ошибка на стороне сервера"
+            )
         }
     ),
     post=extend_schema(
@@ -203,13 +468,16 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         examples=[
             OpenApiExample(
                 "Пример запроса",
-                description="Пример создания поля документа с `TID`=0",
+                description="Пример создания поля документа с `TID=1`",
                 value={
                     "data": [
-                        {
-                            "field_id": 1,
-                            "value": 123
-                        }
+                        { "field_id": "name", "value" : "Название договора" },
+                        { "field_id": "key_name", "value" : "dogovor_name" },
+                        { "field_id": "is_required", "value" : True },
+                        { "field_id": "validation_regex", "value" : None },
+                        { "field_id": "type", "value" : 4 },
+                        { "field_id": "placeholder", "value" : "Название договора" },
+                        { "field_id": "error_text", "value" : None },
                     ]
                 },
                 status_codes=[
@@ -220,11 +488,98 @@ class TemplateListCreateView(generics.ListCreateAPIView):
         )
         ],
         responses={
-            status.HTTP_201_CREATED: DocumentFieldSerializer,
-            status.HTTP_400_BAD_REQUEST: DetailAndStatsSerializer, 
-            status.HTTP_401_UNAUTHORIZED: StatusSerializer,
-            status.HTTP_403_FORBIDDEN: DetailAndStatsSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Создано новое поле для документа",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Создано новое поле для документа.",
+                        value={
+                            "status": 201,
+                            "details": {
+                                'name': 'Название договора',
+                                'key_name': '1__dogovor_name',
+                                'is_required': True,
+                                'placeholder': 'Название договора',
+                                'type': 'TEXT',
+                                'validation_regex': None,
+                                'related_item': "DocumentField",
+                                'error_text': None,
+                                "related_info": None,
+                                "secure_text": False,
+                                "related_template": {
+                                    "id": 1,
+                                    "name": "Аниме_Акт_1",
+                                    "type": "ACT",
+                                    "template_file": "?????????????",
+                                    "related_contractor_person": {
+                                        "todo": "contractor_person_documentation"
+                                    },
+                                    "related_executor_person": {
+                                        "todo": "executor_person_documentation"
+                                    }
+                                }
+                            },
+                        }
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            403: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Доступ запрещён",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователю запрещён метод. Текст ошибки может отличаться.",
+                        value={
+                            "status": 403,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
             )
@@ -232,77 +587,215 @@ class TemplateListCreateView(generics.ListCreateAPIView):
     )
 )
 # endregion
-class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
+class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView, generics.UpdateAPIView):
     serializer_class = DocumentFieldSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    details_serializer = DocumentFieldSerializer
+    permission_classes = [IsAuthedOrReadOnly]
 
     def get_queryset(self):
         template_id = self.kwargs.get('tid')
-        return DocumentField.objects.filter(related_template_id=template_id)
+        return DocumentField.objects.filter(related_template=template_id)
     
     def create(self, request, *args, **kwargs):
-        data = json.loads(json.dumps(request.data["data"]))
+        data = load_data(request.data)
         
-        error = field_validate(data, "Executor")
+        error = field_validate(data, "DocumentField")
         if error is not None:
-            return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail=f"Ошибка валидации значения: не пройдена валидация поля {error.get('field_id')}"
-                ).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
-        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
 
-        if missing_fields:
-            return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail="Отсутствуют необходимые поля: {missing_fields}"
-                ).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
 
         try:
             template = Template.objects.get(id=self.kwargs.get('tid'))
         except Template.DoesNotExist:
-            return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail="Шаблон с TID={tid} не найден."
-                ).data,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"template_id": f"Шаблон с TID {self.kwargs.get('tid')} не найден."})
         
         try:
             doc_field = DocumentField.objects.create(
-                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).name).replace(' ', '_')}",
+                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template.id).first().template_name).replace(' ', '_')}",
                 name=find_dataValue(data, 'name'),
                 key_name=find_dataValue(data, 'key_name'),
                 is_required=find_dataValue(data, 'is_required'),
                 type=find_dataValue(data, 'type'),
                 validation_regex=find_dataValue(data, 'validation_regex'),
-                related_item="Template",
+                related_item="DocumentField",
                 is_custom=True,
                 related_info=None,
                 placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
-                related_template=Template.objects.filter(id=template), # Можно заменить на name но лучше не надо
+                related_template=Template.objects.filter(id=template.id).first(), # Можно заменить на name но лучше не надо
             )
 
-            return Response(
-                DocumentFieldSerializer(doc_field).data,
-                status=status.HTTP_201_CREATED
-            )
+            return Response(self.serializer_class(doc_field).data, status=status.HTTP_201_CREATED)
         except Exception as e:
-            return Response(
-                DetailAndStatsSerializer(
-                    status=400,
-                    detail=f"Ошибка при создании документа: {e}"
-                ).data,
-                status=status.HTTP_400_BAD_REQUEST
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"key_name": "Данное поле в документе уже существует."})
+            raise ValidationError({"unknown": f"Ошибка создания поля документа: {e}"})
+    
+    def put(self, request, *args, **kwargs):
+        data = load_data(request.data)
+        
+        error = field_validate(data, "DocumentField")
+        if error is not None:
+            raise ValidationError({error["field_id"]: error["error"]})
+
+        required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
+
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
+
+        template = Template.objects.filter(id=self.kwargs.get('tid')).first()
+        if template is None:
+            raise ValidationError({"template_id": f"Шаблон с TID {self.kwargs.get('tid')} не найден."})
+
+        instance = DocumentField.objects.get(
+            id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template.id).first().template_name).replace(' ', '_')}",
+            key_name=find_dataValue(data, 'key_name'),
+            related_template=template,
             )
+        if instance:
+            instance.name = find_dataValue(data, 'name')
+            instance.is_required = find_dataValue(data, 'is_required')
+            instance.type = find_dataValue(data, 'type')
+            instance.validation_regex = find_dataValue(data, 'validation_regex')
+            instance.placeholder = f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"
+            instance.save()
+        else:
+            raise ValidationError({"unknown": "Данное поле не найдено."})
+
+        return Response(self.serializer_class(instance).data, status=status.HTTP_200_OK)
+
+
+
+# Вернуть поля для создания DocumentField
+class TemplateDocumentFieldsFieldsView(SchemaAPIView, generics.ListAPIView):
+    serializer_class = FieldSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Field.objects.filter(related_item="DocumentField", is_custom=False)
+
+
+# TableFieldsListCreateView
+# Создать поле столбца таблицы
+class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
+    serializer_class = TableFieldSerializer
+    details_serializer = TableFieldSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        fields = Field.objects.filter(related_item="TableField", is_custom=False)
+        self.details_serializer = FieldSerializer
+        return Response(FieldSerializer(fields, many=True).data, status=status.HTTP_200_OK)
+
+    def create(self, request, tk: int, *args, **kwargs):
+        self.details_serializer = TableFieldSerializer
+        data = load_data(request.data)
+
+        error = field_validate(data, "TableField")
+        if error is not None:
+            raise ValidationError({error["field_id"]: error["error"]})
+
+        required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
+
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
+
+        try:
+            template = Template.objects.filter(id=tk).first()
+        except Template.DoesNotExist:
+            raise ValidationError({"template_id": f"Шаблон с TID {tk} не найден."})
+        
+        try:
+            table_field = TableField.objects.create(
+                id=f"{find_dataValue(data, 'key_name')}__Table__{str(template.template_name).replace(' ', '_')}",
+                name=find_dataValue(data, 'name'),
+                key_name=find_dataValue(data, 'key_name'),
+                order= find_dataValue(data, 'order'),
+                is_required=find_dataValue(data, 'is_required'),
+                is_autoincremental=find_dataValue(data, 'is_autoincremental'),
+                type=find_dataValue(data, 'type'),
+                validation_regex=find_dataValue(data, 'validation_regex'),
+                related_item="Template",
+                is_custom=True,
+                is_summable=find_dataValue(data, 'is_summable'),
+                related_info=None,
+                placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
+                related_template=template, # Можно заменить на name но лучше не надо
+            )
+
+            return Response(self.serializer_class(table_field).data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            if "UNIQUE constraint" in str(e):
+                raise ValidationError({"key_name": "В шаблоне уже существует данный столбец таблицы с таким же названием или порядком."})
+            raise ValidationError({"unknown": f"Ошибка создания поля столбца таблицы: {e}"})
+
+    def put(self, request, tk, *args, **kwargs):
+        self.details_serializer = TableFieldSerializer
+        data = load_data(request.data)
+
+        error = field_validate(data, "TableField")
+        if error is not None:
+            raise ValidationError({error["field_id"]: error["error"]})
+        
+        required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
+
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
+
+        try:
+            template = Template.objects.get(id=tk)
+        except Template.DoesNotExist:
+            raise ValidationError({"template_id": f"Шаблон с TID {tk} не найден."})
+
+        table_field = TableField.objects.get(
+            id=f"{find_dataValue(data, 'key_name')}__Table__{str(template.template_name).replace(' ', '_')}"
+        )
+        if table_field:
+            table_field.name=find_dataValue(data, 'name')
+            table_field.is_required=True
+            table_field.type=find_dataValue(data, 'type')
+            table_field.is_autoincremental=find_dataValue(data, 'is_autoincremental') if find_dataValue(data, 'is_autoincremental') else table_field.is_autoincremental
+            table_field.validation_regex=find_dataValue(data, 'validation_regex') if find_dataValue(data, 'validation_regex') != "" else None
+            table_field.is_summable=find_dataValue(data, 'is_summable')
+            table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"
+        else:
+            raise ValidationError({"unknown": "Данное поле не найдено."})
+
+        return Response(self.serializer_class(table_field).data, status=status.HTTP_200_OK)
+
+
+# Проверить список толбцов таблицы для шаблона TK
+class TemplateTableFieldsListView(SchemaAPIView, generics.ListAPIView):
+    serializer_class = TableFieldSerializer
+    details_serializer = TableFieldSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        template_id = self.kwargs.get('tk')
+        return TableField.objects.filter(related_template=template_id, is_autoincremental=False)
 
 
 # region TemplatesFields_docs
@@ -311,14 +804,19 @@ class TemplateDocumentFieldsListCreateView(generics.ListCreateAPIView):
     get=extend_schema(
         summary="Получить список полей для создания объекта Template",
         responses={
-            status.HTTP_200_OK: DocumentFieldSerializer,
+            # Подробную документацию смотрите в TemplateListCreateView.GET.200.
+            500: OpenApiResponse(
+                response=None,
+                description="Ошибка на стороне сервера"
+            )
         }
     )
 )
 # endregion
-class TemplateFieldsView(generics.ListAPIView):
+class TemplateFieldsView(SchemaAPIView, generics.ListAPIView):
     queryset = Field.objects.filter(related_item="Template")
     serializer_class = FieldSerializer
+    details_serializer = FieldSerializer
     permission_classes = [permissions.AllowAny]
 
 
@@ -328,20 +826,185 @@ class TemplateFieldsView(generics.ListAPIView):
     get=extend_schema(
         summary="Получить список полей для создания объекта Document",
         responses={
-            status.HTTP_200_OK: DocumentFieldSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=DocumentFieldSerializer(many=True),
+                description="Получен список полей для создания объекта `Document`",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получен список полей для создания объекта `Document`. Поля могут быть разные в зависимости от выбранного шаблона документа. Для удобства показан только один элемент списка.",
+                        value=[
+                            {
+                                'name': 'Название договора',
+                                'key_name': '1__dogovor_name',
+                                'is_required': True,
+                                'placeholder': 'Название договора',
+                                'type': 'TEXT',
+                                'validation_regex': None,
+                                'related_item': "DocumentField",
+                                'error_text': None,
+                                "related_info": None,
+                                "secure_text": False,
+                                "related_template": {
+                                    "id": 1,
+                                    "name": "Аниме_Акт_1",
+                                    "type": "ACT",
+                                    "template_file": "?????????????",
+                                    "related_contractor_person": {
+                                        "todo": "contractor_person_documentation"
+                                    },
+                                    "related_executor_person": {
+                                        "todo": "executor_person_documentation"
+                                    }
+                                }
+                            },
+                        ]
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
-                description="Ошибка на стороне сервера... или объект Document ещё не реализован))"
+                description="Ошибка на стороне сервера"
             )
         }
+    ),
+    post=extend_schema(
+        summary="Создать объект `Document`",
+        #...
     )
 )
 # endregion
-class DocumentFieldsView(generics.ListAPIView):
-    # TODO: оказывается у нас нет методов для создания документа - надо бы это сделать.
-    queryset = Field.objects.filter(related_item="Document")
+class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
     serializer_class = DocumentFieldSerializer
-    permission_classes = [permissions.AllowAny]
+    details_serializer = DocumentFieldSerializer
+    permission_classes = [IsAuthedOrReadOnly]
+
+    def get_queryset(self):
+        self.details_serializer = DocumentFieldSerializer
+        tid = self.kwargs.get('tid')
+        return DocumentField.objects.filter(related_template=Template.objects.filter(id=tid).first())
+    
+    def create(self, request, *args, **kwargs):
+        data = load_data(request.data)
+
+        error = field_validate(data, "DocumentField")
+        if error is not None:
+            raise ValidationError({error["field_id"]: error["error"]})
+
+        listfields = [columns.get('field_id') for columns in data if isinstance(columns.get('value'), list)]
+        
+        # Проверка что шаблон документа есть
+        tid = self.kwargs.get('tid')
+        template = Template.objects.filter(id=tid).first()
+        if not template:
+            raise ValidationError({"template_id": "Шаблон документа не найден"})
+        
+        # Создаём документ
+        try:
+            doc = Document.objects.get_or_create(
+                id=Document.objects.filter().count() + 1,
+                template=template,
+                shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
+                save_path=DOCUMENTS_FOLDER/template.template_file.name.split('/')[-1],
+            )[0]
+        except Exception as e:
+            raise ValidationError({"unknown": f"Ошибка создания документа: ({e})"})
+        
+        # Заполняем DocumentValues
+        document_data = {}
+        document_settings = {}
+
+        for field in data:
+            if isinstance(field.get('value'), list):
+                continue
+            document_data[field.get('field_id')] = field.get("value")
+            try:
+                DocumentsValues.objects.get_or_create(
+                    document_id=doc,
+                    field_id=DocumentField.objects.filter(key_name=field.get('field_id'), related_item="DocumentField").first(),
+                    value=field.get("value", ""),
+                )
+            except Exception as e:
+                doc.delete()   # Удаляем документ, если произошла ошибка
+                raise ValidationError({"unknown": f"Ошибка распределении значении полей документа: {e}"})
+        
+        ## Дополняем также информацией о компаниях
+        locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
+        # Информация о документе
+        #document_data["contract_number"] = template.related_contractor_person.company.contract_number
+        #document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
+        #* order_date - в fill_document
+        document_data["order_number"] = Document.objects.filter(template=template).count() + 1
+        # Лицо заказчика
+        if template.related_contractor_person is not None:
+            document_data["contractor_person"] = template.related_contractor_person.set_initials()
+            document_data["contractor_post"] = template.related_contractor_person.post if template.related_contractor_person.post else "Ответственное лицо"
+            document_data["contractor_company_full"] = template.related_contractor_person.company.company_fullName
+            document_data["contractor_company"] = template.related_contractor_person.company.company_name
+        # Лицо исполнителя
+        if template.related_executor_person is not None:
+            document_data["executor_person"] = template.related_executor_person.set_initials()
+            document_data["executor_post"] = template.related_executor_person.post if template.related_executor_person.post else "Ответственное лицо"
+            document_data["executor_company_full"] = template.related_executor_person.company.company_fullName
+            document_data["executor_company"] = template.related_executor_person.company.company_name
+
+
+        # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER
+        ordered_lf = []
+        ordered = TableField.objects.filter(related_template=tid).order_by('order')
+        for row in ordered:
+            if row.key_name not in listfields and row.is_autoincremental == False:
+                continue
+            ordered_lf.append(row.key_name)
+
+        if TableField.objects.filter(related_template=tid, is_summable=True).count() > 1:
+            raise ValidationError({"unknown": "В таблице может быть только один суммируемый столбец"})
+        summable_index = ordered_lf.index(TableField.objects.filter(related_template=tid, is_summable=True).first().key_name) if TableField.objects.filter(related_template=tid, is_summable=True).exists() else None
+        
+        try:
+            ai_field = TableField.objects.filter(related_template=tid, is_autoincremental=True).first().key_name
+        except AttributeError:
+            ai_field = None
+
+        maxlen = 0
+        for listfield in ordered_lf:
+            if listfield == ai_field:
+                continue
+            maxlen = max(maxlen, len(find_dataValue(data, listfield)))
+        
+        table = []
+        autoincrement = [i for i in range(1, maxlen + 1)]
+        for row in range(maxlen):
+            rowlist = []
+            for listfield in ordered_lf:
+                try:
+                    if listfield == ai_field:
+                        rowlist.append(autoincrement[row])
+                    else:
+                        rowlist.append(find_dataValue(data, listfield)[row])
+                except:
+                    rowlist.append("")
+            table.append(rowlist)
+
+        if summable_index is not None:
+            document_data["total_cost"] = round(sum([0 if rowlist[summable_index] == "" else float(rowlist[summable_index]) for rowlist in table]), 2)
+            document_settings["summable_type"] = TableField.objects.filter(related_template=tid, is_summable=True).first().type
+
+        # Создаём сам документ.
+        try:
+            info = fill_document(template.template_file.name, document_data, table, document_settings)
+            if info.get("error"):
+                raise ValidationError({"unknown": f"Ошибка создания документа: ({info['error']})"})
+            doc.shown_date = info.get("shown_date")
+            if info.get("path"):
+                doc.save_path = info["path"]
+        except Exception as e:
+            doc.delete()   # Удаляем документ, если произошла ошибка
+            raise ValidationError({"unknown": f"Ошибка создания документа: ({e})."})
+
+        #print(info)
+        self.details_serializer = DocumentSerializer
+        return Response(DocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
 
 
 # region TemplateOfCompany_docs
@@ -359,22 +1022,47 @@ class DocumentFieldsView(generics.ListAPIView):
             )
         ],
         responses={
-            status.HTTP_200_OK: TemplateSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=TemplateSerializer(many=True),
+                description="Получен список всех шаблонов (Templates) компании `company_id`",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получен список всех шаблонов (Templates) компании `company_id = 1`. Для удобства понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Аниме_Акт_1",
+                                "type": "ACT",
+                                "template_file": "?????????????",
+                                "related_contractor_person": {
+                                    "todo": "contractor_person_documentation"
+                                },
+                                "related_executor_person": {
+                                    "todo": "executor_person_documentation"
+                                }
+                            },
+                        ]
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
-                description="Ошибка на стороне сервера."
+                description="Ошибка на стороне сервера"
             )
         }
     )
 )
 # endregion
-class TemplateCompanyListView(generics.ListAPIView):
+class TemplateCompanyListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = TemplateSerializer
+    details_serializer = TemplateSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         company_id = self.kwargs.get('company_id')
-        return Template.objects.filter(related_executor_person__company=company_id)
+        company = Executor.objects.filter(id=company_id).first()
+        return Template.objects.filter(related_executor_person__company=company)
 
 
 # region TemplateCurrCompany_docs
@@ -383,8 +1071,44 @@ class TemplateCompanyListView(generics.ListAPIView):
     get=extend_schema(
         summary="Получить список всех шаблонов (Templates) компании, в которой зарегестрирован пользователь.",
         responses={
-            status.HTTP_200_OK: TemplateSerializer,
-            status.HTTP_500_INTERNAL_SERVER_ERROR: OpenApiResponse(
+            200: OpenApiResponse(
+                response=TemplateSerializer(many=True),
+                description="Получен список всех шаблонов (Templates) компании, куда авторизирован пользователь.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получен список всех шаблонов (Templates) текущей компании. Для удобства понимания структуры показан только один элемент списка.",
+                        value=[
+                            {
+                                "id": 1,
+                                "name": "Аниме_Акт_1",
+                                "type": "ACT",
+                                "template_file": "?????????????",
+                                "related_contractor_person": {
+                                    "todo": "contractor_person_documentation"
+                                },
+                                "related_executor_person": {
+                                    "todo": "executor_person_documentation"
+                                }
+                            },
+                        ]
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
+            500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера."
             )
@@ -392,12 +1116,12 @@ class TemplateCompanyListView(generics.ListAPIView):
     )
 )
 # endregion
-class TemplateCurrentCompanyListView(generics.ListAPIView):
+class TemplateCurrentCompanyListView(SchemaAPIView, generics.ListAPIView):
     serializer_class = TemplateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    details_serializer = TemplateSerializer
+    permission_classes = [IsAuthed]
 
     def get_queryset(self):
-        company_id = self.kwargs.get('company_id')
         return Template.objects.filter(related_executor_person__company=self.request.user.company)
 
 

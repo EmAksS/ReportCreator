@@ -52,11 +52,12 @@ INSTALLED_APPS = [
     'backend',
     'api',
     'drf_spectacular',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -67,12 +68,27 @@ MIDDLEWARE = [
 
 # Разрешить передачу куки
 CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'sessionid',
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    "EXCEPTION_HANDLER": "api.exceptions.custom_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -81,7 +97,10 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_SETTINGS": {
         "filter": True, # включить поиск по тегам
     },
-    "COMPONENT_SPLIT_REQUEST": True
+    "SERVE_INCLUDE_SCHEMA": True,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {},
+    "COMPONENT_SPLIT_RESPONSE": True, 
 }
 
 ROOT_URLCONF = 'core.urls'
@@ -155,6 +174,9 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 STATIC_URL = '/django-static/'
 STATIC_ROOT = BASE_DIR.parent / 'django-static/'
+MEDIA_ROOT = BASE_DIR.parent / 'media'
+if not MEDIA_ROOT.exists():
+    MEDIA_ROOT.mkdir()
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -163,14 +185,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "backend.User"
 
-DOCUMENTS_FOLDER = BASE_DIR.parent / "docs"
+DOCUMENTS_FOLDER = MEDIA_ROOT / "docs"
 if not DOCUMENTS_FOLDER.exists():
     DOCUMENTS_FOLDER.mkdir()
 
-TEMPLATES_FOLDER = DOCUMENTS_FOLDER / "templates"
+TEMPLATES_FOLDER = MEDIA_ROOT / "templates"
 if not TEMPLATES_FOLDER.exists():
     TEMPLATES_FOLDER.mkdir()
 
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-
-# SESSION_COOKIE_AGE = 3600 * 24 * 7
+SESSION_COOKIE_NAME = 'sessionid'  # Стандартное имя куки
+SESSION_COOKIE_AGE = 1209600  # Время жизни сессии (2 недели, по умолчанию)
+SESSION_COOKIE_SECURE = False  # True для HTTPS в production
+SESSION_COOKIE_SAMESITE = 'Lax'  # 'None' для кросс-доменных запросов (требует Secure=True)
+SESSION_COOKIE_HTTPONLY = True  # Защита от XSS
+SESSION_SAVE_EVERY_REQUEST = True  # Обновлять сессию при каждом запросе

@@ -1,16 +1,19 @@
-from docx import Document
-from docxtpl import DocxTemplate
+from docx import *
+from docxtpl import *
 import os
 from workalendar.europe import Russia
 import locale
 from datetime import date
 from random import randint
 import re
+from django.core.exceptions import ValidationError
 
-from core.settings.base import DOCUMENTS_FOLDER, TEMPLATES_FOLDER
+from core.settings.base import DOCUMENTS_FOLDER, TEMPLATES_FOLDER, MEDIA_ROOT
+
+from backend.scripts.money_to_words import money_to_words
 
 
-def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dict:
+def fill_document(filename: str, data: dict, table_data: list[list[str]], settings: dict = {}) -> dict:
     """
     Выполняет заполнение документа шаблона `filename` необходимыми данными. 
     Итоговый файл сохранятся в `DOCUMENTS_FOLDER`.
@@ -37,22 +40,22 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
     :see: core.settings
     """
 
-    def find_placeholders(template) -> set:
+    def find_placeholders(template: DocxTemplate) -> set:
         """Находит все плейсхолдеры в документе"""
         placeholders = set()
         pattern = re.compile(r'\{\{.*?\}\}')
 
-        for paragraph in doc.docx.paragraphs:
+        for paragraph in template.get_docx().paragraphs:
             matches = pattern.findall(paragraph.text)
             placeholders.update(matches)
         
-        for table in doc.docx.tables:
+        for table in template.get_docx().tables:
             for row in table.rows:
                 for cell in row.cells:
                     matches = pattern.findall(cell.text)
                     placeholders.update(matches)
 
-        return sorted(placeholders)
+            return sorted(placeholders)
 
     def find_empty_row(table):
         """Находит первую полностью пустую строку в таблице"""
@@ -60,7 +63,6 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
             if all(cell.text.startswith('RC') for cell in row.cells):
                 return i
         return None  # Если пустой строки нет
-
 
     def copy_row_formatting(source_row, target_row):
         """Копирует все параметры форматирования из исходной строки в целевую"""
@@ -91,14 +93,24 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
         'code': 0,
         'error': None,
         'path': '',
-        'warnings': []
+        'warnings': [],
+        'shown_date': None,
     }
 
     # Для русскоязычных дат
-    locale.setlocale(locale.LC_ALL, 'ru_RU')
+    locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
+
+    # Сделать место сохранение документа
+    if "/" in filename:
+        filename = filename.split("/")[-1]
 
     # Получить первый рабочий день текущего месяца и текущего года
     data["order_date"] = Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%d %B %Y")
+    result['shown_date'] = data["order_date"]
+
+    if data.get("total_cost") is not None:
+        rubles, ruble_word, kopecks = money_to_words(data["total_cost"])
+        data["total_cost"] = f"{int(data['total_cost'])} ({rubles}) {ruble_word} {kopecks}" if settings.get("summable_type") == "CURRENCY" else data["total_cost"]
 
     if os.path.exists(TEMPLATES_FOLDER / filename) is False:
         result['code'] = 21
@@ -122,15 +134,19 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
 
     # Сохранить в папку документах
     randcode = randint(0, 1000000)
-    doc.save(f"tmp/~$tmp{randcode}.docx")
+    if not os.path.exists(MEDIA_ROOT / "temp"):
+        os.mkdir(MEDIA_ROOT / "temp")
+    template_folder = MEDIA_ROOT / "temp"
+    # Сохраняем измененный шаблон во временную папку
+    doc.save(template_folder / f"~$tmp{randcode}.docx")
 
     # Работаем с таблицами
 
-    doc = Document(f"tmp/~$tmp{randcode}.docx")
+    doc = Document(template_folder / f"~$tmp{randcode}.docx")
     table = doc.tables[0]
     empty_row_idx = find_empty_row(table)
     if empty_row_idx is None:
-        os.remove(f"tmp/~$tmp{randcode}.docx")
+        os.remove(template_folder / f"~$tmp{randcode}.docx")
         result['code'] = 23
         result['error'] = "В документе должна быть строка для заполнения таблицы, но она не была найдена."
 
@@ -150,10 +166,89 @@ def fill_document(filename: str, data: dict, table_data: list[list[str]]) -> dic
         
         empty_row_idx += 1
 
-    os.remove(f"tmp/~$tmp{randcode}.docx")
+    os.remove(template_folder / f"~$tmp{randcode}.docx")
     # TODO: сохранять в директории комании - получать название компании в data
     result['code'] = 10
     result['path'] = DOCUMENTS_FOLDER / f"{filename}_{date(date.today().year, date.today().month, 1).strftime('%m-%y')}.docx"
     doc.save(result['path'])
     
     return result
+
+
+def find_table_columns(filename):
+    """Находит все колонки таблицы, которые являются счетчиками"""
+
+    doc = Document(MEDIA_ROOT / filename.name) #! Теперь файлы загружать именно так!
+    table = doc.tables[0]
+
+    columns_count = max(len(row.cells) for row in table.rows)
+    
+    # Инициализируем список для каждого столбца
+    columns = [[] for _ in range(columns_count)]
+    
+    # Собираем данные всех столбцов
+    for row_idx, row in enumerate(table.rows):
+        for col_idx in range(columns_count):
+            if col_idx < len(row.cells):  # На случай, если в строке меньше ячеек
+                cell_text = row.cells[col_idx].text.strip()
+                columns[col_idx].append(cell_text)
+    
+    headers = []
+    #print(columns)
+    for x in range(columns_count):
+        headers.append(columns[x][0])
+
+    return headers
+
+
+def find_fields(filename) -> list:
+    """Находит все плейсхолдеры в документе"""
+
+    def reformat_placeholder_names(placeholders: set) -> list:
+        """Форматирует имена плейсхолдеров для использования в шаблоне"""
+        if placeholders is None:
+            return []
+        return [placeholder.replace("{{", "").replace("}}", "").strip() for placeholder in placeholders]
+    
+    def find_placeholders(template: DocxTemplate) -> set:
+        """Находит все плейсхолдеры в документе"""
+        # if not template or not hasattr(template, 'docx') or template.docx is None:
+        #     print(template.get_docx())
+        #     raise ValidationError("Не удалось загрузить документ или документ поврежден")
+
+        placeholders = set()
+        pattern = re.compile(r'\{\{.*?\}\}')
+
+        for paragraph in template.get_docx().paragraphs:
+            matches = pattern.findall(paragraph.text)
+            placeholders.update(matches)
+        
+        for table in template.get_docx().tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    matches = pattern.findall(cell.text)
+                    placeholders.update(matches)
+
+        return sorted(placeholders)
+    
+    doc = DocxTemplate(MEDIA_ROOT / filename.name) #! Теперь файлы загружать именно так!
+    placeholders = find_placeholders(doc)
+    reformated = reformat_placeholder_names(placeholders)
+
+    PREORDER_FIELDS = [
+        "contract_number",
+        "contract_date",
+        "order_date",
+        "order_number",
+        "contractor_person",
+        "contractor_post",
+        "contractor_company_full",
+        "contractor_company",
+        "executor_person",
+        "executor_post",
+        "executor_company_full",
+        "executor_company",
+
+        "total_cost",
+    ]
+    return [placeholder for placeholder in reformated if placeholder not in PREORDER_FIELDS]

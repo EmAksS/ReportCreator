@@ -39,6 +39,15 @@ class Contractor(CompanyAbstract):
     """
     related_executor = models.ForeignKey(Executor, on_delete=models.CASCADE, related_name='related_executor', default=0)
     contractor_city = models.CharField(max_length=64, null=False)
+    contract_number = models.IntegerField(null=False) # Номер договора
+    contract_date = models.DateTimeField(auto_now_add=False)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company_name', 'company_fullName', 'related_executor'], name='company_names_combination'
+            )
+        ]
 
 class Person(models.Model):
     """
@@ -68,6 +77,13 @@ class ExecutorPerson(Person):
     Наследует все поля из Person.
     - Компания-исполнитель, которой принадлежит лицо
     """
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['first_name', 'last_name', 'surname', 'company'], name='FIO_executor_combination'
+            )
+        ]
+
     company = models.ForeignKey(Executor, on_delete=models.CASCADE)
 
 class ContractorPerson(Person):
@@ -75,4 +91,11 @@ class ContractorPerson(Person):
     Модель юридического лица-заказчика.
     Наследует все поля из Person.
     """
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['first_name', 'last_name', 'surname', 'company'], name='FIO_contractor_combination'
+            )
+        ]
+
     company = models.ForeignKey(Contractor, on_delete=models.CASCADE)
