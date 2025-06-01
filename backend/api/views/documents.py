@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from api.views.schema import SchemaAPIView
 from rest_framework.exceptions import ValidationError
 # Permissions
-from rest_framework import permissions
+from rest_framework import permissions  
 from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # models 
 from backend.models.fields import Field
@@ -46,6 +46,8 @@ from workalendar.europe import Russia
 from datetime import date
 from core.settings.base import DOCUMENTS_FOLDER, MEDIA_ROOT
 import locale
+
+from django.http import FileResponse
 
 # region DocTypes_docs
 @extend_schema(tags=["Documents"])
@@ -998,6 +1000,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             doc.shown_date = info.get("shown_date")
             if info.get("path"):
                 doc.save_path = info["path"]
+            doc.save()
         except Exception as e:
             doc.delete()   # Удаляем документ, если произошла ошибка
             raise ValidationError({"unknown": f"Ошибка создания документа: ({e})."})
@@ -1124,6 +1127,19 @@ class TemplateCurrentCompanyListView(SchemaAPIView, generics.ListAPIView):
     def get_queryset(self):
         return Template.objects.filter(related_executor_person__company=self.request.user.company)
 
+def DocumentDownloadView(request, did):
+    document = Document.objects.get(pk=did)
+    dir_path = os.path.dirname(document.save_path)
+    file_name = os.path.basename(document.save_path)
+    file_path = os.path.join(dir_path, file_name)
+    print(file_path)
+    if os.path.exists(file_path):
+        response = FileResponse(
+            open(file_path, 'rb'),
+            as_attachment=True,
+            filename=file_name
+        )
+        return response
 
 # template_detail(pk)
 
