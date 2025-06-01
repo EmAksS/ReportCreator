@@ -341,7 +341,7 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         table_columns = find_table_columns(serializer.instance.template_file)
         index = 10
         for column in table_columns:
-            table_field = TableField.objects.   create(
+            table_field = TableField.objects.create(
                 related_template=serializer.instance,
                 order=index,
                 is_summable=False,
@@ -730,6 +730,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 key_name=find_dataValue(data, 'key_name'),
                 order= find_dataValue(data, 'order'),
                 is_required=find_dataValue(data, 'is_required'),
+                is_autoincremental=find_dataValue(data, 'is_autoincremental'),
                 type=find_dataValue(data, 'type'),
                 validation_regex=find_dataValue(data, 'validation_regex'),
                 related_item="Template",
@@ -776,6 +777,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             table_field.name=find_dataValue(data, 'name')
             table_field.is_required=True
             table_field.type=find_dataValue(data, 'type')
+            table_field.is_autoincremental=find_dataValue(data, 'is_autoincremental') if find_dataValue(data, 'is_autoincremental') else table_field.is_autoincremental
             table_field.validation_regex=find_dataValue(data, 'validation_regex') if find_dataValue(data, 'validation_regex') != "" else None
             table_field.is_summable=find_dataValue(data, 'is_summable')
             table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"

@@ -637,6 +637,18 @@ TABLE_FIELD = [
         'error_text': None
     },
     {
+        'name': 'Является ли автоинкрементируемым?',
+        'key_name': 'is_autoincremental',
+        'is_required': False,
+        'placeholder': None,
+        'type': 'BOOL',
+        'validation_regex': None,
+        'related_item': "TableField",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': None
+    },
+    {
         'name': 'Русское название поля',
         'key_name': 'name',
         'is_required': True,
