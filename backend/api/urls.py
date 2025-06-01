@@ -44,6 +44,8 @@ urlpatterns = [
 
     # Вставить про документы
     path('document/save/<int:tid>/', documents.DocumentFieldsCreateView.as_view(), name='document_create'),
+    path('document/list/', documents.DocumentListView.as_view(), name='document_list'),
+    path('document/download/<int:did>/', documents.DocumentDownloadView, name='document_download'),
 
     path('document/types/', documents.DocumentTypesView.as_view(), name='document_types'),
     path('field/types/', documents.FieldTypesView.as_view(), name='field_types'),

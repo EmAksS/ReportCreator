@@ -198,42 +198,6 @@ CONTRACTOR = [
         'secure_text': False,
         'error_text': "Длина названия не должна превышать 256 символов, а также не содержать особых символов."
     },
-    {
-        'name': 'Город расположения заказчика',
-        'key_name': 'contractor_city',
-        'is_required': True,
-        'placeholder': 'Город расположения компании',
-        'type': 'TEXT',
-        'validation_regex': '^[a-zA-Z0-9_.,а-яА-Я]{0,64}$',
-        'related_item': "Contractor",
-        'related_info': None,
-        'secure_text': False,
-        'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
-    },
-    {
-        'name': 'Номер подписанного договора',
-        'key_name': 'contract_number',
-        'is_required': True,
-        'placeholder': 'Номер договора',
-        'type': 'NUMBER',
-        'validation_regex': '^[0-9]*$',
-        'related_item': "Contractor",
-        'related_info': None,
-        'secure_text': False,
-        'error_text': "Номер договора должен быть числом."
-    },
-    {
-        'name': 'Дата подписания договора',
-        'key_name': 'contract_date',
-        'is_required': True,
-        'placeholder': 'Дата подписания',
-        'type': 'DATE',
-        'validation_regex': None,
-        'related_item': "Contractor",
-        'related_info': None,
-        'secure_text': False,
-        'error_text': None
-    }
 ]
 
 TEMPLATE = [
@@ -287,7 +251,7 @@ TEMPLATE = [
         'related_item': "Template",
         'related_info': {
             'url': "persons/executor/",
-            'show_field': "initials",
+            'show_field': "person_type",
             'save_field': "id",
         },
         'secure_text': False,
@@ -303,7 +267,7 @@ TEMPLATE = [
         'related_item': "Template",
         'related_info': {
             'url': "persons/contractor/",
-            'show_field': "initials",
+            'show_field': "person_type",
             'save_field': "id",
         },
         'secure_text': False,
@@ -313,7 +277,19 @@ TEMPLATE = [
 
 EXECUTOR_PERSON = [
     {
-        'name': 'Фамилия юрлица',
+        'name': "Название юридического лица",
+        'key_name': 'person_type',
+        'is_required': True,
+        'placeholder': 'Введите название юридического лица исполнителя договора',
+        'type': "TEXT",
+        'validation_regex': '^([а-яА-Я\s\"\']{0,64})$',
+        'related_item': "ExecutorPerson",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
+    },
+    {
+        'name': 'Фамилия представителя',
         'key_name': 'last_name',
         'is_required': True,
         'placeholder': 'Фамилия юридического лица исполнителя',
@@ -325,7 +301,7 @@ EXECUTOR_PERSON = [
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
     },
     {
-        'name': 'Имя юрлица',
+        'name': 'Имя представителя',
         'key_name': 'first_name',
         'is_required': True,
         'placeholder': 'Имя юридического лица исполнителя',
@@ -337,7 +313,7 @@ EXECUTOR_PERSON = [
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
     },
     {
-        'name': 'Отчество юрлица',
+        'name': 'Отчество представителя',
         'key_name': 'surname',
         'is_required': False,
         'placeholder': 'Отчество юридического лица исполнителя',
@@ -349,9 +325,9 @@ EXECUTOR_PERSON = [
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
     },
     {
-        'name': 'Должность юрлица',
+        'name': 'Должность представителя',
         'key_name': 'post',
-        'is_required': False,
+        'is_required': True,
         'placeholder': 'Должность юридического лица исполнителя в компании',
         'type': 'TEXT',
         'validation_regex': '^[а-яА-Я]{0,64}$',
@@ -364,7 +340,19 @@ EXECUTOR_PERSON = [
 
 CONTRACTOR_PERSON = [
     {
-        'name': 'Фамилия юрлица',
+        'name': "Название юридического лица",
+        'key_name': 'person_type',
+        'is_required': True,
+        'placeholder': 'Введите название юридического лица исполнителя договора',
+        'type': "TEXT",
+        'validation_regex': '^([а-яА-Я\s\"\']{0,64})$',
+        'related_item': "ContractorPerson",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
+    },
+    {
+        'name': 'Фамилия представителя',
         'key_name': 'last_name',
         'is_required': True,
         'placeholder': 'Фамилия юридического лица исполнителя',
@@ -376,7 +364,7 @@ CONTRACTOR_PERSON = [
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
     },
     {
-        'name': 'Имя юрлица',
+        'name': 'Имя представителя',
         'key_name': 'first_name',
         'is_required': True,
         'placeholder': 'Имя юридического лица исполнителя',
@@ -388,7 +376,7 @@ CONTRACTOR_PERSON = [
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
     },
     {
-        'name': 'Отчество юрлица',
+        'name': 'Отчество представителя',
         'key_name': 'surname',
         'is_required': False,
         'placeholder': 'Отчество юридического лица исполнителя',
@@ -400,9 +388,9 @@ CONTRACTOR_PERSON = [
         'error_text': "Значение должно содержать только кириллицу, а также не более 64 символов"
     },
     {
-        'name': 'Должность юрлица',
+        'name': 'Должность представителя',
         'key_name': 'post',
-        'is_required': False,
+        'is_required': True,
         'placeholder': 'Должность юридического лица исполнителя в компании',
         'type': 'TEXT',
         'validation_regex': '^[а-яА-Я]{0,64}$',
@@ -424,6 +412,42 @@ CONTRACTOR_PERSON = [
             'show_field': "company_name",
             'save_field': "id",
         },
+        'secure_text': False,
+        'error_text': None
+    },
+    {
+        'name': 'Город расположения заказчика',
+        'key_name': 'contractor_city',
+        'is_required': True,
+        'placeholder': 'Город расположения компании',
+        'type': 'TEXT',
+        'validation_regex': '^[a-zA-Z0-9_.,а-яА-Я]{0,64}$',
+        'related_item': "ContractorPerson",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
+    },
+    {
+        'name': 'Номер подписанного договора',
+        'key_name': 'contract_number',
+        'is_required': True,
+        'placeholder': 'Номер договора',
+        'type': 'NUMBER',
+        'validation_regex': '^[0-9]*$',
+        'related_item': "ContractorPerson",
+        'related_info': None,
+        'secure_text': False,
+        'error_text': "Номер договора должен быть числом."
+    },
+    {
+        'name': 'Дата подписания договора',
+        'key_name': 'contract_date',
+        'is_required': True,
+        'placeholder': 'Дата подписания',
+        'type': 'DATE',
+        'validation_regex': None,
+        'related_item': "ContractorPerson",
+        'related_info': None,
         'secure_text': False,
         'error_text': None
     },

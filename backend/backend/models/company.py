@@ -38,10 +38,6 @@ class Contractor(CompanyAbstract):
     - Город-месторасположение компании, где происходит подпись документа.
     """
     related_executor = models.ForeignKey(Executor, on_delete=models.CASCADE, related_name='related_executor', default=0)
-    contractor_city = models.CharField(max_length=64, null=False)
-    contract_number = models.IntegerField(null=False) # Номер договора
-    contract_date = models.DateTimeField(auto_now_add=False)
-    
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -63,13 +59,14 @@ class Person(models.Model):
     class Meta:
         abstract = True
 
+    person_type = models.TextField(max_length=128, null=False, default="OAO 'Название компании'") # OAO "Название компании"
     first_name = models.CharField(max_length=64, null=False)
     last_name = models.CharField(max_length=64, null=False)
     surname = models.CharField(max_length=64, null=False)
     post = models.CharField(max_length=64, null=False)
 
     def set_initials(self):
-        return f'{self.last_name} {self.first_name[0]}.{self.surname[0]}.'
+        return f'{self.last_name} {self.first_name[0]}.{self.surname[0]+"." if self.surname else ""}'
 
 class ExecutorPerson(Person):
     """
@@ -98,4 +95,7 @@ class ContractorPerson(Person):
             )
         ]
 
+    contractor_city = models.CharField(max_length=64, null=False)
+    contract_number = models.IntegerField(null=False) # Номер договора
+    contract_date = models.DateTimeField(auto_now_add=False)
     company = models.ForeignKey(Contractor, on_delete=models.CASCADE)

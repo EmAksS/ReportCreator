@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from api.views.schema import SchemaAPIView
 from rest_framework.exceptions import ValidationError
 # Permissions
-from rest_framework import permissions
+from rest_framework import permissions  
 from api.permissions import IsAuthed, IsAuthedOrReadOnly
 # models 
 from backend.models.fields import Field
@@ -46,6 +46,8 @@ from workalendar.europe import Russia
 from datetime import date
 from core.settings.base import DOCUMENTS_FOLDER, MEDIA_ROOT
 import locale
+
+from django.http import FileResponse
 
 # region DocTypes_docs
 @extend_schema(tags=["Documents"])
@@ -777,10 +779,11 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             table_field.name=find_dataValue(data, 'name')
             table_field.is_required=True
             table_field.type=find_dataValue(data, 'type')
-            table_field.is_autoincremental=find_dataValue(data, 'is_autoincremental') if find_dataValue(data, 'is_autoincremental') else table_field.is_autoincremental
+            table_field.is_autoincremental=find_dataValue(data, 'is_autoincremental') if find_dataValue(data, 'is_autoincremental') != None else table_field.is_autoincremental
             table_field.validation_regex=find_dataValue(data, 'validation_regex') if find_dataValue(data, 'validation_regex') != "" else None
             table_field.is_summable=find_dataValue(data, 'is_summable')
             table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"
+            table_field.save()
         else:
             raise ValidationError({"unknown": "Данное поле не найдено."})
 
@@ -904,7 +907,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             doc = Document.objects.get_or_create(
                 id=Document.objects.filter().count() + 1,
                 template=template,
-                shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
+                shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%Y-%m-%d"),
                 save_path=DOCUMENTS_FOLDER/template.template_file.name.split('/')[-1],
             )[0]
         except Exception as e:
@@ -931,22 +934,23 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         ## Дополняем также информацией о компаниях
         locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
         # Информация о документе
-        document_data["contract_number"] = template.related_contractor_person.company.contract_number
-        document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
         #* order_date - в fill_document
         document_data["order_number"] = Document.objects.filter(template=template).count() + 1
         # Лицо заказчика
         if template.related_contractor_person is not None:
             document_data["contractor_person"] = template.related_contractor_person.set_initials()
-            document_data["contractor_post"] = template.related_contractor_person.post if template.related_contractor_person.post else "Ответственное лицо"
-            document_data["contractor_company_full"] = template.related_contractor_person.company.company_fullName
-            document_data["contractor_company"] = template.related_contractor_person.company.company_name
+            document_data["contractor_post"] = template.related_contractor_person.post if template.related_contractor_person.post else f"Ответственное лицо {template.related_contractor_person.post}"
+            document_data["contractor_company_full"] = template.related_contractor_person.person_type
+            document_data["contractor_company"] = template.related_contractor_person.person_type
+            document_data["contractor_city"] = template.related_contractor_person.contractor_city
+            document_data["contract_number"] = template.related_contractor_person.contract_number
+            document_data["contract_date"] = template.related_contractor_person.contract_date.strftime("%d.%m.%Y")
         # Лицо исполнителя
         if template.related_executor_person is not None:
             document_data["executor_person"] = template.related_executor_person.set_initials()
-            document_data["executor_post"] = template.related_executor_person.post if template.related_executor_person.post else "Ответственное лицо"
-            document_data["executor_company_full"] = template.related_executor_person.company.company_fullName
-            document_data["executor_company"] = template.related_executor_person.company.company_name
+            document_data["executor_post"] = template.related_executor_person.post if template.related_executor_person.post else f"Юридическое лицо {template.related_executor_person.person_type}"
+            document_data["executor_company_full"] = template.related_executor_person.person_type
+            document_data["executor_company"] = template.related_executor_person.person_type
 
 
         # Делаем так, чтобы столбцы таблицы располагались по возрастанию ORDER
@@ -998,6 +1002,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             doc.shown_date = info.get("shown_date")
             if info.get("path"):
                 doc.save_path = info["path"]
+            doc.save()
         except Exception as e:
             doc.delete()   # Удаляем документ, если произошла ошибка
             raise ValidationError({"unknown": f"Ошибка создания документа: ({e})."})
@@ -1124,6 +1129,27 @@ class TemplateCurrentCompanyListView(SchemaAPIView, generics.ListAPIView):
     def get_queryset(self):
         return Template.objects.filter(related_executor_person__company=self.request.user.company)
 
+
+class DocumentListView(SchemaAPIView, generics.ListAPIView):
+    serializer_class = DocumentSerializer
+    details_serializer = DocumentSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = Document.objects.all()
+
+
+def DocumentDownloadView(request, did):
+    document = Document.objects.get(pk=did)
+    dir_path = os.path.dirname(document.save_path)
+    file_name = os.path.basename(document.save_path)
+    file_path = os.path.join(dir_path, file_name)
+    print(file_path)
+    if os.path.exists(file_path):
+        response = FileResponse(
+            open(file_path, 'rb'),
+            as_attachment=True,
+            filename=file_name
+        )
+        return response
 
 # template_detail(pk)
 
