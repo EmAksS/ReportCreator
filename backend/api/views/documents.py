@@ -931,8 +931,8 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         ## Дополняем также информацией о компаниях
         locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
         # Информация о документе
-        #document_data["contract_number"] = template.related_contractor_person.company.contract_number
-        #document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
+        document_data["contract_number"] = template.related_contractor_person.company.contract_number
+        document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
         #* order_date - в fill_document
         document_data["order_number"] = Document.objects.filter(template=template).count() + 1
         # Лицо заказчика
