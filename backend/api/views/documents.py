@@ -341,7 +341,7 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         table_columns = find_table_columns(serializer.instance.template_file)
         index = 10
         for column in table_columns:
-            table_field = TableField.objects.get_or_create(
+            table_field = TableField.objects.   create(
                 related_template=serializer.instance,
                 order=index,
                 is_summable=False,
@@ -773,13 +773,13 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             id=f"{find_dataValue(data, 'key_name')}__Table__{str(template.template_name).replace(' ', '_')}"
         )
         if table_field:
-            table_field.name=find_dataValue(data, 'name'),
-            table_field.order= find_dataValue(data, 'order'),
-            table_field.is_required=find_dataValue(data, 'is_required'),
-            table_field.type=find_dataValue(data, 'type'),
-            table_field.validation_regex=find_dataValue(data, 'validation_regex'),
-            table_field.is_summable=find_dataValue(data, 'is_summable'),
-            table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
+            table_field.name=find_dataValue(data, 'name')
+            table_field.order=find_dataValue(data, 'order') if find_dataValue(data, 'order') else table_field.order
+            table_field.is_required=find_dataValue(data, 'is_required')
+            table_field.type=find_dataValue(data, 'type')
+            table_field.validation_regex=find_dataValue(data, 'validation_regex') if find_dataValue(data, 'validation_regex') != "" else None
+            table_field.is_summable=find_dataValue(data, 'is_summable')
+            table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"
         else:
             raise ValidationError({"unknown": "Данное поле не найдено."})
 
