@@ -795,7 +795,7 @@ class TemplateTableFieldsListView(SchemaAPIView, generics.ListAPIView):
 
     def get_queryset(self):
         template_id = self.kwargs.get('tk')
-        return TableField.objects.filter(related_template=template_id)
+        return TableField.objects.filter(related_template=template_id, is_autoincremental=False)
 
 
 # region TemplatesFields_docs
@@ -931,8 +931,8 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         ## Дополняем также информацией о компаниях
         locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
         # Информация о документе
-        document_data["contract_number"] = template.related_contractor_person.company.contract_number
-        document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
+        #document_data["contract_number"] = template.related_contractor_person.company.contract_number
+        #document_data["contract_date"] = template.related_contractor_person.company.contract_date.strftime("%d.%m.%Y")
         #* order_date - в fill_document
         document_data["order_number"] = Document.objects.filter(template=template).count() + 1
         # Лицо заказчика
@@ -953,7 +953,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         ordered_lf = []
         ordered = TableField.objects.filter(related_template=tid).order_by('order')
         for row in ordered:
-            if row.key_name not in listfields:
+            if row.key_name not in listfields and row.is_autoincremental == False:
                 continue
             ordered_lf.append(row.key_name)
 
@@ -961,16 +961,27 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             raise ValidationError({"unknown": "В таблице может быть только один суммируемый столбец"})
         summable_index = ordered_lf.index(TableField.objects.filter(related_template=tid, is_summable=True).first().key_name) if TableField.objects.filter(related_template=tid, is_summable=True).exists() else None
         
+        try:
+            ai_field = TableField.objects.filter(related_template=tid, is_autoincremental=True).first().key_name
+        except AttributeError:
+            ai_field = None
+
         maxlen = 0
         for listfield in ordered_lf:
+            if listfield == ai_field:
+                continue
             maxlen = max(maxlen, len(find_dataValue(data, listfield)))
         
         table = []
+        autoincrement = [i for i in range(1, maxlen + 1)]
         for row in range(maxlen):
             rowlist = []
             for listfield in ordered_lf:
                 try:
-                    rowlist.append(find_dataValue(data, listfield)[row])
+                    if listfield == ai_field:
+                        rowlist.append(autoincrement[row])
+                    else:
+                        rowlist.append(find_dataValue(data, listfield)[row])
                 except:
                     rowlist.append("")
             table.append(rowlist)
