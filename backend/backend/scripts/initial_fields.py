@@ -612,18 +612,18 @@ DOCUMENT_FIELD = [
 ]
 
 TABLE_FIELD = [
-    {
-        'name': 'Порядок поля',
-        'key_name': 'order',
-        'is_required': True,
-        'placeholder': 'Укажите порядок поля',
-        'type': 'NUMBER',
-        'validation_regex': None,
-        'related_item': "TableField",
-        'related_info': None,
-        'secure_text': False,
-        'error_text': None
-    },
+    # {
+    #     'name': 'Порядок поля',
+    #     'key_name': 'order',
+    #     'is_required': True,
+    #     'placeholder': 'Укажите порядок поля',
+    #     'type': 'NUMBER',
+    #     'validation_regex': None,
+    #     'related_item': "TableField",
+    #     'related_info': None,
+    #     'secure_text': False,
+    #     'error_text': None
+    # },
     {
         'name': 'Является ли суммируемым столбцом?',
         'key_name': 'is_summable',
@@ -660,18 +660,18 @@ TABLE_FIELD = [
         'secure_text': False,
         'error_text': "Значение должно быть уникальным, содержать только латиницу, а также не более 64 символов"
     },
-    {
-        'name': 'Необходимое поле?',
-        'key_name': 'is_required',
-        'is_required': True,
-        'placeholder': 'Это необходимое поле?',
-        'type': 'BOOL',
-        'validation_regex': None,
-        'related_item': "TableField",
-        'related_info': None,
-        'secure_text': False,
-        'error_text': None
-    },
+    # {
+    #     'name': 'Необходимое поле?',
+    #     'key_name': 'is_required',
+    #     'is_required': True,
+    #     'placeholder': 'Это необходимое поле?',
+    #     'type': 'BOOL',
+    #     'validation_regex': None,
+    #     'related_item': "TableField",
+    #     'related_info': None,
+    #     'secure_text': False,
+    #     'error_text': None
+    # },
     {
         'name': 'Предложение записи для пользователя',
         'key_name': 'placeholder',

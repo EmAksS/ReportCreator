@@ -774,8 +774,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         )
         if table_field:
             table_field.name=find_dataValue(data, 'name')
-            table_field.order=find_dataValue(data, 'order') if find_dataValue(data, 'order') else table_field.order
-            table_field.is_required=find_dataValue(data, 'is_required')
+            table_field.is_required=True
             table_field.type=find_dataValue(data, 'type')
             table_field.validation_regex=find_dataValue(data, 'validation_regex') if find_dataValue(data, 'validation_regex') != "" else None
             table_field.is_summable=find_dataValue(data, 'is_summable')
