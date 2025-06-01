@@ -250,5 +250,6 @@ def find_fields(filename) -> list:
         "executor_company",
 
         "total_cost",
+        "contractor_city",
     ]
     return [placeholder for placeholder in reformated if placeholder not in PREORDER_FIELDS]
