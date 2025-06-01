@@ -725,7 +725,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         
         try:
             table_field = TableField.objects.create(
-                id=f"{find_dataValue(data, 'key_name')}__Template__{str(template.template_name).replace(' ', '_')}",
+                id=f"{find_dataValue(data, 'key_name')}__Table__{str(template.template_name).replace(' ', '_')}",
                 name=find_dataValue(data, 'name'),
                 key_name=find_dataValue(data, 'key_name'),
                 order= find_dataValue(data, 'order'),
@@ -770,7 +770,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             raise ValidationError({"template_id": f"Шаблон с TID {tk} не найден."})
 
         table_field = TableField.objects.get(
-            id=f"{find_dataValue(data, 'key_name')}__Template__{str(template.template_name).replace(' ', '_')}"
+            id=f"{find_dataValue(data, 'key_name')}__Table__{str(template.template_name).replace(' ', '_')}"
         )
         if table_field:
             table_field.name=find_dataValue(data, 'name'),
