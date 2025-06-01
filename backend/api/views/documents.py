@@ -347,7 +347,7 @@ class TemplateListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 is_summable=False,
                 is_autoincremental=False,
 
-                id=f"table{index}__Table__{serializer.instance.template_name.replace(' ', '_')}",
+                id=f"table_{index}__Table__{serializer.instance.template_name.replace(' ', '_')}",
                 name=str(column)[0:50],
                 key_name=f"table_{index}",
                 is_required=True,
