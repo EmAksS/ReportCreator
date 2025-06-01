@@ -613,22 +613,6 @@ DOCUMENT_FIELD = [
 
 TABLE_FIELD = [
     {
-        'name': 'Связанный шаблон',
-        'key_name': 'related_template',
-        'is_required': True,
-        'placeholder': 'Выберите шаблон для создания поля.',
-        'type': 'COMBOBOX',
-        'validation_regex': None,
-        'related_item': "TableField",
-        'related_info': {
-            'url': "templates/company/current/",
-            'show_field': "template_name",
-            'save_field': "id",
-        },
-        'secure_text': False,
-        'error_text': None
-    },
-    {
         'name': 'Порядок поля',
         'key_name': 'order',
         'is_required': True,

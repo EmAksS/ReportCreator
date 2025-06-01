@@ -713,7 +713,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         
         try:
             table_field = TableField.objects.create(
-                id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().template_name).replace(' ', '_')}",
+                id=f"{find_dataValue(data, 'key_name')}__Template__{str(template.template_name).replace(' ', '_')}",
                 name=find_dataValue(data, 'name'),
                 key_name=find_dataValue(data, 'key_name'),
                 order= find_dataValue(data, 'order'),
@@ -725,7 +725,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 is_summable=find_dataValue(data, 'is_summable'),
                 related_info=None,
                 placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}",
-                related_template=Template.objects.filter(id=template).first(), # Можно заменить на name но лучше не надо
+                related_template=template, # Можно заменить на name но лучше не надо
             )
 
             return Response(self.serializer_class(table_field).data, status=status.HTTP_201_CREATED)
@@ -734,7 +734,7 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
                 raise ValidationError({"key_name": "В шаблоне уже существует данный столбец таблицы с таким же названием или порядком."})
             raise ValidationError({"unknown": f"Ошибка создания поля столбца таблицы: {e}"})
 
-    def put(self, request, *args, **kwargs):
+    def put(self, request, tk, *args, **kwargs):
         self.details_serializer = TableFieldSerializer
         data = load_data(request.data)
 
@@ -748,14 +748,13 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
         if missing_fields:
             raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
 
-        template_id = data.get('related_template')
         try:
-            template = Template.objects.get(id=template_id)
+            template = Template.objects.get(id=tk)
         except Template.DoesNotExist:
-            raise ValidationError({"template_id": f"Шаблон с TID {template_id} не найден."})
+            raise ValidationError({"template_id": f"Шаблон с TID {tk} не найден."})
 
         table_field = TableField.objects.get(
-            id=f"{find_dataValue(data, 'key_name')}__Template__{str(Template.objects.filter(id=template).first().template_name).replace(' ', '_')}"
+            id=f"{find_dataValue(data, 'key_name')}__Template__{str(template.template_name).replace(' ', '_')}"
         )
         if table_field:
             table_field.name=find_dataValue(data, 'name'),
