@@ -604,10 +604,14 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
             raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
-        missing_fields = [field.name for field in required_fields if find_dataValue(data, field.key_name) is None]
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
 
-        if missing_fields:
-            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
 
         try:
             template = Template.objects.get(id=self.kwargs.get('tid'))
@@ -643,10 +647,14 @@ class TemplateDocumentFieldsListCreateView(SchemaAPIView, generics.ListCreateAPI
             raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="DocumentField", is_custom=False, is_required=True)
-        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
 
-        if missing_fields:
-            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
 
         template = Template.objects.filter(id=self.kwargs.get('tid')).first()
         if template is None:
@@ -701,13 +709,17 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             raise ValidationError({error["field_id"]: error["error"]})
 
         required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
-        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
 
-        if missing_fields:
-            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
-        
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
+
         try:
-            template = Template.objects.get(id=tk)
+            template = Template.objects.filter(id=tk).first()
         except Template.DoesNotExist:
             raise ValidationError({"template_id": f"Шаблон с TID {tk} не найден."})
         
@@ -743,10 +755,14 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             raise ValidationError({error["field_id"]: error["error"]})
         
         required_fields = Field.objects.filter(related_item="TableField", is_custom=False, is_required=True)
-        missing_fields = [field.name for field in required_fields if not find_dataValue(data, field.key_name)]
+        missing_fields = []
+        for field in required_fields:
+            if find_dataValue(data, field.key_name) is None:
+                missing_fields.append(field.key_name)
 
-        if missing_fields:
-            raise ValidationError({field_id: "Не указано обязательное поле."} for field_id in missing_fields)
+        if len(missing_fields) > 0:
+            errors = {str(field_id): "Не указано обязательное поле." for field_id in missing_fields} 
+            raise ValidationError(errors)
 
         try:
             template = Template.objects.get(id=tk)

@@ -1,5 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.plumbing import build_object_type
 
 class SchemaAPIView(APIView):
     """
@@ -67,3 +68,19 @@ class SchemaAPIView(APIView):
 
         response.data = result
         return super().finalize_response(request, response, *args, **kwargs)
+    
+
+def schema_response(success_serializer_class=None, has_errors:bool=False):
+    schema = {
+        "type": "object",
+        "properties": {
+            "details": success_serializer_class if success_serializer_class else None,
+            "errors": None if not has_errors else {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "string",
+                }
+            },
+        }
+    }
+    return build_object_type(schema)

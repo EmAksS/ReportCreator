@@ -10,9 +10,6 @@ class DataInputSerializer(serializers.Serializer):
         help_text="Список объектов {field_id, value}"
     )
 
-# class SchemaAPISerializer(serializers.Serializer):
-#     details = serializers.
-
 class StatusSerializer(serializers.Serializer):
     status = serializers.IntegerField()
 
