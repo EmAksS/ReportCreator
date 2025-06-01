@@ -49,7 +49,32 @@ import json
         summary="Получить поля создания компании",
         description="Получить поля для создания компании и её суперпользователя",
         responses={
-            200: schema_response(FieldSerializer(many=True)),
+            200: OpenApiResponse(
+                response=FieldSerializer(many=True),
+                description="Успешный ответ",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Получены поля для создания. Для простоты понимания структуры, показывается только один элемент поля",
+                        value={
+                            "data": [
+                                {
+                                    'name': 'Краткое название компании',
+                                    'key_name': 'company_name',
+                                    'is_required': True,
+                                    'placeholder': 'Название компании с сокращёнными аббревиатурами',
+                                    'type': 'TEXT',
+                                    'validation_regex': '^[a-zA-Z0-9_\"\'\-«»а-яА-Я\s\.\,]{0,64}$',
+                                    'related_item': "Executor",
+                                    'related_info': None,
+                                    'secure_text': False,
+                                    'error_text': "Длина названия не должна превышать 64 символа, а также не содержать особых символов."
+                                },
+                            ]
+                        }
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -77,8 +102,52 @@ import json
             )
         ],
         responses={
-            201: schema_response(UserSerializer),
-            400: schema_response(has_errors=True),
+            201: OpenApiResponse(
+                response=ItemDetailsSerializer,
+                description="Созданы суперпользователь и компания.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        value={
+                            "status": 201,
+                            "details": {
+                                "company": {
+                                    "id": 123,
+                                    "company_name": "ИПР \"РепортКреатор\"",
+                                    "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                    "created_at": "2025-04-24 00:00:00.00000",
+                                    "updated_at": "2023-05-01 00:00:00.00000"
+                                },
+                                "superuser": {
+                                    "username": "anon",
+                                    "company": {
+                                        "id": 123,
+                                        "company_name": "ИПР \"РепортКреатор\"",
+                                        "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                                        "created_at": "2025-04-24 00:00:00.00000",
+                                        "updated_at": "2023-05-01 00:00:00.00000"
+                                    },
+                                    "is_company_superuser": True,
+                                },
+                            }
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
@@ -191,10 +260,50 @@ class CompanyRegisterView(SchemaAPIView, generics.ListCreateAPIView):
     get=extend_schema(
         summary="Получить информацию о компании, в которой находится пользователь.",
         responses={
-            200: schema_response(CompanySerializer),
-            400: schema_response(has_errors=True),
-            401: schema_response(has_errors=True),
-            403: schema_response(has_errors=True),
+            200: OpenApiResponse(
+                response=CompanySerializer,
+                description="Информация о компании.",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        value={
+                            "id": 123,
+                            "company_name": "ИПР \"РепортКреатор\"",
+                            "company_fullName": "Индивидуальное Программное Решение \"РепортКреатор\" (ReportCreator)",
+                            "created_at": "2025-04-24 00:00:00.00000",
+                            "updated_at": "2023-05-01 00:00:00.00000"
+                        }
+                    )
+                ]
+            ),
+            #403:
+            400: OpenApiResponse(
+                response=DetailAndStatsSerializer,
+                description="Неправильные данные",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Неправильные данные в теле запроса. Текст ошибки может отличаться.",
+                        value={
+                            "status": 400,
+                            "details": "Текст ошибки"
+                        }
+                    )
+                ]
+            ),
+            401: OpenApiResponse(
+                response=StatusSerializer,
+                description="Пользователь неавторизирован в системе",
+                examples=[
+                    OpenApiExample(
+                        "Пример ответа",
+                        description="Пользователь неавторизирован в системе",
+                        value={
+                            "status": 401
+                        }
+                    )
+                ]
+            ),
             500: OpenApiResponse(
                 response=None,
                 description="Ошибка на стороне сервера"
