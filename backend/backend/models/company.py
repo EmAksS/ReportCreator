@@ -66,7 +66,7 @@ class Person(models.Model):
     post = models.CharField(max_length=64, null=False)
 
     def set_initials(self):
-        return f'{self.last_name} {self.first_name[0]}.{self.surname[0]}.'
+        return f'{self.last_name} {self.first_name[0]}.{self.surname[0]+"." if self.surname else None}'
 
 class ExecutorPerson(Person):
     """
