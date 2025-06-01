@@ -1,69 +1,86 @@
-import React, {createContext, useContext, useEffect, useState} from "react";
+import React, {createContext, ReactNode, useContext, useEffect, useState} from "react";
 import "./App.css";
 import Hat from "./components/Hat";
-import {ButtonType} from "./components/Button";
-import {AuthFormMode} from "./components/AuthForm";
-import {BrowserRouter, Navigate, Route, Routes, useLocation} from "react-router-dom";
+import { ButtonType } from "./components/Button";
+import { AuthFormMode } from "./components/AuthForm";
+import {BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom";
 import AuthPage from "./components/pages/AuthPage";
 import WelcomePage from "./components/pages/WelcomePage";
-import {isAuthenticated} from "./api/api";
+import { getUser, logout } from "./api/api";
+import MainPage from "./components/pages/MainPage";
+import CompanyPage from "./components/pages/CompanyPage";
+import {User} from "./types/core";
+import Modal, {ModalProps} from "./components/Modal";
+import DocumentPage from "./components/pages/DocumentPage";
+import ModalContextProvider from "./components/contexts/ModalContextProvider";
+import AuthContextProvider, {AuthContext} from "./components/contexts/AuthContextProvider";
 
-const AuthContext = createContext<boolean>(false);
-
-const ROUTES = {
+export const ROUTES = {
     LOGIN: "/login",
     REGISTRATION: "/register",
-    WELCOME: "/welcome"
+    WELCOME: "/welcome",
+    MAIN: "/main",
+    COMPANY: "/company",
+    DOCUMENTS: "/documents",
 }
 
 function AppContent()
 {
-    const isAuthenticated = useContext(AuthContext);
+    const { user, checkAuth, isAuthChecked } = useContext(AuthContext);
     const location = useLocation();
-    const shouldShowHatButtons = location.pathname === ROUTES.WELCOME;
+    const navigate = useNavigate();
 
-    if (!isAuthenticated && location.pathname !== ROUTES.LOGIN) { return <Navigate to={ROUTES.LOGIN} replace/>; }
+    useEffect(() => {
+        if (!isAuthChecked) return;
+
+        if (!user && ![ROUTES.LOGIN, ROUTES.REGISTRATION].includes(location.pathname)) {
+            navigate(ROUTES.LOGIN);
+        } else if (user && [ROUTES.LOGIN, ROUTES.REGISTRATION].includes(location.pathname)) {
+            navigate(ROUTES.MAIN);
+        }
+    }, [location.pathname, user, isAuthChecked]);
+
+    if (!user && !isAuthChecked) return null;
 
     return (
         <div className={"page"}>
             <Hat
                 imageSrc={"/assets/images/report_creator_logo.png"}
                 title={"Report Creator"}
-                buttonProps={shouldShowHatButtons
-                    ? [{text: "Личный кабинет", onClick: ()=>{}, variant: ButtonType.hat},
-                       {text: "Выйти", onClick: ()=>{}, variant: ButtonType.hat}]
-                    : []}
-            />
+                onLogoClick={() => {if (user) navigate(ROUTES.MAIN)}}
+                buttonProps={user
+                    ? [{ text: "Документы", onClick: () => navigate(ROUTES.DOCUMENTS), variant: ButtonType.hat },
+                        { text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },
+                        { text: "Компания", onClick: () => navigate(ROUTES.COMPANY), variant: ButtonType.hat },
+                        { text: "Выйти", onClick: async () => { await logout(); await checkAuth(); navigate(ROUTES.MAIN); }, variant: ButtonType.hat }]
+                    : []}/>
 
             <div className={"main-space"}>
                 <Routes>
-                    <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration}/>} />
-                    <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login}/>} />
-                    <Route path={ROUTES.WELCOME} element={<WelcomePage/>} />
+                    <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration} />} />
+                    <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login} />} />
+                    <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
+                    <Route path={ROUTES.MAIN} element={<MainPage />} />
+                    <Route path={ROUTES.COMPANY} element={<CompanyPage />} />
+                    <Route path={ROUTES.DOCUMENTS} element={<DocumentPage />} />
+                    <Route path="*" element={<Navigate to={ROUTES.MAIN} />} />
                 </Routes>
             </div>
-        </div>);
+        </div>
+    );
 }
 
 function App()
 {
-    const [authState, setAuthState] = useState<boolean>(false);
-
-    useEffect(() => {
-        checkAuth();
-    }, [])
-
-    const checkAuth = async () =>
-    {
-        setAuthState(await isAuthenticated());
-    };
-
     return (
         <BrowserRouter>
-            <AuthContext.Provider value={authState}>
-                <AppContent/>
-            </AuthContext.Provider>
+            <AuthContextProvider>
+                <ModalContextProvider>
+                    <AppContent/>
+                </ModalContextProvider>
+            </AuthContextProvider>
         </BrowserRouter>);
 }
+
 
 export default App;

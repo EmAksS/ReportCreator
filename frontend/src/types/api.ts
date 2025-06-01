@@ -1,16 +1,20 @@
 import {User} from "./core";
 
+export enum InputType
+{
+    Text = "TEXT",
+    Bool = "BOOL",
+    Table = "TABLE",
+    Combobox = "COMBOBOX",
+    File = "FILE",
+    Number = "NUMBER",
+    Date = "DATE"
+}
+
 export interface DataValue
 {
     fieldId: string,
     value: FieldValue
-}
-
-export enum InputType
-{
-    Text = "TEXT",
-    Checkbox = "CHECKBOX",
-    Table = "TABLE"
 }
 
 export type FieldValue = string | boolean | FieldValue[][] | File;
@@ -36,20 +40,24 @@ export interface FileField extends Field
     fileFormat: string;
 }
 
-export interface DocumentField extends TextField
+export interface ComboboxField extends Field
+{
+    relatedInfo: {
+        url: string,
+        saveField: string,
+        showField: string
+    }
+}
+
+export interface DocumentField extends Field
 {
     relatedTemplate: string;
 }
 
 export interface TableField extends Field
 {
-    relatedTable: string;
-    fields: Field[];
-}
-
-export interface CsrfToken
-{
-    csrfToken: string;
+    isAutoincremental: boolean;
+    isSummable: boolean;
 }
 
 export interface InputPresentation
@@ -58,13 +66,8 @@ export interface InputPresentation
     value: DataValue;
 }
 
-interface ApiResponse
+export interface ApiResponse<T>
 {
-    status: number;
-    details?: string;
-}
-
-export interface IsAuthenticatedApiResponse extends ApiResponse
-{
-    user: User
+    details: null | T;
+    errors: null | Record<string, string>;
 }

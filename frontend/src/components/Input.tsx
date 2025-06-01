@@ -3,6 +3,10 @@ import {Field, FieldValue, InputType} from "../types/api";
 import TextInput, {TextInputProps} from "./inputs/TextInput";
 import TableInput, {TableInputProps} from "./inputs/TableInput";
 import CheckboxInput from "./inputs/CheckboxInput";
+import ComboboxInput, {ComboboxInputProps} from "./inputs/ComboboxInput";
+import FileInput, {FileInputProps} from "./inputs/FileInput";
+import NumberInput, {NumberInputProps} from "./inputs/NumberInput";
+import DateInput, {DateInputProps} from "./inputs/DateInput";
 
 export interface InputProps
 {
@@ -10,6 +14,7 @@ export interface InputProps
     onChange?: (keyName: string, value: FieldValue) => void;
     alert?: (keyName: string, message: string) => void;
     style?: React.CSSProperties;
+    canPassDefaultValue?: boolean;
 }
 
 const Input: FC<InputProps> = (props: InputProps) =>
@@ -21,16 +26,13 @@ const Input: FC<InputProps> = (props: InputProps) =>
         switch (inputData.type)
         {
             case InputType.Text: return <TextInput {...props as TextInputProps} />
+            case InputType.Bool: return <CheckboxInput {...props} />
+            case InputType.Combobox: return <ComboboxInput {...props as ComboboxInputProps} />
+            case InputType.File: return <FileInput {...props as FileInputProps} />
+            case InputType.Number: return <NumberInput {...props as NumberInputProps} />
+            case InputType.Date: return <DateInput {...props as DateInputProps} />
 
-            case InputType.Table: return <TableInput {...props as TableInputProps} />
-
-            case InputType.Checkbox: return <CheckboxInput {...props} />
-
-            default:
-            {
-                console.error("Not valid input type provided " + inputData.type);
-                return (<div>Not valid input type</div>);
-            }
+            default: throw new Error("Предоставлен не валидный объект Field")
         }
     }
 

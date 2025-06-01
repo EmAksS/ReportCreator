@@ -7,6 +7,7 @@ export interface ButtonProps
     type?: string;
     text?: string;
     style?: React.CSSProperties;
+    selected?: boolean;
 }
 
 export enum ButtonType
@@ -28,8 +29,9 @@ const Button: FC<ButtonProps> = (props: ButtonProps) =>
     return (
         <button className={`button ${buttonCSSClasses[props.variant]}`}
                 onClick={props.onClick}
-                style={props.style}>
-            <p style={{margin: 0}}>{props.text}</p>
+                style={{...props.style, ...(props.variant === ButtonType.toggleable && {
+                        backgroundColor: props.selected ? "whitesmoke" : "white"})}}>
+        <p style={{margin: 0}}>{props.text}</p>
         </button>
     )
 }

@@ -9,10 +9,12 @@ export interface TextInputProps extends InputProps
 
 const TextInput: FC<TextInputProps> = (props: TextInputProps) =>
 {
-    const [validationRegExp, setValidationRegExp] = useState<RegExp>();
+    const [validationRegExp, setValidationRegExp] = useState<RegExp | null>();
 
-    useEffect(() => {
-        setValidationRegExp(new RegExp(props.inputData.validationRegex as string));
+    useEffect(() =>
+    {
+        const regExp = props.inputData.validationRegex;
+        setValidationRegExp(regExp ? new RegExp(regExp) : null);
     }, [props.inputData.validationRegex]);
 
 
@@ -46,7 +48,7 @@ const TextInput: FC<TextInputProps> = (props: TextInputProps) =>
                className={"form-item text-input" + (props.inputData.secureText ? " secure-text" : "")}
                placeholder={props.inputData.placeholder}
                style={props.style}
-               onChange={handleChange}/>
+               onChange={handleChange} />
     )
 }
 
