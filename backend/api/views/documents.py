@@ -779,10 +779,11 @@ class TableFieldsListCreateView(SchemaAPIView, generics.ListCreateAPIView):
             table_field.name=find_dataValue(data, 'name')
             table_field.is_required=True
             table_field.type=find_dataValue(data, 'type')
-            table_field.is_autoincremental=find_dataValue(data, 'is_autoincremental') if find_dataValue(data, 'is_autoincremental') else table_field.is_autoincremental
+            table_field.is_autoincremental=find_dataValue(data, 'is_autoincremental') if find_dataValue(data, 'is_autoincremental') != None else table_field.is_autoincremental
             table_field.validation_regex=find_dataValue(data, 'validation_regex') if find_dataValue(data, 'validation_regex') != "" else None
             table_field.is_summable=find_dataValue(data, 'is_summable')
             table_field.placeholder=f"Введите значение поля {str(find_dataValue(data, 'name')).upper()}"
+            table_field.save()
         else:
             raise ValidationError({"unknown": "Данное поле не найдено."})
 
