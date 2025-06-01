@@ -1127,6 +1127,14 @@ class TemplateCurrentCompanyListView(SchemaAPIView, generics.ListAPIView):
     def get_queryset(self):
         return Template.objects.filter(related_executor_person__company=self.request.user.company)
 
+
+class DocumentListView(SchemaAPIView, generics.ListAPIView):
+    serializer_class = DocumentSerializer
+    details_serializer = DocumentSerializer
+    permission_classes = [permissions.AllowAny]
+    queryset = Document.objects.all()
+
+
 def DocumentDownloadView(request, did):
     document = Document.objects.get(pk=did)
     dir_path = os.path.dirname(document.save_path)
