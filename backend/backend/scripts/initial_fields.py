@@ -251,7 +251,7 @@ TEMPLATE = [
         'related_item': "Template",
         'related_info': {
             'url': "persons/executor/",
-            'show_field': "initials",
+            'show_field': "person_type",
             'save_field': "id",
         },
         'secure_text': False,
@@ -267,7 +267,7 @@ TEMPLATE = [
         'related_item': "Template",
         'related_info': {
             'url': "persons/contractor/",
-            'show_field': "initials",
+            'show_field': "person_type",
             'save_field': "id",
         },
         'secure_text': False,
