@@ -906,7 +906,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
             doc = Document.objects.get_or_create(
                 id=Document.objects.filter().count() + 1,
                 template=template,
-                shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0),
+                shown_date=Russia().add_working_days(date(date.today().year, date.today().month, 1), 0).strftime("%Y-%m-%d"),
                 save_path=DOCUMENTS_FOLDER/template.template_file.name.split('/')[-1],
             )[0]
         except Exception as e:
