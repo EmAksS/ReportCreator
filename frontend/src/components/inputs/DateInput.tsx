@@ -7,7 +7,6 @@ const DateInput: FC<DateInputProps> = (props) =>
 {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void =>
     {
-        console.log(event.target.value)
         props.onChange?.(props.inputData.keyName, event.target.value);
     };
 

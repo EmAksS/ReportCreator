@@ -25,7 +25,6 @@ const TemplateCreationForm: FC = () =>
     const requestCreateDocumentTemplate = async (values: DataValue[]) =>
     {
         const template = await createDocumentTemplate(values);
-        console.log(template)
         if (template)
         {
             setIsOpen(true);

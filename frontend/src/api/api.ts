@@ -12,7 +12,7 @@ import {
     User
 } from "../types/core";
 
-const BASE_API_URL = "http://localhost:8000";
+const BASE_API_URL = "http://26.63.43.26:8000";
 export const ENDPOINTS = {
     COMPANY_REGISTRATION: "/register/company/",
 
@@ -161,7 +161,6 @@ export async function getTemplateTableFieldSettingFields(templateId: number): Pr
 
 export async function getTemplateTableFieldValues(templateId: number): Promise<Field[]>
 {
-    console.log("getTemplateTableFieldValues", await getFields(ENDPOINTS.TEMPLATE_FIELD_VALUES(templateId)))
     return await getFields(ENDPOINTS.TEMPLATE_FIELD_VALUES(templateId));
 }
 
@@ -379,9 +378,9 @@ async function apiRequest<TValue>(config: { url: string, method: string, body?: 
     const response = await api.request<ApiResponse<TValue>>({...config.config, url: config.url, method: config.method, data: config.body});
     const data = response.data;
 
-    if (config.url !== ENDPOINTS.CSRF) {
-        console.log(config.method, config.url, config.body, data);
-    }
+    // if (config.url !== ENDPOINTS.CSRF) {
+    //     console.log(config.method, config.url, config.body, data);
+    // }
 
     if (!isSuccessfulResponse(response.status))
     {

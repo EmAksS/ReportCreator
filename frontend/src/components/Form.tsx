@@ -67,9 +67,7 @@ const Form: FC<FormProps> = (props: FormProps) =>
     {
         try
         {
-            console.log(inputs)
             const emptyFields = getEmptyRequiredFields(inputs)
-            console.log(emptyFields)
             if (emptyFields.length === 0)
             {
                 if (Object.keys(alertMessages).length === 0)
@@ -81,7 +79,7 @@ const Form: FC<FormProps> = (props: FormProps) =>
         }
         catch (e)
         {
-            console.log("поймана ошибка ", e)
+            console.error("поймана ошибка ", e)
             if (e instanceof Error) {
                 setSubmitResultMessage(e.message);
             }

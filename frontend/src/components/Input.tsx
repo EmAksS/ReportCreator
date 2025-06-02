@@ -32,6 +32,7 @@ const Input: FC<InputProps> = (props: InputProps) =>
             case InputType.Number: return <NumberInput {...props as NumberInputProps} />
             case InputType.Currency: return <NumberInput {...props as NumberInputProps} />
             case InputType.Date: return <DateInput {...props as DateInputProps} />
+            case InputType.User: return <div></div>
 
             default: throw new Error("Предоставлен не валидный объект Field")
         }
