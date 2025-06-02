@@ -116,7 +116,7 @@ const Form: FC<FormProps> = (props: FormProps) =>
             {props.children}
 
             <p style={{margin: "8px 0"}} className={"alert-message"}>{getFirstAlertMessage()}</p>
-            <Button text={props.submitLabel} variant={ButtonType.general} onClick={tryToSubmit} style={{width: "100%"}}/>
+            <Button text={props.submitLabel} variant={ButtonType.general} onClick={tryToSubmit} style={{width: "100%"}} />
             <p style={{margin: "8px 0", color: "black"}} className={"alert-message"}>{submitResultMessage}</p>
         </div>)
 }

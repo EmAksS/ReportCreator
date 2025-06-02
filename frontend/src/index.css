@@ -242,6 +242,7 @@ code {
 .list-item
 {
   position: relative;
+  margin-right: 16px;
 }
 
 .list-item:last-of-type > div
@@ -249,11 +250,16 @@ code {
   border-bottom: none;
 }
 
+.table-input > .list > .list-item
+{
+  margin-right: 0;
+}
+
 .list-item-remove-button
 {
   position: absolute;
   left: 100%;
-  top: 15%;
+  top: 0;
   outline: none;
   border: none;
   background-color: transparent;

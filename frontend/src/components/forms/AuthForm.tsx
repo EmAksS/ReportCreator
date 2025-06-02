@@ -1,18 +1,18 @@
 import React, {FC, ReactElement, useContext, useEffect, useState} from "react";
-import Form from "./Form";
-import Button, {ButtonType} from "./Button";
+import Form from "../Form";
+import Button, {ButtonType} from "../Button";
 import {
     getLoginFields,
     getCompanyRegistrationFields,
     createCompany,
     login
-} from "../api/api";
-import {DataValue, Field} from "../types/api";
-import {ROUTES} from "../App";
+} from "../../api/api";
+import {DataValue, Field} from "../../types/api";
+import {ROUTES} from "../../App";
 import {useNavigate} from "react-router-dom";
-import {User} from "../types/core";
-import SimpleContainer from "./SimpleContainer";
-import {AuthContext} from "./contexts/AuthContextProvider";
+import {User} from "../../types/core";
+import SimpleContainer from "../SimpleContainer";
+import {AuthContext} from "../contexts/AuthContextProvider";
 
 export enum AuthFormMode
 {

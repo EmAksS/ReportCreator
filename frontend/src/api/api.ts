@@ -12,22 +12,27 @@ import {
     User
 } from "../types/core";
 
-const BASE_API_URL = "http://26.63.43.26:8000";
+const BASE_API_URL = "http://localhost:8000";
 export const ENDPOINTS = {
     COMPANY_REGISTRATION: "/register/company/",
 
     USER_REGISTRATION: "/register/user/",
+    DELETE_USER: (username: string) => `user/delete/${username}/`,
     //USER_REGISTRATION_FIELDS: "/user/values/fields/",
 
     CONTRACTOR_COMPANY: "/company/contractors/",
     CONTRACTOR_COMPANY_FIELDS: "/company/contractors/fields/",
+    DELETE_CONTRACTOR_COMPANY: (companyId: number) => `${ENDPOINTS.CONTRACTOR_COMPANY}${companyId}/`,
     CONTRACTOR_PERSONS: "/persons/contractor/",
     CONTRACTOR_PERSONS_FIELDS: "/persons/contractor/fields/",
+    DELETE_CONTRACTOR_PERSONS: (personId: number) => `${ENDPOINTS.CONTRACTOR_PERSONS}${personId}/`,
 
     COMPANY: "/company/",
-    COMPANY_USERS: "/company/users",
+    DELETE_COMPANY: "/company/delete/",
+    COMPANY_USERS: "/company/users/",
     EXECUTOR_PERSONS: "/persons/executor/",
     EXECUTOR_PERSONS_FIELDS: "/persons/executor/fields/",
+    DELETE_EXECUTOR_PERSONS: (personId: number) => `${ENDPOINTS.EXECUTOR_PERSONS}${personId}/`,
 
     TEMPLATES: "/templates/",
     COMPANY_TEMPLATES: (templateId: number | string = "") => `/templates/company/${templateId}/`,
@@ -277,11 +282,6 @@ const extractFileName = (contentDisposition: string): string | null => {
     return matches?.[1]?.replace(/['"]/g, '') || null;
 };
 
-// export async function recreateTemplateTableField(templateId: number, fieldCreationData: DataValue[]): Promise<any>
-// {
-//     return await apiPut<any>({url: ENDPOINTS.TEMPLATE_TABLE_FIELD_FIELDS(templateId), body: fieldCreationData});
-// }
-
 export async function createCompany(companyRegistrationData: DataValue[]): Promise<User>
 {
     return await apiPost<User>({url: ENDPOINTS.COMPANY_REGISTRATION, body: companyRegistrationData});
@@ -340,6 +340,31 @@ export async function getUser(): Promise<User>
     return await apiGet<User>(ENDPOINTS.CHECK_AUTH);
 }
 
+export async function deleteCompany(): Promise<void>
+{
+    return await apiDelete(ENDPOINTS.DELETE_COMPANY);
+}
+
+export async function deleteCompanyUser(username: string): Promise<void>
+{
+    return await apiDelete(ENDPOINTS.DELETE_USER(username));
+}
+
+export async function deleteContractorPerson(personId: number): Promise<void>
+{
+    return apiDelete(ENDPOINTS.DELETE_CONTRACTOR_PERSONS(personId));
+}
+
+export async function deleteExecutorPerson(personId: number): Promise<void>
+{
+    return apiDelete(ENDPOINTS.DELETE_EXECUTOR_PERSONS(personId));
+}
+
+export async function deleteContractorCompany(companyId: number): Promise<void>
+{
+    return apiDelete(ENDPOINTS.DELETE_CONTRACTOR_COMPANY(companyId));
+}
+
 async function getCsrfToken(): Promise<string>
 {
     return await apiGet<string>(ENDPOINTS.CSRF);
@@ -378,9 +403,9 @@ async function apiRequest<TValue>(config: { url: string, method: string, body?: 
     const response = await api.request<ApiResponse<TValue>>({...config.config, url: config.url, method: config.method, data: config.body});
     const data = response.data;
 
-    // if (config.url !== ENDPOINTS.CSRF) {
-    //     console.log(config.method, config.url, config.body, data);
-    // }
+    if (config.url !== ENDPOINTS.CSRF) {
+        console.log(config.method, config.url, config.body, data);
+    }
 
     if (!isSuccessfulResponse(response.status))
     {

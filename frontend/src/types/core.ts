@@ -21,6 +21,7 @@ export interface Person extends Credentials
 {
     post: string
     personType: string
+    id: number
 }
 
 export interface ContractorPerson extends Person
@@ -36,7 +37,8 @@ export interface ExecutorPerson extends Person
 export interface DocumentData
 {
     id: number,
-    template: string,
+    documentNumber: number
+    template: number,
     savePath: string
 }
 

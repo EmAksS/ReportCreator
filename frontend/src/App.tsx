@@ -2,7 +2,7 @@ import React, {createContext, ReactNode, useContext, useEffect, useState} from "
 import "./App.css";
 import Hat from "./components/Hat";
 import { ButtonType } from "./components/Button";
-import { AuthFormMode } from "./components/AuthForm";
+import { AuthFormMode } from "./components/forms/AuthForm";
 import {BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom";
 import AuthPage from "./components/pages/AuthPage";
 import { getUser, logout } from "./api/api";
@@ -41,7 +41,7 @@ function AppContent()
     return (
         <div className={"page"}>
             <Hat
-                imageSrc={"/assets/images/report_creator_logo.png"}
+                imageSrc={"/assets/images/logo.png"}
                 title={"Report Creator"}
                 onLogoClick={() => {if (user) navigate(ROUTES.MAIN)}}
                 buttonProps={user

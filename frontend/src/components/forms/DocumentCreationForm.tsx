@@ -5,12 +5,12 @@ import {
     getCompanyDocumentTemplates,
     getDocumentFields,
     getTemplateTableFields,
-} from "../api/api";
-import { DocumentTemplate } from "../types/core";
-import Form from "./Form";
-import { InputProps } from "./Input";
-import { Field, FieldValue, DataValue, InputType } from "../types/api";
-import TableInput from "./inputs/TableInput";
+} from "../../api/api";
+import { DocumentTemplate } from "../../types/core";
+import Form from "../Form";
+import { InputProps } from "../Input";
+import { Field, FieldValue, DataValue, InputType } from "../../types/api";
+import TableInput from "../inputs/TableInput";
 
 const DocumentCreationForm: FC = () => {
     const [fields, setFields] = useState<Record<string, Field[]>>({});
