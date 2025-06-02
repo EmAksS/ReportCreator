@@ -9,8 +9,8 @@ export interface ListProps {
     items: ListItem[];
     onAdd?: () => void;
     onRemove?: (id: number) => void;
-    hideAddButton?: boolean;   // Скрывает кнопку "+"
-    hideRemoveButtons?: boolean; // Скрывает кнопки "-"
+    hideAddButton?: boolean;
+    hideRemoveButtons?: boolean;
 }
 
 const List: FC<ListProps> = ({ items, onAdd, onRemove, hideAddButton = false, hideRemoveButtons = false }) => {
