@@ -2,7 +2,15 @@ import axios, {AxiosRequestConfig} from "axios";
 import camelcaseKeys from 'camelcase-keys';
 import snakecaseKeys from "snakecase-keys";
 import {ApiResponse, DataValue, Field} from "../types/api";
-import {Company, ContractorCompany, ContractorPerson, DocumentTemplate, ExecutorPerson, User} from "../types/core";
+import {
+    Company,
+    ContractorCompany,
+    ContractorPerson,
+    DocumentData,
+    DocumentTemplate,
+    ExecutorPerson,
+    User
+} from "../types/core";
 
 const BASE_API_URL = "http://localhost:8000";
 export const ENDPOINTS = {
@@ -23,8 +31,11 @@ export const ENDPOINTS = {
 
     TEMPLATES: "/templates/",
     COMPANY_TEMPLATES: (templateId: number | string = "") => `/templates/company/${templateId}/`,
+    TEMPLATE_INFO: (templateId: number) => `templates/${templateId}/info/`,
+    
     DOCUMENTS: (templateId: number | string) => `/document/save/${templateId}/`,
     DOCUMENT_TYPES: "/document/types/",
+    DOCUMENT_LIST: "/document/list/",
 
     CHECK_AUTH: "/check_auth/",
     LOGIN: "/login/",
@@ -35,6 +46,8 @@ export const ENDPOINTS = {
     TEMPLATE_FIELD_FIELDS: (templateId: number) => `/templates/${templateId}/fields/fields/`,
     TEMPLATE_TABLE_FIELD_FIELDS: (templateId: number | string) => `/templates/tables/create/${templateId}/`,
     TEMPLATE_FIELD_VALUES: (templateId: number) => `/templates/tables/${templateId}/`,
+
+    DOWNLOAD_DOCUMENT: (templateId: number) => `/document/download/${templateId}/`,
 }
 
 const API_METHODS = {
@@ -74,20 +87,23 @@ api.interceptors.request.use(async (config) =>
 });
 
 api.interceptors.response.use(
-    (response) =>
-    {
+    (response) => {
+        // Пропускаем преобразование для blob-ответов
+        if (response.config.responseType === 'blob') {
+            return response;
+        }
+
         const data = response.data;
-        if (data)
-        {
+        if (data) {
             response.data = toCamel(data);
         }
         return response;
     },
-    (error) =>
-    {
+    (error) => {
         console.error(error);
         return Promise.reject(error);
-    });
+    }
+);
 
 function toCamel(data: any): any { return camelcaseKeys(data, { deep: true }); }
 
@@ -149,6 +165,11 @@ export async function getTemplateTableFieldValues(templateId: number): Promise<F
     return await getFields(ENDPOINTS.TEMPLATE_FIELD_VALUES(templateId));
 }
 
+export async function getTemplateInfo(templateId: number): Promise<DocumentTemplate>
+{
+    return await apiGet<DocumentTemplate>(ENDPOINTS.TEMPLATE_INFO(templateId));
+}
+
 async function getFields(url: string): Promise<Field[]>
 {
     return await apiGet<Field[]>(url);
@@ -204,6 +225,59 @@ export async function createTemplateTableField(templateId: number, fieldCreation
     return await apiPut<any>({url: ENDPOINTS.TEMPLATE_TABLE_FIELD_FIELDS(templateId), body: fieldCreationData});
 }
 
+export async function downloadDocument(documentId: number): Promise<void> {
+    const url = ENDPOINTS.DOWNLOAD_DOCUMENT(documentId);
+    const response = await api.get(url, {
+        responseType: 'blob' // Указываем тип ответа - бинарные данные
+    });
+
+    // Проверяем статус ответа
+    if (!isSuccessfulResponse(response.status)) {
+        const errorText = await readBlobAsText(response.data);
+        throw new Error(`Ошибка загрузки: ${getFirstOrDefaultErrorMessageFromText(errorText)}`);
+    }
+
+    // Извлекаем имя файла из заголовков
+    const contentDisposition = response.headers['content-disposition'];
+    const fileName = extractFileName(contentDisposition) || `document_${documentId}.docx`;
+
+    // Создаем временную ссылку для скачивания
+    const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    // Убираем элементы после скачивания
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+}
+
+// Вспомогательные функции
+const readBlobAsText = (blob: Blob): Promise<string> => {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsText(blob);
+    });
+};
+
+const getFirstOrDefaultErrorMessageFromText = (text: string): string => {
+    try {
+        const errorData = JSON.parse(text);
+        return errorData.errors?.[0] || text;
+    } catch {
+        return text;
+    }
+};
+
+const extractFileName = (contentDisposition: string): string | null => {
+    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+    const matches = filenameRegex.exec(contentDisposition);
+    return matches?.[1]?.replace(/['"]/g, '') || null;
+};
+
 // export async function recreateTemplateTableField(templateId: number, fieldCreationData: DataValue[]): Promise<any>
 // {
 //     return await apiPut<any>({url: ENDPOINTS.TEMPLATE_TABLE_FIELD_FIELDS(templateId), body: fieldCreationData});
@@ -242,9 +316,14 @@ export async function createDocumentTemplate(templateCreationData: DataValue[]):
         config: {headers: {"Content-Type": "multipart/form-data"}}});
 }
 
-export async function createDocument(templateId: number, documentCreationData: DataValue[]): Promise<any>
+export async function createDocument(templateId: number, documentCreationData: DataValue[]): Promise<DocumentData>
 {
-    return apiPost({url: ENDPOINTS.DOCUMENTS(templateId), body: documentCreationData});
+    return apiPost<DocumentData>({url: ENDPOINTS.DOCUMENTS(templateId), body: documentCreationData});
+}
+
+export async function getDocuments(): Promise<DocumentData[]>
+{
+    return apiGet<DocumentData[]>(ENDPOINTS.DOCUMENT_LIST);
 }
 
 export async function login(userLoginData: DataValue[]): Promise<User>

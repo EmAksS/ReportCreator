@@ -229,7 +229,7 @@ code {
 .list
 {
   position: relative;
-  width: fit-content;
+  width: 100%;
   min-height: 1px;
   margin-bottom: 64px;
 }

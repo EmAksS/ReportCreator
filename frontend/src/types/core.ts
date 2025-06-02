@@ -20,6 +20,7 @@ export interface User
 export interface Person extends Credentials
 {
     post: string
+    personType: string
 }
 
 export interface ContractorPerson extends Person
@@ -30,6 +31,13 @@ export interface ContractorPerson extends Person
 export interface ExecutorPerson extends Person
 {
 
+}
+
+export interface DocumentData
+{
+    id: number,
+    template: string,
+    savePath: string
 }
 
 export interface Company
