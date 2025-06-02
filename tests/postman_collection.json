@@ -1,0 +1,1661 @@
+{
+	"info": {
+		"_postman_id": "54a29d09-640b-439f-bdf2-6ba3d26c7fe9",
+		"name": "ReportCreator API Tests Copy",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "45486777"
+	},
+	"item": [
+		{
+			"name": "Аутентификация и регистрация",
+			"item": [
+				{
+					"name": "1. Получение CSRF-токена",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"console.log('Получен ответ от сервера:', pm.response.text());",
+									"try {",
+									"    var jsonData = pm.response.json();",
+									"    console.log('Ответ в формате JSON:', JSON.stringify(jsonData));",
+									"    ",
+									"    if (jsonData && jsonData.details) {",
+									"        pm.environment.set(\"csrf_token\", jsonData.details);",
+									"        console.log(\"CSRF токен сохранен: \" + jsonData.details);",
+									"    } else if (jsonData && jsonData.csrf_token) {",
+									"        pm.environment.set(\"csrf_token\", jsonData.csrf_token);",
+									"        console.log(\"CSRF токен сохранен (из поля csrf_token): \" + jsonData.csrf_token);",
+									"    } else {",
+									"        console.error(\"CSRF токен не найден в ответе!\");",
+									"        console.log(\"Полученный ответ:\", JSON.stringify(jsonData));",
+									"        console.log(\"Доступные поля:\", Object.keys(jsonData).join(', '));",
+									"    }",
+									"} catch (e) {",
+									"    console.error('Ошибка при обработке JSON:', e);",
+									"    ",
+									"    // Проверяем, есть ли токен в заголовке Set-Cookie",
+									"    if (pm.response.headers.has('Set-Cookie')) {",
+									"        var cookies = pm.response.headers.get('Set-Cookie');",
+									"        console.log('Cookies из заголовка:', cookies);",
+									"        ",
+									"        // Ищем csrftoken в куки",
+									"        var match = cookies.match(/csrftoken=([^;]+)/);",
+									"        if (match && match[1]) {",
+									"            pm.environment.set('csrf_token', match[1]);",
+									"            console.log('CSRF токен извлечен из куки:', match[1]);",
+									"        }",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/csrf/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"csrf",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Регистрация компании",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"company_name\", \"value\": \"Тестовая компания\" },\n        { \"field_id\": \"company_fullName\", \"value\": \"Общество с ограниченной ответственностью Тестовая компания\" },\n        { \"field_id\": \"username\", \"value\": \"testuser\" },\n        { \"field_id\": \"password\", \"value\": \"Test_Password123\" },\n        { \"field_id\": \"last_name\", \"value\": \"Тестов\" },\n        { \"field_id\": \"first_name\", \"value\": \"Тест\" },\n        { \"field_id\": \"surname\", \"value\": \"Тестович\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/register/company/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"register",
+								"company",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Авторизация",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Сохраняем все куки из ответа",
+									"if (pm.response.headers.has(\"Set-Cookie\")) {",
+									"    var cookies = pm.response.headers.get(\"Set-Cookie\");",
+									"    pm.environment.set(\"session_cookie\", cookies);",
+									"    console.log('Полученные cookies:', cookies);",
+									"    ",
+									"    // Ищем sessionid в куки",
+									"    var sessionMatch = cookies.match(/sessionid=([^;]+)/);",
+									"    if (sessionMatch && sessionMatch[1]) {",
+									"        pm.environment.set('session_id', sessionMatch[1]);",
+									"        console.log('Session ID извлечен из куки:', sessionMatch[1]);",
+									"    }",
+									"    ",
+									"    // Ищем csrftoken в куки",
+									"    var csrfMatch = cookies.match(/csrftoken=([^;]+)/);",
+									"    if (csrfMatch && csrfMatch[1]) {",
+									"        pm.environment.set('csrf_token', csrfMatch[1]);",
+									"        console.log('CSRF токен извлечен из куки:', csrfMatch[1]);",
+									"    }",
+									"}",
+									"",
+									"// Проверяем заголовок Location при редиректе",
+									"if (pm.response.code === 302) {",
+									"    var location = pm.response.headers.get(\"Location\");",
+									"    console.log('Редирект на:', location);",
+									"}",
+									"",
+									"// Проверяем тип контента ответа",
+									"var contentType = pm.response.headers.get('Content-Type');",
+									"console.log('Тип контента ответа:', contentType);",
+									"",
+									"// Проверяем успешность авторизации",
+									"try {",
+									"    // Если ответ в формате JSON",
+									"    if (contentType && contentType.includes('application/json')) {",
+									"        var jsonData = pm.response.json();",
+									"        console.log('Ответ сервера (JSON):', JSON.stringify(jsonData));",
+									"        ",
+									"        pm.test(\"Успешная авторизация (JSON)\", function() {",
+									"            pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"            if (jsonData && jsonData.success) {",
+									"                pm.expect(jsonData.success).to.be.true;",
+									"            }",
+									"        });",
+									"    } ",
+									"    // Если ответ в формате HTML",
+									"    else if (contentType && contentType.includes('text/html')) {",
+									"        var responseText = pm.response.text();",
+									"        console.log('Ответ сервера (HTML): длина', responseText.length);",
+									"        ",
+									"        // Проверяем наличие sessionid в куках",
+									"        pm.test(\"Успешная авторизация (HTML)\", function() {",
+									"            var hasSessionId = pm.environment.has('session_id');",
+									"            pm.expect(hasSessionId).to.be.true;",
+									"            ",
+									"            // Проверяем редирект",
+									"            if (pm.response.code === 302) {",
+									"                var location = pm.response.headers.get('Location');",
+									"                pm.expect(location).to.not.include('/login/');",
+									"            }",
+									"        });",
+									"    }",
+									"} catch (e) {",
+									"    console.error('Ошибка при обработке ответа:', e);",
+									"    ",
+									"    // Проверяем наличие sessionid в куках даже при ошибке",
+									"    pm.test(\"Проверка наличия сессии\", function() {",
+									"        var hasSessionId = pm.environment.has('session_id');",
+									"        console.log('Наличие session_id:', hasSessionId);",
+									"        console.log('Значение session_id:', pm.environment.get('session_id'));",
+									"    });",
+									"}"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Получаем новый CSRF-токен перед авторизацией",
+									"pm.sendRequest({",
+									"    url: 'http://localhost:8000/csrf/',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (err) {",
+									"        console.error('Ошибка при получении CSRF-токена:', err);",
+									"        return;",
+									"    }",
+									"    ",
+									"    console.log('Ответ CSRF:', res.text());",
+									"    ",
+									"    // Сохраняем CSRF-токен из ответа",
+									"    try {",
+									"        var jsonData = res.json();",
+									"        if (jsonData && jsonData.details) {",
+									"            pm.environment.set('csrf_token', jsonData.details);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.details);",
+									"        } else if (jsonData && jsonData.csrf_token) {",
+									"            pm.environment.set('csrf_token', jsonData.csrf_token);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.csrf_token);",
+									"        }",
+									"    } catch (e) {",
+									"        console.error('Ошибка при обработке JSON:', e);",
+									"    }",
+									"    ",
+									"    // Ищем CSRF-токен в куках",
+									"    if (res.headers.has('Set-Cookie')) {",
+									"        var cookies = res.headers.get('Set-Cookie');",
+									"        var match = cookies.match(/csrftoken=([^;]+)/);",
+									"        if (match && match[1]) {",
+									"            pm.environment.set('csrf_token', match[1]);",
+									"            console.log('CSRF токен обновлен из куки:', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Requested-With",
+								"value": "XMLHttpRequest",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"username\", \"value\": \"testuser\" },\n        { \"field_id\": \"password\", \"value\": \"Test_Password123\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/login/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"login",
+								""
+							]
+						},
+						"followRedirects": true
+					},
+					"response": []
+				},
+				{
+					"name": "4. Проверка статуса авторизации",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"try {",
+									"    var jsonData = pm.response.json();",
+									"    console.log('Ответ проверки авторизации:', JSON.stringify(jsonData));",
+									"    ",
+									"    pm.test(\"Проверка статуса авторизации\", function() {",
+									"        pm.expect(pm.response.code).to.equal(200);",
+									"        ",
+									"        if (jsonData.details && jsonData.details.username) {",
+									"            console.log('Пользователь авторизован: ' + jsonData.details.username);",
+									"            pm.expect(jsonData.errors).to.be.null;",
+									"            tests[\"Пользователь авторизован\"] = true;",
+									"        } else if (jsonData.errors && jsonData.errors.not_authorized) {",
+									"            console.log('Пользователь не авторизован: ' + jsonData.errors.not_authorized);",
+									"            pm.expect(jsonData.details).to.be.null;",
+									"            tests[\"Пользователь не авторизован\"] = true;",
+									"        }",
+									"    });",
+									"} catch (e) {",
+									"    console.error('Ошибка при обработке JSON:', e);",
+									"    tests[\"Ошибка при обработке ответа\"] = false;",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/check_auth/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"check_auth",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Регистрация пользователя",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Получаем новый CSRF-токен перед регистрацией",
+									"pm.sendRequest({",
+									"    url: 'http://localhost:8000/csrf/',",
+									"    method: 'GET'",
+									"}, function (err, res) {",
+									"    if (err) {",
+									"        console.error('Ошибка при получении CSRF-токена:', err);",
+									"        return;",
+									"    }",
+									"    ",
+									"    console.log('Ответ CSRF:', res.text());",
+									"    ",
+									"    // Сохраняем CSRF-токен из ответа",
+									"    try {",
+									"        var jsonData = res.json();",
+									"        if (jsonData && jsonData.details) {",
+									"            pm.environment.set('csrf_token', jsonData.details);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.details);",
+									"        } else if (jsonData && jsonData.csrf_token) {",
+									"            pm.environment.set('csrf_token', jsonData.csrf_token);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.csrf_token);",
+									"        }",
+									"    } catch (e) {",
+									"        console.error('Ошибка при обработке JSON:', e);",
+									"    }",
+									"    ",
+									"    // Ищем CSRF-токен в куках",
+									"    if (res.headers.has('Set-Cookie')) {",
+									"        var cookies = res.headers.get('Set-Cookie');",
+									"        var match = cookies.match(/csrftoken=([^;]+)/);",
+									"        if (match && match[1]) {",
+									"            pm.environment.set('csrf_token', match[1]);",
+									"            console.log('CSRF токен обновлен из куки:', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"try {",
+									"    var jsonData = pm.response.json();",
+									"    console.log('Ответ регистрации пользователя:', JSON.stringify(jsonData));",
+									"    ",
+									"    pm.test(\"Успешная регистрация пользователя\", function() {",
+									"        pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"        pm.expect(jsonData.errors).to.be.null;",
+									"    });",
+									"} catch (e) {",
+									"    console.error('Ошибка при обработке JSON:', e);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							},
+							{
+								"key": "X-Requested-With",
+								"value": "XMLHttpRequest",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"username\", \"value\": \"testuser2\" },\n        { \"field_id\": \"password\", \"value\": \"Test_Password123\" },\n        { \"field_id\": \"last_name\", \"value\": \"Тестов\" },\n        { \"field_id\": \"first_name\", \"value\": \"Тест\" },\n        { \"field_id\": \"surname\", \"value\": \"Тестович\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/register/user/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"register",
+								"user",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Выход из системы",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"console.log('Ответ от сервера при выходе из системы:', pm.response.text());",
+									"",
+									"pm.test(\"Успешный выход из системы\", function() {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+									"    ",
+									"    try {",
+									"        var jsonData = pm.response.json();",
+									"        console.log('Ответ в формате JSON:', JSON.stringify(jsonData));",
+									"    } catch (e) {",
+									"        console.log('Ответ не в формате JSON');",
+									"    }",
+									"});"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Получаем новый CSRF-токен перед выходом из системы",
+									"pm.sendRequest({",
+									"    url: 'http://localhost:8000/csrf/',",
+									"    method: 'GET',",
+									"    header: {",
+									"        'Cookie': 'sessionid=' + pm.environment.get('session_id')",
+									"    }",
+									"}, function (err, res) {",
+									"    if (err) {",
+									"        console.error('Ошибка при получении CSRF-токена:', err);",
+									"        return;",
+									"    }",
+									"    ",
+									"    console.log('Ответ CSRF:', res.text());",
+									"    ",
+									"    // Сохраняем CSRF-токен из ответа",
+									"    try {",
+									"        var jsonData = res.json();",
+									"        if (jsonData && jsonData.details) {",
+									"            pm.environment.set('csrf_token', jsonData.details);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.details);",
+									"        } else if (jsonData && jsonData.csrf_token) {",
+									"            pm.environment.set('csrf_token', jsonData.csrf_token);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.csrf_token);",
+									"        }",
+									"    } catch (e) {",
+									"        console.error('Ошибка при обработке JSON:', e);",
+									"    }",
+									"    ",
+									"    // Ищем CSRF-токен в куках",
+									"    if (res.headers.has('Set-Cookie')) {",
+									"        var cookies = res.headers.get('Set-Cookie');",
+									"        var match = cookies.match(/csrftoken=([^;]+)/);",
+									"        if (match && match[1]) {",
+									"            pm.environment.set('csrf_token', match[1]);",
+									"            console.log('CSRF токен обновлен из куки:', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							},
+							{
+								"key": "X-Requested-With",
+								"value": "XMLHttpRequest",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/logout/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"logout",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Информация о компании",
+			"item": [
+				{
+					"name": "1. Получение информации о компании",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/company/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"company",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Получение пользователей компании",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/company/users/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"company",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Получение ПК пользователя",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/company/pcs/{{username}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"company",
+								"pcs",
+								"{{username}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Получение контрагентов компании",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/company/contractors/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"company",
+								"contractors",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Получение полей контрагентов",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/company/contractors/fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"company",
+								"contractors",
+								"fields",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Поля пользователя",
+			"item": [
+				{
+					"name": "1. Получение полей пользователя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/user/values/fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"values",
+								"fields",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Получение значений полей",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/user/values/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"values",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Установка значений полей",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n    {\n        \"field_id\": \"field_key_name\",\n        \"value\": \"field_value\"\n    }\n]"
+						},
+						"url": {
+							"raw": "http://localhost:8000/user/values/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"values",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Получение конкретного значения поля",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/user/values/{{field_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"user",
+								"values",
+								"{{field_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Исполнитель и Заказчик",
+			"item": [
+				{
+					"name": "1. Получение полей исполнителя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/persons/executor/fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"executor",
+								"fields",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Получение полей заказчика",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/persons/contractor/fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"contractor",
+								"fields",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Создание записи исполнителя",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Получаем новый CSRF-токен перед созданием записи",
+									"pm.sendRequest({",
+									"    url: 'http://localhost:8000/csrf/',",
+									"    method: 'GET',",
+									"    header: {",
+									"        'Cookie': 'sessionid=' + pm.environment.get('session_id')",
+									"    }",
+									"}, function (err, res) {",
+									"    if (err) {",
+									"        console.error('Ошибка при получении CSRF-токена:', err);",
+									"        return;",
+									"    }",
+									"    ",
+									"    console.log('Ответ CSRF:', res.text());",
+									"    ",
+									"    // Сохраняем CSRF-токен из ответа",
+									"    try {",
+									"        var jsonData = res.json();",
+									"        if (jsonData && jsonData.details) {",
+									"            pm.environment.set('csrf_token', jsonData.details);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.details);",
+									"        } else if (jsonData && jsonData.csrf_token) {",
+									"            pm.environment.set('csrf_token', jsonData.csrf_token);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.csrf_token);",
+									"        }",
+									"    } catch (e) {",
+									"        console.error('Ошибка при обработке JSON:', e);",
+									"    }",
+									"    ",
+									"    // Ищем CSRF-токен в куках",
+									"    if (res.headers.has('Set-Cookie')) {",
+									"        var cookies = res.headers.get('Set-Cookie');",
+									"        var match = cookies.match(/csrftoken=([^;]+)/);",
+									"        if (match && match[1]) {",
+									"            pm.environment.set('csrf_token', match[1]);",
+									"            console.log('CSRF токен обновлен из куки:', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"person_type\", \"value\": \"director\" },\n        { \"field_id\": \"first_name\", \"value\": \"Иван\" },\n        { \"field_id\": \"last_name\", \"value\": \"Иванов\" },\n        { \"field_id\": \"surname\", \"value\": \"Иванович\" },\n        { \"field_id\": \"post\", \"value\": \"Генеральный директор\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/persons/executor/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"executor",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Создание записи заказчика",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Получаем новый CSRF-токен перед созданием записи",
+									"pm.sendRequest({",
+									"    url: 'http://localhost:8000/csrf/',",
+									"    method: 'GET',",
+									"    header: {",
+									"        'Cookie': 'sessionid=' + pm.environment.get('session_id')",
+									"    }",
+									"}, function (err, res) {",
+									"    if (err) {",
+									"        console.error('Ошибка при получении CSRF-токена:', err);",
+									"        return;",
+									"    }",
+									"    ",
+									"    console.log('Ответ CSRF:', res.text());",
+									"    ",
+									"    // Сохраняем CSRF-токен из ответа",
+									"    try {",
+									"        var jsonData = res.json();",
+									"        if (jsonData && jsonData.details) {",
+									"            pm.environment.set('csrf_token', jsonData.details);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.details);",
+									"        } else if (jsonData && jsonData.csrf_token) {",
+									"            pm.environment.set('csrf_token', jsonData.csrf_token);",
+									"            console.log('CSRF токен обновлен из ответа:', jsonData.csrf_token);",
+									"        }",
+									"    } catch (e) {",
+									"        console.error('Ошибка при обработке JSON:', e);",
+									"    }",
+									"    ",
+									"    // Ищем CSRF-токен в куках",
+									"    if (res.headers.has('Set-Cookie')) {",
+									"        var cookies = res.headers.get('Set-Cookie');",
+									"        var match = cookies.match(/csrftoken=([^;]+)/);",
+									"        if (match && match[1]) {",
+									"            pm.environment.set('csrf_token', match[1]);",
+									"            console.log('CSRF токен обновлен из куки:', match[1]);",
+									"        }",
+									"    }",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}; sessionid={{session_id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"person_type\", \"value\": \"director\" },\n        { \"field_id\": \"first_name\", \"value\": \"Петр\" },\n        { \"field_id\": \"last_name\", \"value\": \"Петров\" },\n        { \"field_id\": \"surname\", \"value\": \"Петрович\" },\n        { \"field_id\": \"post\", \"value\": \"Директор\" },\n        { \"field_id\": \"company\", \"value\": \"1\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/persons/contractor/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"contractor",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Получение списка исполнителей",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/persons/executor/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"executor",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Получение списка заказчиков",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/persons/contractor/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"contractor",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Получение данных конкретного исполнителя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/persons/executor/{{executor_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"executor",
+								"{{executor_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Получение данных конкретного заказчика",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/persons/contractor/{{contractor_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"persons",
+								"contractor",
+								"{{contractor_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Шаблоны документов",
+			"item": [
+				{
+					"name": "1. Получение типов документов",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/document/types/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"document",
+								"types",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Получение типов полей",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/field/types/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"field",
+								"types",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Получение шаблонов",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Создание шаблона",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"template_name\", \"value\": \"Тестовый шаблон\" },\n        { \"field_id\": \"template_description\", \"value\": \"Описание тестового шаблона\" },\n        { \"field_id\": \"template_type\", \"value\": \"ACT\" },\n        { \"field_id\": \"template_file\", \"value\": \"data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQABgAIAAAAIQA...\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/templates/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Получение информации о шаблоне",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/{{template_id}}/info/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"{{template_id}}",
+								"info",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Добавление поля в шаблон",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"name\", \"value\": \"Тестовое поле\" },\n        { \"field_id\": \"key_name\", \"value\": \"test_field\" },\n        { \"field_id\": \"is_required\", \"value\": true },\n        { \"field_id\": \"type\", \"value\": \"TEXT\" },\n        { \"field_id\": \"placeholder\", \"value\": \"Введите текст\" },\n        { \"field_id\": \"validation_regex\", \"value\": null },\n        { \"field_id\": \"secure_text\", \"value\": false },\n        { \"field_id\": \"error_text\", \"value\": null }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/templates/{{template_id}}/fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"{{template_id}}",
+								"fields",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Получение доступных полей для шаблона",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/{{template_id}}/fields/fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"{{template_id}}",
+								"fields",
+								"fields",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Получение детальной информации о шаблоне",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/{{template_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"{{template_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Создание таблицы в шаблоне",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": [\n        { \"field_id\": \"name\", \"value\": \"Тестовая таблица\" },\n        { \"field_id\": \"key_name\", \"value\": \"test_table\" }\n    ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/templates/tables/create/{{template_key}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"tables",
+								"create",
+								"{{template_key}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. Получение полей таблицы",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/tables/{{table_key}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"tables",
+								"{{table_key}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "11. Получение шаблонов текущей компании",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/company/current/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"company",
+								"current",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "12. Получение шаблонов конкретной компании",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/templates/company/{{company_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"templates",
+								"company",
+								"{{company_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Генерация документов",
+			"item": [
+				{
+					"name": "1. Генерация документа",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-CSRFToken",
+								"value": "{{csrf_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Cookie",
+								"value": "csrftoken={{csrf_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"data\": {\n        \"fields\": [\n            {\n                \"field_id\": \"test_field\",\n                \"value\": \"Тестовое значение\"\n            }\n        ],\n        \"tables\": []\n    }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/document/save/{{template_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"document",
+								"save",
+								"{{template_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Получение списка документов",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/document/list/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"document",
+								"list",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Скачивание документа",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/document/download/{{document_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"document",
+								"download",
+								"{{document_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Сохраняем cookie сессии",
+					"if (pm.response.headers.has(\"Set-Cookie\")) {",
+					"    var cookies = pm.response.headers.get(\"Set-Cookie\");",
+					"    pm.environment.set(\"session_cookie\", cookies);",
+					"    console.log('Полученные cookies:', cookies);",
+					"    ",
+					"    // Ищем sessionid в куки",
+					"    var sessionMatch = cookies.match(/sessionid=([^;]+)/);",
+					"    if (sessionMatch && sessionMatch[1]) {",
+					"        pm.environment.set('session_id', sessionMatch[1]);",
+					"        console.log('Session ID извлечен из куки:', sessionMatch[1]);",
+					"    }",
+					"    ",
+					"    // Ищем csrftoken в куки",
+					"    var match = cookies.match(/csrftoken=([^;]+)/);",
+					"    if (match && match[1]) {",
+					"        pm.environment.set('csrf_token', match[1]);",
+					"        console.log('CSRF токен извлечен из куки:', match[1]);",
+					"    }",
+					"}",
+					"",
+					"// Проверяем наличие JSON-ответа",
+					"try {",
+					"    var jsonData = pm.response.json();",
+					"    ",
+					"    // Проверяем разные варианты расположения CSRF-токена",
+					"    if (jsonData && jsonData.details) {",
+					"        pm.environment.set(\"csrf_token\", jsonData.details);",
+					"        console.log(\"CSRF токен сохранен из поля details: \" + jsonData.details);",
+					"    } else if (jsonData && jsonData.csrf_token) {",
+					"        pm.environment.set(\"csrf_token\", jsonData.csrf_token);",
+					"        console.log(\"CSRF токен сохранен из поля csrf_token: \" + jsonData.csrf_token);",
+					"    }",
+					"} catch (e) {",
+					"    // Игнорируем ошибки при обработке JSON",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "csrf_token",
+			"value": ""
+		},
+		{
+			"key": "session_cookie",
+			"value": ""
+		},
+		{
+			"key": "session_id",
+			"value": ""
+		},
+		{
+			"key": "template_id",
+			"value": "1"
+		},
+		{
+			"key": "document_id",
+			"value": "1"
+		},
+		{
+			"key": "username",
+			"value": "testuser"
+		},
+		{
+			"key": "executor_id",
+			"value": "1"
+		},
+		{
+			"key": "contractor_id",
+			"value": "1"
+		},
+		{
+			"key": "field_id",
+			"value": "field_key_name"
+		},
+		{
+			"key": "company_id",
+			"value": "1"
+		},
+		{
+			"key": "template_key",
+			"value": "1"
+		},
+		{
+			"key": "table_key",
+			"value": "1"
+		}
+	]
+}
