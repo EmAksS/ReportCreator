@@ -84,6 +84,18 @@ class Document(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     shown_date = models.DateField(verbose_name="Отображаемая дата")
     save_path = models.CharField(max_length=255, verbose_name=f"Путь к сохранённому документу относительно {DOCUMENTS_FOLDER}", null=True, blank=True)
+    document_number = models.IntegerField(verbose_name="Номер документа в шаблоне", default=0)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.document_number = Document.objects.filter(
+                template__related_contractor_person=self.template.related_contractor_person,
+                template__related_executor_person=self.template.related_executor_person,
+                template__template_type=self.template.template_type
+                ).count() + 1
+        super().save(*args, **kwargs)
+        #return documents.Document.objects.filter(template=obj.template).count() + 1
+
 
 class DocumentsValues(models.Model):
     """
