@@ -1,5 +1,5 @@
 import React, {FC} from "react";
-import AuthForm, {AuthFormMode} from "../AuthForm";
+import AuthForm, {AuthFormMode} from "../forms/AuthForm";
 
 
 export interface AuthPageProps

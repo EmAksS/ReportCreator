@@ -1,14 +1,19 @@
-import React, {FC, useContext, useEffect, useState} from "react";
+import React, {FC, use, useContext, useEffect, useState} from "react";
 import {
     createContractorCompany,
     createContractorPerson,
-    createExecutorPerson, createUser, getCompany, getCompanyUsers,
+    createExecutorPerson,
+    createUser,
+    deleteCompany, deleteCompanyUser, deleteContractorCompany, deleteContractorPerson, deleteExecutorPerson,
+    getCompany,
+    getCompanyUsers,
     getContractorCompanies,
     getContractorCompanyFields,
     getContractorPersonFields,
     getContractorPersons,
     getExecutorPersonFields,
-    getExecutorPersons, getUserRegistrationFields
+    getExecutorPersons,
+    getUserRegistrationFields
 } from "../../api/api";
 import Form from "../Form";
 import {DataValue, Field} from "../../types/api";
@@ -18,6 +23,7 @@ import {InputProps} from "../Input";
 import SimpleContainer from "../SimpleContainer";
 import {AuthContext} from "../contexts/AuthContextProvider";
 import {ModalContext} from "../contexts/ModalContextProvider";
+import Button, {ButtonType} from "../Button";
 
 const CompanyPage: FC = () =>
 {
@@ -71,21 +77,13 @@ const CompanyPage: FC = () =>
             }
 
             setContractorPersons(contractorPersons);
-
             setExecutorPersons(executorPersons);
-
             setContractorPersonFields(contractorPersonFields);
-
             setCompany(company);
-
             setCompanyUsers(companyUsers)
-
             setCompanyUserFields(companyUserFields)
-
             setExecutorPersonFields(executorPersonFields);
-
             setContractorCompanies(contractorCompanies);
-
             setContractorCompanyFields(contractorCompanyFields);
         }
         catch (error)
@@ -118,18 +116,91 @@ const CompanyPage: FC = () =>
         setCompanyUsers(await getCompanyUsers());
     }
 
+    const requestDeleteCompany = async () =>
+    {
+        if (user?.isCompanySuperuser)
+        {
+            setIsOpenModal(true)
+            setModalChildren(
+                <SimpleContainer>
+                    <p>Вы уверены, что хотите удалить компанию?</p>
+                    <Button text={"Да"} variant={ButtonType.general} onClick={async () => await deleteCompany()} style={{width: "100%"}} />
+                </SimpleContainer>)
+        }
+    }
+
+    const requestDeleteContractorCompany = async (company: ContractorCompany) =>
+    {
+        setIsOpenModal(true)
+        setModalChildren(
+            <SimpleContainer>
+                <p>Вы уверены, что хотите удалить компанию заказчика {company.companyFullName}?</p>
+                <Button text={"Да"} variant={ButtonType.general} onClick={async () => {
+                    await deleteContractorCompany(company.id)
+                    setContractorCompanies(await getContractorCompanies())
+                    setContractorPersons(await getContractorPersons());
+                    setIsOpenModal(false)
+                }} style={{width: "100%"}} />
+            </SimpleContainer>)
+    }
+
+    const requestDeleteContractorPerson = async (person: ContractorPerson) =>
+    {
+        setIsOpenModal(true)
+        setModalChildren(
+            <SimpleContainer>
+                <p>Вы уверены, что хотите удалить юр. лицо компании заказчика "{person.firstName} {person.lastName} {person.surname}"?</p>
+                <Button text={"Да"} variant={ButtonType.general} onClick={async () => {
+                    await deleteContractorPerson(person.id)
+                    setContractorPersons(await getContractorPersons());
+                    setIsOpenModal(false)
+                }} style={{width: "100%"}} />
+            </SimpleContainer>)
+    }
+
+    const requestDeleteExecutorPerson = async (person: ExecutorPerson) =>
+    {
+        setIsOpenModal(true)
+        setModalChildren(
+            <SimpleContainer>
+                <p>Вы уверены, что хотите удалить юр. лицо исполнителя "{person.firstName} {person.lastName} {person.surname}"?</p>
+                <Button text={"Да"} variant={ButtonType.general} onClick={async () => {
+                    await deleteExecutorPerson(person.id)
+                    setExecutorPersons(await getExecutorPersons());
+                    setIsOpenModal(false)
+                }} style={{width: "100%"}} />
+            </SimpleContainer>)
+    }
+
+    const requestDeleteCompanyUser = async (username: string) =>
+    {
+        if (user?.isCompanySuperuser && user.username !== username)
+        {
+            setIsOpenModal(true)
+            setModalChildren(
+                <SimpleContainer>
+                    <p>Вы уверены, что хотите удалить пользователя {username}?</p>
+                    <Button text={"Да"} variant={ButtonType.general} onClick={async () => {
+                        await deleteCompanyUser(username);
+                        setCompanyUsers(await getCompanyUsers());
+                        setIsOpenModal(false)
+                    } } style={{width: "100%"}} />
+                </SimpleContainer>)
+        }
+    }
+
     return (<div>
         <div style={{display: "flex"}}>
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Пользователь</h3>
                 {user?.username}
                 <h3 style={{margin: "5px auto"}}>Компания</h3>
-                {company?.companyFullName}
+                <List hideAddButton={true} hideRemoveButtons={!user?.isCompanySuperuser} items={[{content: <span>{company?.companyFullName}</span>, id: 0} as ListItem]} onRemove={() => requestDeleteCompany()} />
             </SimpleContainer>
 
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Пользователи компании</h3>
-                <List hideRemoveButtons={true} items={companyUsers.map((currentUser, index) =>
+                <List onRemove={(id) => requestDeleteCompanyUser(companyUsers[id].username)} hideRemoveButtons={!user?.isCompanySuperuser} items={companyUsers.map((currentUser, index) =>
                     ({id: index, content: <div>{(user?.username == currentUser.username ? "Вы: " : "") + currentUser.username + " " + (currentUser.isCompanySuperuser ? "👑" : "")}</div>} as ListItem))}
                       onAdd={() =>
                       {
@@ -148,7 +219,7 @@ const CompanyPage: FC = () =>
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Компании Заказчики</h3>
 
-                <List hideRemoveButtons={true} items={contractorCompanies.map((contractor, index) =>
+                <List onRemove={(id) => requestDeleteContractorCompany(contractorCompanies[id])} items={contractorCompanies.map((contractor, index) =>
                     ({id: index, content: <div>{contractor.companyFullName}</div>} as ListItem))}
                       onAdd={() =>
                       {
@@ -161,7 +232,7 @@ const CompanyPage: FC = () =>
 
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Юридические лица заказчиков</h3>
-                <List hideRemoveButtons={true} items={contractorPersons.map((person, index) =>
+                <List onRemove={(id) => requestDeleteContractorPerson(contractorPersons[id])} items={contractorPersons.map((person, index) =>
                     ({id: index, content: <div>{person.personType + " " + person.post + " " + person.
                             lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
                       onAdd={() => {
@@ -175,7 +246,7 @@ const CompanyPage: FC = () =>
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Юридические лица исполнителя</h3>
 
-                <List hideRemoveButtons={true} items={executorPersons.map((person, index) =>
+                <List onRemove={(id) => requestDeleteExecutorPerson(executorPersons[id])} items={executorPersons.map((person, index) =>
                     ({id: index, content: <div>{person.personType + " " + person.post + " " + person.
                             lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
                       onAdd={() => {

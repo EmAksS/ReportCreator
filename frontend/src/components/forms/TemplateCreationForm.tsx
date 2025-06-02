@@ -1,10 +1,10 @@
 import React, {FC, useContext, useEffect, useState} from "react";
-import {DataValue, Field} from "../types/api";
-import {getDocumentTemplateCreationFields, createDocumentTemplate} from "../api/api";
-import Form from "./Form";
-import {ModalContext} from "./contexts/ModalContextProvider";
-import FieldsSettingMenu from "./forms/FieldsSettingMenu";
-import SimpleContainer from "./SimpleContainer";
+import {DataValue, Field} from "../../types/api";
+import {getDocumentTemplateCreationFields, createDocumentTemplate} from "../../api/api";
+import Form from "../Form";
+import {ModalContext} from "../contexts/ModalContextProvider";
+import FieldsSettingMenu from "./FieldsSettingMenu";
+import SimpleContainer from "../SimpleContainer";
 
 const TemplateCreationForm: FC = () =>
 {

@@ -17,7 +17,7 @@ const DocumentShowMenu: FC = () => {
                 const docs = await getDocuments();
                 setDocuments(docs);
 
-                const infos = await Promise.all(docs.map((doc) => getTemplateInfo(doc.id)));
+                const infos = await Promise.all(docs.map((doc) => getTemplateInfo(doc.template)));
                 setTemplatesInfo(infos);
             } catch (err: any) {
                 setError(err.message || "Ошибка при загрузке документов");
@@ -46,13 +46,13 @@ const DocumentShowMenu: FC = () => {
             <p>Существующие документы:</p>
             <ul style={{ listStyleType: "none", padding: 0 }}>
                 {documents.map((doc, idx) => {
-                    const tpl = templatesInfo[idx];
-                    const title = tpl
-                        ? `${tpl.templateType} "${tpl.templateName}" #${doc.id}`
-                        : `Document #${doc.id}`;
+                    const template = templatesInfo[idx];
+                    const title = template
+                        ? `${template.templateType} "${template.templateName}" #${doc.id}`
+                        : `Document #${doc.documentNumber}`;
 
                     return (
-                        <li key={doc.id} style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "0.5rem" }}>
+                        <li key={doc.id} style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>{title}</span>
                             <Button text="Скачать" variant={ButtonType.general} onClick={() => downloadDocument(doc.id)} />
                         </li>

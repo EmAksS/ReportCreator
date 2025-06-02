@@ -72,7 +72,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         const isOrdinaryPhase = currentPhase === "ordinary";
 
         const keyNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldKeyNames;
-        const displayNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldDisplayNames;
         const idx = isOrdinaryPhase ? currentOrdinaryIndex : currentTableIndex;
 
         const currentKeyName = keyNamesArr[idx];
