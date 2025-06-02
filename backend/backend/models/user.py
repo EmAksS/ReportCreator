@@ -32,7 +32,7 @@ class UsersValues(models.Model):
     Вся информация касательно пользователей.
     """
 
-    id = models.CharField(max_length=150, primary_key=True)
+    id = models.CharField(max_length=150, primary_key=True, unique=True)
     user_id = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -48,7 +48,12 @@ class UsersValues(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('user_id', 'field_id')
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         fields=['key_name', 'related_item'], name='abstract_key_name_related_item_combination'
+        #     )
+        # ]
+        pass
 
     def __str__(self):
         return f"{self.user_id} - {self.field_id}: {self.value}"
