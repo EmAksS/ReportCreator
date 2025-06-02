@@ -12,7 +12,7 @@ import {
     User
 } from "../types/core";
 
-const BASE_API_URL = "http://26.63.43.26:8000";
+const BASE_API_URL = "http://localhost:8000";
 export const ENDPOINTS = {
     COMPANY_REGISTRATION: "/register/company/",
 
