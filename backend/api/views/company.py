@@ -3,7 +3,7 @@ from api.views.schema import SchemaAPIView
 from rest_framework.exceptions import ValidationError
 # Permissions
 from rest_framework.permissions import AllowAny
-from api.permissions import IsAuthed, IsAuthedOrReadOnly
+from api.permissions import IsAuthed, IsAuthedOrReadOnly, IsCompanySuperuser
 # Serializers
 from api.serializers.users import UserSerializer
 from api.serializers.company import (
@@ -327,6 +327,23 @@ class CompanyInfoView(SchemaAPIView, generics.GenericAPIView):
         return Response(self.serializer_class(company).data)
 
 
+class CompanyDeleteView(SchemaAPIView, generics.DestroyAPIView):
+    permission_classes = [IsCompanySuperuser]
+    serializer_class = CompanySerializer
+    details_serializer = CompanySerializer
+    error_messages = {
+        "company": "Не найдена компания, в которой находится пользователь."
+    }
+
+    def get_queryset(self):
+        return Executor.objects.get(id=self.request.user.company.id)
+
+    def delete(self, request, *args, **kwargs):
+        company = request.user.company
+        self.perform_destroy(company)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @extend_schema(tags=["Company"])
 @extend_schema_view(
     get=extend_schema(
@@ -605,6 +622,20 @@ class ContractorListView(SchemaAPIView, generics.ListAPIView):
 
     def get_queryset(self):
         return Contractor.objects.filter(related_executor=self.request.user.company.id)
+
+
+class ContractorDeleteView(SchemaAPIView, generics.RetrieveDestroyAPIView):
+    serializer_class = ContractorSerializer
+    permission_classes = [IsAuthed]
+    lookup_url_kwarg = "pk"
+
+    def get_queryset(self):
+        return Contractor.objects.filter(id=self.kwargs["pk"]).first()
+    
+    def delete(self, request, *args, **kwargs):
+        contractor = self.get_queryset()
+        contractor.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # --- Получение юридичеких лиц компании ---

@@ -15,10 +15,12 @@ urlpatterns = [
     path('register/user/', users.UserRegisterView.as_view(), name='register_user'),
     
     path('company/', company.CompanyInfoView.as_view(), name='get_company_info'),
+    path('company/delete/', company.CompanyDeleteView.as_view(), name='delete_company'),
     path('company/pcs/<str:username>/', company.CompanyUserPCView.as_view(), name='get_company_users_pc'),
     path('company/users/', company.CompanyUsersView.as_view(), name='get_company_users'),
     path('company/fields/', company.CompanyRegisterView.as_view(), name='get_company_fields'),
     path('company/contractors/', company.ContractorListView.as_view(), name='get_contractors'),
+    path('company/contractors/<int:pk>/', company.ContractorDeleteView.as_view(), name='get_contractor_detail'),
     path('company/contractors/fields/', company.ContractorCreateView.as_view(), name='get_contractor_fields'),
     
     path('persons/executor/', company.ExecutorPersonListCreateView.as_view(), name='executor_list'),
