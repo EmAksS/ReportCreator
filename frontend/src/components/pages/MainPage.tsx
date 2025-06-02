@@ -1,7 +1,7 @@
 import React, { FC, useState } from "react";
-import TemplateCreationForm from "../TemplateCreationForm";
+import TemplateCreationForm from "../forms/TemplateCreationForm";
 import SimpleContainer from "../SimpleContainer";
-import DocumentCreationForm from "../DocumentCreationForm";
+import DocumentCreationForm from "../forms/DocumentCreationForm";
 import Button, { ButtonType } from "../Button";
 import DocumentShowMenu from "../forms/DocumentShowMenu";
 
