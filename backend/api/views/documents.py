@@ -935,7 +935,7 @@ class DocumentFieldsCreateView(SchemaAPIView, generics.ListCreateAPIView):
         locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
         # Информация о документе
         #* order_date - в fill_document
-        document_data["order_number"] = Document.objects.filter(template=template).count() + 1
+        document_data["order_number"] = doc.document_number
         # Лицо заказчика
         if template.related_contractor_person is not None:
             document_data["contractor_person"] = template.related_contractor_person.set_initials()
