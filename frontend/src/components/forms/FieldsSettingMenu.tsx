@@ -179,7 +179,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
 
     const isOrdinaryPhase = currentPhase === "ordinary";
     const displayNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldDisplayNames;
-    const keyNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldKeyNames;
     const activeFieldsArray = isOrdinaryPhase ? ordinaryFieldFields : tableFieldFields;
     const activeIndex = isOrdinaryPhase ? currentOrdinaryIndex : currentTableIndex;
 
@@ -193,7 +192,7 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
     ) || [];
 
     return (
-        <div>
+        <div style={{width:"700px"}}>
             <h3>Настройка полей для шаблона {template.templateName}</h3>
             {displayNamesArr.length > 0 && (
                 <div
@@ -210,7 +209,7 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
                     <div>{currentLabel}</div>
 
                     <button className={"toggleable-button"}
-                        onClick={handleNext}
+                            onClick={handleNext}
                         disabled={
                             isOrdinaryPhase
                                 ? currentOrdinaryIndex === ordinaryFieldNames.length - 1 && tableFieldKeyNames.length === 0

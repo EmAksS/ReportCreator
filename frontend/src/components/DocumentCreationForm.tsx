@@ -1,7 +1,6 @@
-// src/components/DocumentCreationForm.tsx
 import React, { ChangeEvent, FC, useEffect, useState } from "react";
 import {
-    createDocument,
+    createDocument, downloadDocument,
     getCompany,
     getCompanyDocumentTemplates,
     getDocumentFields,
@@ -107,7 +106,9 @@ const DocumentCreationForm: FC = () => {
 
         // объединяем все значения и отправляем
         const allValues: DataValue[] = [...normalValues, ...tableValues];
-        await createDocument(Number(selectedTemplateId), allValues);
+        const doc = await createDocument(Number(selectedTemplateId), allValues);
+
+        await downloadDocument(doc.id)
     };
 
     return (

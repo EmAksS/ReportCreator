@@ -146,7 +146,7 @@ const CompanyPage: FC = () =>
 
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Пользователи компании</h3>
-                <List items={companyUsers.map((currentUser, index) =>
+                <List hideRemoveButtons={true} items={companyUsers.map((currentUser, index) =>
                     ({id: index, content: <div>{(user?.username == currentUser.username ? "Вы: " : "") + currentUser.username + " " + (currentUser.isCompanySuperuser ? "👑" : "")}</div>} as ListItem))}
                       onAdd={() =>
                       {
@@ -165,8 +165,8 @@ const CompanyPage: FC = () =>
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Компании Заказчики</h3>
 
-                <List items={contractorCompanies.map((contractor, index) =>
-                    ({id: index, content: <div>{contractor.companyFullName + " " + contractor.contractorCity}</div>} as ListItem))}
+                <List hideRemoveButtons={true} items={contractorCompanies.map((contractor, index) =>
+                    ({id: index, content: <div>{contractor.companyFullName}</div>} as ListItem))}
                       onAdd={() =>
                       {
                           setIsOpenModal(true);
@@ -178,8 +178,8 @@ const CompanyPage: FC = () =>
 
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Юридические лица заказчиков</h3>
-                <List items={contractorPersons.map((person, index) =>
-                    ({id: index, content: <div>{person.company + " " + person.post + " " + person.
+                <List hideRemoveButtons={true} items={contractorPersons.map((person, index) =>
+                    ({id: index, content: <div>{person.personType + " " + person.post + " " + person.
                             lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
                       onAdd={() => {
                           setIsOpenModal(true);
@@ -192,8 +192,8 @@ const CompanyPage: FC = () =>
             <SimpleContainer style={{flex: "1"}}>
                 <h3 style={{margin: "5px auto"}}>Юридические лица исполнителя</h3>
 
-                <List items={executorPersons.map((person, index) =>
-                    ({id: index, content: <div>{person.post + " " + person.
+                <List hideRemoveButtons={true} items={executorPersons.map((person, index) =>
+                    ({id: index, content: <div>{person.personType + " " + person.post + " " + person.
                             lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
                       onAdd={() => {
                           setIsOpenModal(true);

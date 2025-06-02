@@ -3,11 +3,12 @@ import TemplateCreationForm from "../TemplateCreationForm";
 import SimpleContainer from "../SimpleContainer";
 import DocumentCreationForm from "../DocumentCreationForm";
 import Button, { ButtonType } from "../Button";
+import DocumentShowMenu from "../forms/DocumentShowMenu";
 
 const options = [
     { id: "create-document", text: "Создать документ" },
     { id: "create-template", text: "Создать шаблон" },
-    { id: "edit-template", text: "Редактирование шаблона" },
+    { id: "show-documents", text: "Просмотр документов"}
 ];
 
 const MainPage: FC = () => {
@@ -19,8 +20,8 @@ const MainPage: FC = () => {
                 return <TemplateCreationForm />;
             case "create-document":
                 return <DocumentCreationForm />;
-            case "edit-template":
-                return <div>Контент для редактирования шаблона</div>;
+            case "show-documents":
+                return <DocumentShowMenu />;
             default:
                 return null;
         }

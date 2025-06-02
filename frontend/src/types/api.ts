@@ -8,6 +8,7 @@ export enum InputType
     Combobox = "COMBOBOX",
     File = "FILE",
     Number = "NUMBER",
+    Currency = "CURRENCY",
     Date = "DATE"
 }
 

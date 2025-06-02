@@ -49,8 +49,7 @@ function AppContent()
                 title={"Report Creator"}
                 onLogoClick={() => {if (user) navigate(ROUTES.MAIN)}}
                 buttonProps={user
-                    ? [{ text: "Документы", onClick: () => navigate(ROUTES.DOCUMENTS), variant: ButtonType.hat },
-                        { text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },
+                    ? [{ text: "Главная", onClick: () => navigate(ROUTES.MAIN), variant: ButtonType.hat },
                         { text: "Компания", onClick: () => navigate(ROUTES.COMPANY), variant: ButtonType.hat },
                         { text: "Выйти", onClick: async () => { await logout(); await checkAuth(); navigate(ROUTES.MAIN); }, variant: ButtonType.hat }]
                     : []}/>
@@ -59,10 +58,8 @@ function AppContent()
                 <Routes>
                     <Route path={ROUTES.REGISTRATION} element={<AuthPage authMode={AuthFormMode.registration} />} />
                     <Route path={ROUTES.LOGIN} element={<AuthPage authMode={AuthFormMode.login} />} />
-                    <Route path={ROUTES.WELCOME} element={<WelcomePage />} />
                     <Route path={ROUTES.MAIN} element={<MainPage />} />
                     <Route path={ROUTES.COMPANY} element={<CompanyPage />} />
-                    <Route path={ROUTES.DOCUMENTS} element={<DocumentPage />} />
                     <Route path="*" element={<Navigate to={ROUTES.MAIN} />} />
                 </Routes>
             </div>

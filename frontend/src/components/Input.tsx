@@ -30,6 +30,7 @@ const Input: FC<InputProps> = (props: InputProps) =>
             case InputType.Combobox: return <ComboboxInput {...props as ComboboxInputProps} />
             case InputType.File: return <FileInput {...props as FileInputProps} />
             case InputType.Number: return <NumberInput {...props as NumberInputProps} />
+            case InputType.Currency: return <NumberInput {...props as NumberInputProps} />
             case InputType.Date: return <DateInput {...props as DateInputProps} />
 
             default: throw new Error("Предоставлен не валидный объект Field")
