@@ -16,27 +16,20 @@ export interface FieldsSettingMenuProps {
 }
 
 const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
-    // -------------------- Состояния --------------------
-    // Фаза: "ordinary" (обычные поля) или "table" (табличные поля)
     const [currentPhase, setCurrentPhase] = useState<"ordinary" | "table">("ordinary");
 
-    // Обычные поля (keyName и displayName совпадают)
     const [ordinaryFieldNames, setOrdinaryFieldNames] = useState<string[]>([]);
     const [ordinaryFieldFields, setOrdinaryFieldFields] = useState<Field[][]>([]);
     const [currentOrdinaryIndex, setCurrentOrdinaryIndex] = useState<number>(0);
 
-    // Табличные поля: отдельно keyNames и displayNames
     const [tableFieldKeyNames, setTableFieldKeyNames] = useState<string[]>([]);
     const [tableFieldDisplayNames, setTableFieldDisplayNames] = useState<string[]>([]);
     const [tableFieldFields, setTableFieldFields] = useState<Field[][]>([]);
     const [currentTableIndex, setCurrentTableIndex] = useState<number>(0);
 
-    // Загрузка
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    // -------------------- Эффект: загрузка полей при изменении шаблона --------------------
     useEffect(() => {
-        // Сбрасываем всё при смене template
         setCurrentPhase("ordinary");
         setCurrentOrdinaryIndex(0);
         setCurrentTableIndex(0);
@@ -49,7 +42,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         const fetchAllFields = async () => {
             setIsLoading(true);
             try {
-                // ---- 1. Обычные поля ----
                 const ordNames = [...template.foundFields];
                 setOrdinaryFieldNames(ordNames);
 
@@ -57,9 +49,7 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
                 const ordFieldsArray = await Promise.all(ordinaryRequests);
                 setOrdinaryFieldFields(ordFieldsArray);
 
-                // ---- 2. Табличные поля ----
                 const tableNameFields = await getTemplateTableFieldValues(template.id);
-                // Извлекаем keyName и display name
                 const tblKeyNames = tableNameFields.map((f) => f.keyName);
                 const tblDisplayNames = tableNameFields.map((f) => f.name);
                 setTableFieldKeyNames(tblKeyNames);
@@ -78,7 +68,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         fetchAllFields();
     }, [template]);
 
-    // -------------------- Хэндлер сохранения --------------------
     const onFieldSettingSubmit = async (values: DataValue[]) => {
         const isOrdinaryPhase = currentPhase === "ordinary";
 
@@ -86,7 +75,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         const displayNamesArr = isOrdinaryPhase ? ordinaryFieldNames : tableFieldDisplayNames;
         const idx = isOrdinaryPhase ? currentOrdinaryIndex : currentTableIndex;
 
-        // Для сохранения используем keyName
         const currentKeyName = keyNamesArr[idx];
 
         const hasKeyName = values.some((v) => v.fieldId === "key_name");
@@ -107,7 +95,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         }
     };
 
-    // -------------------- Удаление обычного поля --------------------
     const removeOrdinaryFieldByIndex = (index: number) => {
         setOrdinaryFieldNames((prev) => prev.filter((_, idx) => idx !== index));
         setOrdinaryFieldFields((prev) => prev.filter((_, idx) => idx !== index));
@@ -117,7 +104,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         });
     };
 
-    // -------------------- Удаление табличного поля --------------------
     const removeTableFieldByIndex = (index: number) => {
         setTableFieldKeyNames((prev) => prev.filter((_, idx) => idx !== index));
         setTableFieldDisplayNames((prev) => prev.filter((_, idx) => idx !== index));
@@ -128,7 +114,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         });
     };
 
-    // -------------------- Хэндлеры перехода "← Предыдущее" и "Следующее →" --------------------
     const handlePrev = () => {
         if (currentPhase === "ordinary") {
             setCurrentOrdinaryIndex((i) => Math.max(0, i - 1));
@@ -154,7 +139,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         }
     };
 
-    // -------------------- Логика рендера --------------------
     if (isLoading) {
         return <div>Loading...</div>;
     }
@@ -186,7 +170,6 @@ const FieldsSettingMenu: FC<FieldsSettingMenuProps> = ({ template }) => {
         ? `Поле ${displayNamesArr[activeIndex]} (${activeIndex + 1} из ${displayNamesArr.length})`
         : `Табличное поле ${displayNamesArr[activeIndex]} (${activeIndex + 1} из ${displayNamesArr.length})`;
 
-    // Фильтруем, чтобы не показывать поля key_name и related_template
     const visibleFields = activeFieldsArray[activeIndex]?.filter(
         (f) => f.keyName !== "key_name" && f.keyName !== "related_template"
     ) || [];

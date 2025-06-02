@@ -19,12 +19,6 @@ const Modal: FC<ModalProps> = (props) =>
         if (event.key === "Escape") { setIsOpen(false); }
     };
 
-    // const cancel = () =>
-    // {
-    //     setIsOpen(false);
-    //     onCancel?.();
-    // }
-
     useEffect(() =>
     {
         if (isOpen) { document.addEventListener("keydown", onEscapePress); }

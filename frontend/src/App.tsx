@@ -5,13 +5,9 @@ import { ButtonType } from "./components/Button";
 import { AuthFormMode } from "./components/AuthForm";
 import {BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom";
 import AuthPage from "./components/pages/AuthPage";
-import WelcomePage from "./components/pages/WelcomePage";
 import { getUser, logout } from "./api/api";
 import MainPage from "./components/pages/MainPage";
 import CompanyPage from "./components/pages/CompanyPage";
-import {User} from "./types/core";
-import Modal, {ModalProps} from "./components/Modal";
-import DocumentPage from "./components/pages/DocumentPage";
 import ModalContextProvider from "./components/contexts/ModalContextProvider";
 import AuthContextProvider, {AuthContext} from "./components/contexts/AuthContextProvider";
 
