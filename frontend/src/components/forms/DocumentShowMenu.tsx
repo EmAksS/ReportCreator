@@ -17,7 +17,7 @@ const DocumentShowMenu: FC = () => {
                 const docs = await getDocuments();
                 setDocuments(docs);
 
-                const infos = await Promise.all(docs.map((doc) => getTemplateInfo(doc.id)));
+                const infos = await Promise.all(docs.map((doc) => getTemplateInfo(doc.template)));
                 setTemplatesInfo(infos);
             } catch (err: any) {
                 setError(err.message || "Ошибка при загрузке документов");

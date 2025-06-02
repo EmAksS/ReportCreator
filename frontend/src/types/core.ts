@@ -38,7 +38,7 @@ export interface DocumentData
 {
     id: number,
     documentNumber: number
-    template: string,
+    template: number,
     savePath: string
 }
 
