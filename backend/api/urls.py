@@ -16,6 +16,7 @@ urlpatterns = [
     
     path('company/', company.CompanyInfoView.as_view(), name='get_company_info'),
     path('company/delete/', company.CompanyDeleteView.as_view(), name='delete_company'),
+    path('user/delete/<str:username>/', company.CompanyUserDeleteView.as_view(), name='delete_company_user'),
     path('company/pcs/<str:username>/', company.CompanyUserPCView.as_view(), name='get_company_users_pc'),
     path('company/users/', company.CompanyUsersView.as_view(), name='get_company_users'),
     path('company/fields/', company.CompanyRegisterView.as_view(), name='get_company_fields'),

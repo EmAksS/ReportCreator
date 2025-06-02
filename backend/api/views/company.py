@@ -344,6 +344,28 @@ class CompanyDeleteView(SchemaAPIView, generics.DestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class CompanyUserDeleteView(SchemaAPIView, generics.DestroyAPIView):
+    permission_classes = [IsCompanySuperuser]
+    serializer_class = UserSerializer
+    details_serializer = UserSerializer
+    error_messages = {
+        "company": "Не найдена компания, в которой находится пользователь.",
+        "username": "Не найден пользователь компании."
+    }
+
+    def get_queryset(self):
+        if not self.request.user.company:
+            raise ValidationError(self.error_messages["company"])
+        return User.objects.filter(company=self.request.user.company, username=self.kwargs.get('username'))
+    
+    def delete(self, request, *args, **kwargs):
+        user = self.get_queryset().first()
+        if not user:
+            raise ValidationError(self.error_messages["username"])
+        self.perform_destroy(user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @extend_schema(tags=["Company"])
 @extend_schema_view(
     get=extend_schema(
