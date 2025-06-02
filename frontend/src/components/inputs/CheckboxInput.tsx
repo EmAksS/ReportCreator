@@ -11,7 +11,6 @@ const CheckBoxInput: FC<InputProps> = (props: InputProps) =>
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void =>
     {
         const newValue: FieldValue = event.target.checked;
-        console.log(newValue)
         props.onChange?.(props.inputData.keyName, newValue);
     };
 

@@ -70,31 +70,22 @@ const CompanyPage: FC = () =>
                 companyUserFields = await getUserRegistrationFields();
             }
 
-            console.log("Юридические лица заказчиков:", contractorPersons);
             setContractorPersons(contractorPersons);
 
-            console.log("Юридические лица исполнителей:", executorPersons);
             setExecutorPersons(executorPersons);
 
-            console.log("Поля юридических лиц заказчиков:", contractorPersonFields);
             setContractorPersonFields(contractorPersonFields);
 
-            console.log("Компания пользователя:", company);
             setCompany(company);
 
-            console.log("Пользователи компании:", company);
             setCompanyUsers(companyUsers)
 
-            console.log("Поля для создания пользователя в компании:", companyUserFields);
             setCompanyUserFields(companyUserFields)
 
-            console.log("Поля юридических лиц исполнителей:", executorPersonFields);
             setExecutorPersonFields(executorPersonFields);
 
-            console.log("Компании заказчики:", contractorCompanies);
             setContractorCompanies(contractorCompanies);
 
-            console.log("Поля компаний заказчиков:", contractorCompanyFields);
             setContractorCompanyFields(contractorCompanyFields);
         }
         catch (error)
@@ -105,33 +96,25 @@ const CompanyPage: FC = () =>
 
     const requestCreateExecutorPerson = async (values: DataValue[]) =>
     {
-        console.log("пытаемся создать лицо исполнителя");
-        const response = await createExecutorPerson(values);
-        console.log(response);
+        await createExecutorPerson(values);
         setExecutorPersons(await getExecutorPersons());
     }
 
     const requestCreateContractorPerson = async (values: DataValue[]) =>
     {
-        console.log("пытаемся создать лицо заказчика");
-        const response = await createContractorPerson(values);
-        console.log(response);
+        await createContractorPerson(values);
         setContractorPersons(await getContractorPersons());
     }
 
     const requestCreateContractorCompany = async (values: DataValue[]) =>
     {
-        console.log("пытаемся создать компанию заказчика");
-        const response = await createContractorCompany(values);
-        console.log(response);
+        await createContractorCompany(values);
         setContractorCompanies(await getContractorCompanies());
     }
 
     const requestCreateCompanyUser = async (values: DataValue[]) =>
     {
-        console.log("пытаемся создать пользователя");
-        const response = await createUser(values);
-        console.log(response);
+        await createUser(values);
         setCompanyUsers(await getCompanyUsers());
     }
 
@@ -153,7 +136,7 @@ const CompanyPage: FC = () =>
                           if (user?.isCompanySuperuser)
                           {
                               setIsOpenModal(true);
-                              setModalChildren(<SimpleContainer><Form submitLabel={"Добавить пользователя"}
+                              setModalChildren(<SimpleContainer style={{width: "500px"}}><Form submitLabel={"Добавить пользователя"}
                                                                       inputs={companyUserFields.map(field => ({inputData: field} as InputProps))}
                                                                       onSubmit={requestCreateCompanyUser}/></SimpleContainer>)
                           }
@@ -170,7 +153,7 @@ const CompanyPage: FC = () =>
                       onAdd={() =>
                       {
                           setIsOpenModal(true);
-                          setModalChildren(<SimpleContainer><Form submitLabel={"Добавить компанию заказчика"}
+                          setModalChildren(<SimpleContainer style={{width: "500px"}}><Form submitLabel={"Добавить компанию заказчика"}
                                                                   inputs={contractorCompanyFields.map(field => ({inputData: field} as InputProps))}
                                                                   onSubmit={requestCreateContractorCompany}/></SimpleContainer>)
                       }}/>
@@ -183,7 +166,7 @@ const CompanyPage: FC = () =>
                             lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
                       onAdd={() => {
                           setIsOpenModal(true);
-                          setModalChildren(<SimpleContainer><Form submitLabel={"Добавить юр. лицо заказчика"}
+                          setModalChildren(<SimpleContainer style={{width: "500px"}}><Form submitLabel={"Добавить юр. лицо заказчика"}
                                                                   inputs={contractorPersonFields.map(field => ({inputData: field} as InputProps))}
                                                                   onSubmit={requestCreateContractorPerson}/></SimpleContainer>)
                       }}/>
@@ -197,7 +180,7 @@ const CompanyPage: FC = () =>
                             lastName + " " + person.firstName + " " + person.surname}</div>} as ListItem))}
                       onAdd={() => {
                           setIsOpenModal(true);
-                          setModalChildren(<SimpleContainer>
+                          setModalChildren(<SimpleContainer style={{width: "500px"}}>
                               <Form submitLabel={"Добавить юр. лицо исполнителя"}
                                     inputs={executorPersonFields.map(field => ({inputData: field} as InputProps))}
                                     onSubmit={requestCreateExecutorPerson}/>

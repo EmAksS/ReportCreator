@@ -9,7 +9,8 @@ export enum InputType
     File = "FILE",
     Number = "NUMBER",
     Currency = "CURRENCY",
-    Date = "DATE"
+    Date = "DATE",
+    User = "USER",
 }
 
 export interface DataValue

@@ -101,7 +101,6 @@ const AuthForm: FC<AuthFormProps> = (props: AuthFormProps) =>
             {
                 updateFormConfig(menuMode, {alertMessage: error.message});
             }
-            console.log("Не удалось загрузить поля", error);
         }
     };
 
