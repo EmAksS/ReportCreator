@@ -421,6 +421,9 @@ class UserRegisterView(SchemaAPIView, generics.ListCreateAPIView):
         username = find_dataValue(data, "username")
         password = find_dataValue(data, "password")
 
+        if User.objects.filter(username=username).count() > 0:
+            raise ValidationError({"username": "Пользователь с таким именем ужее существует"})
+
         if not all([username, password]):
             raise ValidationError({"username": "Отсутствуют необходимые поля `username` и/или `password`"})
         else:
